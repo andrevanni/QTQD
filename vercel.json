@@ -16,6 +16,10 @@
     {
       "src": "shared/**",
       "use": "@vercel/static"
+    },
+    {
+      "src": "validar_fronts.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
