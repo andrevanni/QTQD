@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QTQD - Área Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img class="brand-logo" src="logo_alta.jpg" alt="Service Farma">
+          <div class="brand-copy">
+            <strong>QTQD</strong>
+            <span>Painel Master</span>
+          </div>
+        </div>
+
+        <div>
+          <p class="eyebrow">Administração</p>
+          <h1>Painel master</h1>
+          <p class="sidebar-copy">
+            Controle de clientes, vigência da ferramenta, base operacional, identidade visual e primeira carga.
+          </p>
+        </div>
+
+        <div class="status-card">
+          <span class="small-label">Projeto</span>
+          <strong>Service Farma</strong>
+          <span id="projectUrlLabel" class="small-copy">Projeto conectado</span>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-link active" data-section="clientes">Clientes</button>
+          <button class="nav-link" data-section="vigencias">Vigências</button>
+          <button class="nav-link" data-section="importacao">Primeira Carga</button>
+          <button class="nav-link" data-section="campos">Campos</button>
+          <button class="nav-link" data-section="identidade">Identidade Visual</button>
+          <button class="nav-link" data-section="ambiente">Ambiente</button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <div class="topbar">
+          <div class="theme-toggle" role="group" aria-label="Tema visual">
+            <button class="theme-chip" type="button" data-theme-choice="light">Claro</button>
+            <button class="theme-chip active" type="button" data-theme-choice="dark">Escuro</button>
+          </div>
+        </div>
+
+        <header class="hero">
+          <div>
+            <p class="eyebrow">Painel Administrativo</p>
+            <h2>Clientes e licenciamento</h2>
+            <p class="hero-copy">
+              Interface alinhada com a Agenda de Compras Web, incluindo identidade visual do cliente, tema e primeira carga.
+            </p>
+          </div>
+          <div class="hero-actions">
+            <button id="resetAdminButton" class="secondary-button" type="button">Recarregar Demo</button>
+          </div>
+        </header>
+
+        <div id="feedbackBox" class="feedback-box hidden"></div>
+
+        <section id="clientes" class="admin-section">
+          <div class="board two-column">
+            <div>
+              <div class="board-header">
+                <div>
+                  <p class="eyebrow">Cadastro Comercial</p>
+                  <h3>Clientes da plataforma</h3>
+                </div>
+              </div>
+              <div id="clientList" class="card-list"></div>
+            </div>
+
+            <div class="form-panel">
+              <div class="board-header">
+                <div>
+                  <p class="eyebrow">Novo cliente</p>
+                  <h3>Cadastrar cliente</h3>
+                </div>
+                <span id="clientModeBadge" class="badge">Novo</span>
+              </div>
+              <form id="clientForm" class="stack-form">
+                <input id="clientId" type="hidden">
+                <label class="field"><span>Nome do cliente</span><input id="clientName" type="text" required></label>
+                <label class="field"><span>Slug</span><input id="clientSlug" type="text" required></label>
+                <label class="field"><span>Status</span><select id="clientStatus"><option value="implantacao">Implantação</option><option value="ativo">Ativo</option><option value="bloqueado">Bloqueado</option></select></label>
+                <label class="field"><span>Plano</span><input id="clientPlan" type="text" value="premium"></label>
+                <label class="field"><span>Contato</span><input id="clientContact" type="text"></label>
+                <label class="field"><span>E-mail</span><input id="clientEmail" type="email"></label>
+                <div class="hero-actions">
+                  <button class="primary-button" type="submit">Salvar cliente</button>
+                  <button id="clearClientFormButton" class="secondary-button" type="button">Limpar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section id="vigencias" class="admin-section hidden">
+          <div class="board two-column">
+            <div>
+              <div class="board-header"><div><p class="eyebrow">Licenciamento</p><h3>Vigências cadastradas</h3></div></div>
+              <div id="licenseList" class="card-list"></div>
+            </div>
+
+            <div class="form-panel">
+              <div class="board-header"><div><p class="eyebrow">Nova vigência</p><h3>Controle de acesso do cliente</h3></div></div>
+              <form id="licenseForm" class="stack-form">
+                <label class="field"><span>Cliente</span><select id="licenseClient"></select></label>
+                <label class="field"><span>Plano</span><input id="licensePlan" type="text" value="premium"></label>
+                <label class="field"><span>Início</span><input id="licenseStart" type="date"></label>
+                <label class="field"><span>Fim</span><input id="licenseEnd" type="date"></label>
+                <label class="field"><span>Status</span><select id="licenseStatus"><option value="ativo">Ativo</option><option value="implantacao">Implantação</option><option value="bloqueado">Bloqueado</option></select></label>
+                <div class="hero-actions"><button class="primary-button" type="submit">Salvar vigência</button></div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section id="importacao" class="admin-section hidden">
+          <div class="board two-column">
+            <div class="form-panel">
+              <div class="board-header"><div><p class="eyebrow">Primeira carga</p><h3>Importação inicial da base Excel</h3></div></div>
+              <form id="importForm" class="stack-form">
+                <label class="field"><span>Cliente destino</span><select id="importClient"></select></label>
+                <label class="field"><span>Arquivo da base inicial</span><input id="importFile" type="file" accept=".xlsx,.xls,.csv"></label>
+                <label class="field"><span>Observações</span><textarea id="importNotes" rows="4" placeholder="Ex.: primeira carga histórica do cliente"></textarea></label>
+                <div class="hero-actions"><button class="primary-button" type="submit">Registrar importação</button></div>
+              </form>
+            </div>
+
+            <div class="board inset">
+              <div class="board-header"><div><p class="eyebrow">Fila de importações</p><h3>Cargas registradas</h3></div></div>
+              <div id="importList" class="card-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="campos" class="admin-section hidden">
+          <div class="board">
+            <div class="board-header">
+              <div>
+                <p class="eyebrow">Configuração</p>
+                <h3>Campos exibidos no Cliente</h3>
+              </div>
+            </div>
+            <p class="board-copy">Se um campo for desativado aqui, ele deixa de aparecer em todo o portal do Cliente, inclusive no lançamento de uma nova data.</p>
+            <div id="fieldConfigList" class="field-config-list"></div>
+            <div class="hero-actions">
+              <button id="saveFieldConfigButton" class="primary-button" type="button">Salvar configuração</button>
+              <button id="resetFieldConfigButton" class="secondary-button" type="button">Restaurar padrão</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="identidade" class="admin-section hidden">
+          <div class="board two-column">
+            <div class="form-panel">
+              <div class="board-header">
+                <div>
+                  <p class="eyebrow">Branding</p>
+                  <h3>Identidade visual do cliente</h3>
+                </div>
+              </div>
+              <form id="brandingForm" class="stack-form">
+                <label class="field"><span>Nome exibido no portal</span><input id="brandingClientName" type="text" placeholder="Cliente Demonstração"></label>
+                <label class="field"><span>Logo do cliente</span><input id="brandingClientLogo" type="file" accept=".jpg,.jpeg,.png,.webp"></label>
+                <div class="hero-actions">
+                  <button class="primary-button" type="submit">Salvar identidade</button>
+                  <button id="resetBrandingButton" class="secondary-button" type="button">Restaurar padrão</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="form-panel">
+              <div class="board-header">
+                <div>
+                  <p class="eyebrow">Pré-visualização</p>
+                  <h3>Portal do Cliente</h3>
+                </div>
+              </div>
+              <div class="branding-preview">
+                <img class="preview-service-logo" src="logo_alta.jpg" alt="Service Farma">
+                <div class="preview-client-shell">
+                  <img id="brandingPreviewLogo" class="preview-client-logo" alt="Logo do cliente">
+                  <div id="brandingPreviewFallback" class="preview-client-fallback">CD</div>
+                </div>
+                <strong id="brandingPreviewName">Cliente Demonstração</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="ambiente" class="admin-section hidden">
+          <div class="stats-grid">
+            <article>
+              <span class="stat-label">Stack</span>
+              <strong>Web + Supabase + Vercel</strong>
+            </article>
+            <article>
+              <span class="stat-label">Segurança</span>
+              <strong>Multi-tenant com RLS</strong>
+            </article>
+            <article>
+              <span class="stat-label">Cliente</span>
+              <strong>Portal QTQD</strong>
+            </article>
+            <article>
+              <span class="stat-label">Admin</span>
+              <strong>Painel Master</strong>
+            </article>
+          </div>
+
+          <div class="board two-column">
+            <div class="form-panel">
+              <div class="board-header">
+                <div>
+                  <p class="eyebrow">Conexão</p>
+                  <h3>Modo de execução</h3>
+                </div>
+              </div>
+              <form id="runtimeConfigForm" class="stack-form">
+                <label class="field">
+                  <span>Modo</span>
+                  <select id="runtimeMode">
+                    <option value="simulation">Simulação</option>
+                    <option value="api">API real</option>
+                  </select>
+                </label>
+                <label class="field"><span>Base da API</span><input id="runtimeApiBaseUrl" type="url"></label>
+                <label class="field"><span>URL de health</span><input id="runtimeHealthUrl" type="url"></label>
+                <label class="field"><span>Tenant padrão do Cliente</span><input id="runtimeTenantId" type="text" placeholder="UUID do tenant"></label>
+                <label class="field"><span>Token administrativo</span><input id="runtimeAdminToken" type="password" placeholder="x-admin-token"></label>
+                <div class="hero-actions">
+                  <button class="primary-button" type="submit">Salvar ambiente</button>
+                  <button id="testApiConnectionButton" class="secondary-button" type="button">Testar API</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="board inset">
+              <div class="board-header">
+                <div>
+                  <p class="eyebrow">Status</p>
+                  <h3>Conectividade atual</h3>
+                </div>
+              </div>
+              <div class="card-list">
+                <article class="entity-card">
+                  <strong>Modo ativo</strong>
+                  <span id="runtimeModeLabel">Simulação</span>
+                </article>
+                <article class="entity-card">
+                  <strong>API configurada</strong>
+                  <span id="runtimeApiBaseLabel">-</span>
+                </article>
+                <article class="entity-card">
+                  <strong>Tenant padrão</strong>
+                  <span id="runtimeTenantLabel">Não definido</span>
+                </article>
+                <article class="entity-card">
+                  <strong>Health da API</strong>
+                  <span id="runtimeHealthStatusLabel">Não testado</span>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="../shared/app_config.js"></script>
+    <script src="../shared/api_client.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

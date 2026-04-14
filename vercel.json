@@ -1,0 +1,51 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend_cliente/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "frontend_admin/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "shared/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/cliente",
+      "dest": "/frontend_cliente/index.html"
+    },
+    {
+      "src": "/cliente/(.*)",
+      "dest": "/frontend_cliente/$1"
+    },
+    {
+      "src": "/admin",
+      "dest": "/frontend_admin/index.html"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "/frontend_admin/$1"
+    },
+    {
+      "src": "/shared/(.*)",
+      "dest": "/shared/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/validar_fronts.html"
+    }
+  ]
+}

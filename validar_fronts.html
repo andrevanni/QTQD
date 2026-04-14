@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QTQD - Validacao dos Fronts</title>
+    <style>
+      :root {
+        --bg: #f3f1ec;
+        --card: rgba(255, 255, 255, 0.9);
+        --ink: #1f2933;
+        --muted: #66727c;
+        --line: rgba(31, 41, 51, 0.12);
+        --accent: #b85c33;
+        --accent-2: #11756c;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: var(--ink);
+        font-family: "Segoe UI", Arial, sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(184, 92, 51, 0.16), transparent 24%),
+          radial-gradient(circle at bottom right, rgba(17, 117, 108, 0.14), transparent 20%),
+          linear-gradient(180deg, #faf8f5 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(900px, 100%);
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: var(--card);
+        box-shadow: 0 24px 60px rgba(31, 41, 51, 0.12);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .grid {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .card h2 {
+        margin: 0 0 10px;
+      }
+
+      .actions {
+        margin-top: 18px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      a.button {
+        display: inline-block;
+        padding: 12px 16px;
+        border-radius: 14px;
+        text-decoration: none;
+        color: white;
+        font-weight: 700;
+      }
+
+      .cliente { background: var(--accent); }
+      .admin { background: var(--accent-2); }
+      .ghost {
+        background: white;
+        color: var(--ink) !important;
+        border: 1px solid var(--line);
+      }
+
+      code {
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: rgba(31, 41, 51, 0.06);
+      }
+
+      @media (max-width: 720px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <h1>QTQD - Validacao dos Fronts</h1>
+      <p>Use os botoes abaixo para abrir a simulacao da Area Cliente e da Area Admin. Se preferir, tambem pode usar o arquivo <code>abrir_fronts.cmd</code>.</p>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Area Cliente</h2>
+          <p>Cadastro semanal, edicao, exclusao, historico e painel de avaliacao com rotulos congelados.</p>
+          <div class="actions">
+            <a class="button cliente" href="frontend_cliente/index.html" target="_blank" rel="noopener noreferrer">Abrir Cliente</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Area Admin</h2>
+          <p>Cadastro de clientes, vigencias e registro da primeira carga inicial do Excel.</p>
+          <div class="actions">
+            <a class="button admin" href="frontend_admin/index.html" target="_blank" rel="noopener noreferrer">Abrir Admin</a>
+          </div>
+        </article>
+      </section>
+
+      <section class="card" style="margin-top: 18px;">
+        <h2 style="margin-top: 0;">Abertura rapida</h2>
+        <p>Dê duplo clique em <code>abrir_fronts.cmd</code> para abrir os dois frontends no navegador padrao do Windows.</p>
+        <div class="actions">
+          <a class="button ghost" href="abrir_fronts.cmd">Baixar/abrir comando</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

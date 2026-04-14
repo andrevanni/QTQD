@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.vercel.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Vercel
+.vercel/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+
+# Logs and local artifacts
+*.log
+*.tmp
+*.bak
+
+# Temporary helper copies used for manual SQL execution
+copiar_schema_supabase.sql
+copiar_schema_supabase.txt
+copiar_seed_supabase.sql
+copiar_seed_supabase.txt
