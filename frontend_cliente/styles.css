@@ -68,7 +68,7 @@ select {
 }
 
 body.sidebar-collapsed .app-shell {
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 34px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -88,8 +88,8 @@ body.sidebar-collapsed .app-shell {
 }
 
 body.sidebar-collapsed .sidebar {
-  transform: translateX(calc(-100% + 22px));
-  opacity: .16;
+  transform: translateX(calc(-100% + 34px));
+  opacity: .08;
 }
 
 body.sidebar-collapsed .sidebar:hover,
@@ -357,7 +357,7 @@ body[data-theme="light"] .theme-chip.active {
 }
 
 .topbar {
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .panel-topbar {
@@ -369,7 +369,6 @@ body[data-theme="light"] .theme-chip.active {
   display: none;
 }
 
-.page-logo-top,
 .footer-logo-shell {
   border-radius: 24px;
   border: 1px solid var(--line);
@@ -379,18 +378,10 @@ body[data-theme="light"] .theme-chip.active {
   place-items: center;
 }
 
-body[data-theme="light"] .page-logo-top,
 body[data-theme="light"] .footer-logo-shell {
   background: #fff;
 }
 
-.page-logo-top {
-  width: 88px;
-  height: 88px;
-  padding: 10px;
-}
-
-.page-logo-top img,
 .footer-logo-shell img {
   width: 100%;
   height: 100%;
@@ -652,30 +643,37 @@ body[data-theme="light"] .analysis-list div {
   position: relative;
 }
 
-.matrix-scroll {
-  overflow: auto;
-  max-height: 68vh;
-  width: 100%;
-  position: relative;
+.matrix-grid-shell {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
 }
 
-.matrix-table {
+.matrix-fixed-wrap {
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+}
+
+.matrix-data-wrap {
+  overflow: auto;
+  max-height: 68vh;
+}
+
+.matrix-fixed-table,
+.matrix-data-table {
   border-collapse: separate;
   border-spacing: 0;
+  width: 100%;
+}
+
+.matrix-data-table {
   min-width: 100%;
   width: max-content;
 }
 
-.matrix-col-components {
-  width: 340px;
-}
-
-.matrix-col-data {
-  width: 210px;
-}
-
-.matrix-table th,
-.matrix-table td {
+.matrix-fixed-table th,
+.matrix-fixed-table td,
+.matrix-data-table th,
+.matrix-data-table td {
   padding: 14px 16px;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -683,39 +681,42 @@ body[data-theme="light"] .analysis-list div {
   background: rgba(255, 255, 255, .02);
 }
 
-.matrix-table th {
+.matrix-fixed-table th,
+.matrix-data-table th {
   font-family: "Space Grotesk", sans-serif;
   text-align: left;
   background: rgba(255, 255, 255, .05);
 }
 
-body[data-theme="light"] .matrix-table th,
-body[data-theme="light"] .matrix-table td {
+body[data-theme="light"] .matrix-fixed-table th,
+body[data-theme="light"] .matrix-fixed-table td,
+body[data-theme="light"] .matrix-data-table th,
+body[data-theme="light"] .matrix-data-table td {
   background: rgba(255, 255, 255, .78);
 }
 
-.matrix-col-sticky {
-  position: sticky;
-  left: 0;
-  z-index: 6;
-  background: var(--panel-soft) !important;
-  box-shadow: 1px 0 0 var(--line), 8px 0 18px rgba(0, 0, 0, .12);
+.matrix-fixed-table td {
+  font-weight: 700;
 }
 
-.matrix-table th.matrix-col-sticky {
-  z-index: 7;
+.matrix-data-table th,
+.matrix-data-table td {
+  min-width: 210px;
 }
 
-.row-header td {
+.matrix-fixed-table .row-header td,
+.matrix-data-table .row-header td {
   background: rgba(79, 209, 197, .12) !important;
   font-weight: 800 !important;
 }
 
-body[data-theme="light"] .row-header td {
+body[data-theme="light"] .matrix-fixed-table .row-header td,
+body[data-theme="light"] .matrix-data-table .row-header td {
   background: rgba(13, 91, 87, .08) !important;
 }
 
-.row-section td {
+.matrix-fixed-table .row-section td,
+.matrix-data-table .row-section td {
   background: rgba(255, 255, 255, .04) !important;
   color: var(--muted);
   font-weight: 800 !important;
@@ -723,7 +724,8 @@ body[data-theme="light"] .row-header td {
   letter-spacing: .08em;
 }
 
-.row-empty td {
+.matrix-fixed-table .row-empty td,
+.matrix-data-table .row-empty td {
   height: 16px;
   padding: 8px 16px !important;
 }
@@ -809,6 +811,10 @@ body.focus-painel .matrix-scroll {
   max-height: calc(100vh - 140px);
 }
 
+body.focus-painel .matrix-data-wrap {
+  max-height: calc(100vh - 140px);
+}
+
 body.focus-painel #toggleFocusButton {
   display: none;
 }
@@ -846,8 +852,8 @@ body.focus-painel #backFromPanelButton {
     grid-template-columns: 1fr;
   }
 
-  .matrix-col-components {
-    width: 260px;
+  .matrix-grid-shell {
+    grid-template-columns: 260px minmax(0, 1fr);
   }
 }
 
