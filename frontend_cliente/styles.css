@@ -644,7 +644,7 @@ body[data-theme="light"] .analysis-list div {
 .matrix-shell {
   border-radius: 22px;
   background: rgba(255, 255, 255, .03);
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 
@@ -660,6 +660,7 @@ body[data-theme="light"] .analysis-list div {
   border-spacing: 0;
   width: max-content;
   min-width: 100%;
+  table-layout: fixed;
 }
 
 .matrix-col-components {
@@ -691,15 +692,28 @@ body[data-theme="light"] .matrix-table td {
 }
 
 .matrix-col-sticky {
-  position: sticky;
-  left: 0;
-  z-index: 6;
-  background: var(--panel-soft) !important;
-  box-shadow: 1px 0 0 var(--line), 8px 0 18px rgba(0, 0, 0, .12);
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 30;
+  min-width: 340px;
+  width: 340px;
+  max-width: 340px;
+  background: #1c2431 !important;
+  background-clip: padding-box;
+  box-shadow: inset -1px 0 0 var(--line), 12px 0 18px rgba(0, 0, 0, .18);
 }
 
 .matrix-table th.matrix-col-sticky {
-  z-index: 7;
+  z-index: 31;
+  background: #2c3443 !important;
+}
+
+body[data-theme="light"] .matrix-col-sticky {
+  background: #fffaf2 !important;
+}
+
+body[data-theme="light"] .matrix-table th.matrix-col-sticky {
+  background: #f3ebdf !important;
 }
 
 .row-header td {
