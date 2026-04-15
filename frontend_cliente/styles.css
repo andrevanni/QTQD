@@ -655,43 +655,37 @@ body[data-theme="light"] .analysis-list div {
   position: relative;
 }
 
-.matrix-table {
-  border-collapse: separate;
-  border-spacing: 0;
+.matrix-grid {
+  display: grid;
   width: max-content;
   min-width: 100%;
-  table-layout: fixed;
 }
 
-.matrix-col-components {
-  width: 340px;
-}
-
-.matrix-col-data {
-  width: 210px;
-}
-
-.matrix-table th,
-.matrix-table td {
+.matrix-cell {
   padding: 14px 16px;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   vertical-align: top;
   background: rgba(255, 255, 255, .02);
+  min-height: 88px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
 }
 
-.matrix-table th {
+.matrix-head {
   font-family: "Space Grotesk", sans-serif;
   text-align: left;
   background: rgba(255, 255, 255, .05);
+  font-weight: 700;
 }
 
-body[data-theme="light"] .matrix-table th,
-body[data-theme="light"] .matrix-table td {
+body[data-theme="light"] .matrix-cell {
   background: rgba(255, 255, 255, .78);
 }
 
-.matrix-col-sticky {
+.matrix-sticky {
   position: sticky !important;
   left: 0 !important;
   z-index: 30;
@@ -701,31 +695,32 @@ body[data-theme="light"] .matrix-table td {
   background: #1c2431 !important;
   background-clip: padding-box;
   box-shadow: inset -1px 0 0 var(--line), 12px 0 18px rgba(0, 0, 0, .18);
+  font-weight: 700;
 }
 
-.matrix-table th.matrix-col-sticky {
+.matrix-head.matrix-sticky {
   z-index: 31;
   background: #2c3443 !important;
 }
 
-body[data-theme="light"] .matrix-col-sticky {
+body[data-theme="light"] .matrix-sticky {
   background: #fffaf2 !important;
 }
 
-body[data-theme="light"] .matrix-table th.matrix-col-sticky {
+body[data-theme="light"] .matrix-head.matrix-sticky {
   background: #f3ebdf !important;
 }
 
-.row-header td {
+.matrix-cell.row-header {
   background: rgba(79, 209, 197, .12) !important;
   font-weight: 800 !important;
 }
 
-body[data-theme="light"] .row-header td {
+body[data-theme="light"] .matrix-cell.row-header {
   background: rgba(13, 91, 87, .08) !important;
 }
 
-.row-section td {
+.matrix-cell.row-section {
   background: rgba(255, 255, 255, .04) !important;
   color: var(--muted);
   font-weight: 800 !important;
@@ -733,8 +728,8 @@ body[data-theme="light"] .row-header td {
   letter-spacing: .08em;
 }
 
-.row-empty td {
-  height: 16px;
+.matrix-cell.row-empty {
+  min-height: 16px;
   padding: 8px 16px !important;
 }
 
@@ -860,8 +855,10 @@ body.focus-painel #backFromPanelButton {
     grid-template-columns: 1fr;
   }
 
-  .matrix-col-components {
+  .matrix-sticky {
+    min-width: 260px;
     width: 260px;
+    max-width: 260px;
   }
 }
 
