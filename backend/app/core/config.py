@@ -6,11 +6,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "QTQD API"
     app_env: str = "local"
+
+    # Banco de dados (Supabase PostgreSQL via connection string)
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/qtqd"
+
+    # Supabase
     supabase_url: str | None = None
     supabase_anon_key: str | None = None
     supabase_service_role_key: str | None = None
+    # JWT Secret: encontrado em Supabase Dashboard > Settings > API > JWT Secret
+    supabase_jwt_secret: str | None = None
+
+    # Token administrativo para endpoints de admin (X-Admin-Token header)
     admin_token: str = "trocar-este-token"
+
+    # CORS — origens separadas por vírgula
     cors_origins: str = "http://localhost:3000,http://localhost:8080"
     frontend_client_url: str | None = None
     frontend_admin_url: str | None = None
@@ -20,10 +30,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        origins = {origin.strip() for origin in self.cors_origins.split(",") if origin.strip()}
-        for origin in (self.frontend_client_url, self.frontend_admin_url, self.vercel_project_url):
-            if origin:
-                origins.add(origin.rstrip("/"))
+        origins = {o.strip() for o in self.cors_origins.split(",") if o.strip()}
+        for url in (self.frontend_client_url, self.frontend_admin_url, self.vercel_project_url):
+            if url:
+                origins.add(url.rstrip("/"))
         return sorted(origins)
 
 

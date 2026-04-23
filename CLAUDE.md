@@ -172,6 +172,108 @@ QTQD/
 
 ---
 
+---
+
+## Backend — FastAPI
+
+### Stack
+- **FastAPI** + **SQLAlchemy** (raw SQL via `text()`) + **psycopg** (driver PostgreSQL)
+- **PyJWT** para validação de tokens do Supabase Auth
+- Deploy via `@vercel/python` — entry point: `api/index.py` → importa `backend.app.main:app`
+
+### Variáveis de ambiente obrigatórias (Vercel + .env local)
+
+| Variável | Descrição |
+|----------|-----------|
+| `DATABASE_URL` | `postgresql+psycopg://...` (connection string do Supabase) |
+| `SUPABASE_JWT_SECRET` | Supabase Dashboard → Settings → API → JWT Secret |
+| `ADMIN_TOKEN` | Token secreto para endpoints `/admin/*` |
+| `CORS_ORIGINS` | Origens permitidas, separadas por vírgula |
+| `VERCEL_PROJECT_URL` | URL do projeto na Vercel (incluída no CORS automaticamente) |
+
+### Autenticação — dois níveis
+
+| Nível | Como funciona | Endpoints |
+|-------|---------------|-----------|
+| **Cliente** | `Authorization: Bearer <supabase_jwt>` | `/api/v1/avaliacoes/*`, `/api/v1/me/*` |
+| **Admin** | `X-Admin-Token: <admin_token>` | `/api/v1/admin/*` |
+
+O JWT do cliente é validado com `SUPABASE_JWT_SECRET` (HS256). O `sub` do JWT é usado para resolver o `tenant_id` na tabela `tenant_users`.
+
+### Endpoints disponíveis
+
+**Cliente (JWT):**
+- `GET  /api/v1/avaliacoes` — lista avaliações do tenant
+- `POST /api/v1/avaliacoes` — cria avaliação (status 201)
+- `GET  /api/v1/avaliacoes/{id}` — obtém avaliação
+- `PATCH /api/v1/avaliacoes/{id}` — atualiza avaliação
+- `POST /api/v1/avaliacoes/{id}/fechar` — fecha avaliação
+- `DELETE /api/v1/avaliacoes/{id}` — exclui avaliação
+- `GET /api/v1/me/branding` — branding do tenant do usuário
+- `GET /api/v1/me/componentes-config` — config de campos do tenant
+
+**Admin (X-Admin-Token):**
+- `GET/POST /api/v1/admin/clientes` — gestão de tenants
+- `PATCH /api/v1/admin/clientes/{id}` — atualiza tenant
+- `GET/POST /api/v1/admin/licencas` — vigências
+- `GET/PUT /api/v1/admin/branding/{tenant_id}` — branding por tenant
+- `GET/PUT /api/v1/admin/componentes-config/{tenant_id}` — config de campos
+- `GET/POST /api/v1/admin/importacoes` — importações
+
+**Saúde:**
+- `GET /health`
+
+### Estrutura do backend
+
+```
+backend/app/
+  core/
+    config.py       Settings via pydantic-settings (.env + variáveis de ambiente)
+    auth.py         Validação JWT Supabase + resolução de tenant_id
+    admin_auth.py   Validação do X-Admin-Token
+  db/
+    session.py      SQLAlchemy engine + get_db_session dependency
+  api/
+    router.py       Agrega todos os routers em /api/v1
+    v1/
+      avaliacoes.py       CRUD de avaliações semanais (JWT)
+      cliente_config.py   /me/branding e /me/componentes-config (JWT)
+      admin_clientes.py   CRUD de tenants (admin token)
+      admin_config.py     Licenças, branding, componentes, importações (admin token)
+  schemas/
+    avaliacoes.py   AvaliacaoValores, AvaliacaoCreateRequest, AvaliacaoResponse, IndicadorCalculado
+    admin_clientes.py
+    admin_config.py
+  services/
+    calculos_qtqd.py  Cálculos de QT, QD, saldo, índice, PME, ciclo, prazos
+api/
+  index.py          Entry point Vercel: from backend.app.main import app
+```
+
+### Modelo de dados no Supabase
+
+Os valores QT/QD de cada avaliação ficam em uma coluna `valores JSONB` na tabela `avaliacoes_semanais`. Os indicadores são **calculados pelo backend em tempo de leitura** (não são persistidos).
+
+```
+tenants              → um por cliente
+tenant_users         → vínculo usuário Supabase Auth ↔ tenant
+tenant_branding      → logo, cores, nome do portal
+tenant_licencas      → vigência e limites
+tenant_componentes_config → labels e visibilidade dos campos por tenant
+avaliacoes_semanais  → avaliação semanal (valores como JSONB)
+avaliacao_analises   → análises manuais ou por IA
+tenant_importacoes   → log de importações
+```
+
+### Como ativar o modo API no frontend
+
+1. Usuário faz login via Supabase Auth → obtém JWT
+2. Chama `QTQD_API_CLIENT.setJwt(token)` para armazenar o JWT
+3. `script.js` chama `isApiMode()` — retorna `true` se `mode === "api"` E `tenantId` está configurado E `QTQD_API_CLIENT` existe
+4. Todos os endpoints de avaliações passam o JWT automaticamente via `Authorization: Bearer`
+
+---
+
 ## Histórico de problemas resolvidos
 
 1. **CSS não carregava na Vercel:** URL `/cliente` (sem trailing slash) fazia `href="styles.css"` resolver para `/styles.css` (404). **Fix:** `<base href="/cliente/">` no `<head>`.
