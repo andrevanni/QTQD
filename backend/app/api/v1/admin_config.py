@@ -240,6 +240,91 @@ def atualizar_usuario(usuario_id: UUID, payload: UsuarioAdminUpdateRequest) -> U
     return UsuarioAdminResponse(**result.data[0])
 
 
+@router.post("/usuarios/{usuario_id}/enviar-convite", status_code=200)
+def enviar_convite_usuario(usuario_id: UUID) -> dict:
+    from backend.app.services.email_service import send_html
+
+    sb = get_supabase()
+
+    # Busca usuário
+    u_res = sb.table("tenant_usuarios").select("*").eq("id", str(usuario_id)).limit(1).execute()
+    if not u_res.data:
+        raise HTTPException(status_code=404, detail="Usuario nao encontrado.")
+    u = u_res.data[0]
+
+    # Busca nome do tenant
+    t_res = sb.table("tenants").select("nome").eq("id", str(u["tenant_id"])).limit(1).execute()
+    tenant_nome = t_res.data[0]["nome"] if t_res.data else "Service Farma"
+
+    # Busca branding para personalizar
+    b_res = sb.table("tenant_branding").select("nome_portal").eq("tenant_id", str(u["tenant_id"])).limit(1).execute()
+    portal_nome = (b_res.data[0].get("nome_portal") or tenant_nome) if b_res.data else tenant_nome
+
+    portal_url = "https://qtqd-vt2a.vercel.app/cliente"
+    perm_label = {"edita": "Edição", "visualiza": "Somente leitura", "relatorio": "Somente relatórios"}.get(u.get("permissao", ""), "Acesso")
+
+    html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>Convite QTQD</title></head>
+<body style="margin:0;padding:20px;background:#f0f4f8;font-family:Arial,Helvetica,sans-serif;">
+<div style="max-width:600px;margin:0 auto;">
+
+  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#2563eb 100%);border-radius:12px 12px 0 0;padding:28px 32px;">
+    <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#93c5fd;">QTQD — Saúde Financeira</p>
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;">Você foi convidado!</h1>
+    <p style="margin:0;font-size:14px;color:#bfdbfe;">{portal_nome}</p>
+  </div>
+
+  <div style="background:#ffffff;padding:28px 32px;border-radius:0 0 12px 12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);">
+    <p style="margin:0 0 16px;font-size:15px;color:#374151;">Olá, <strong>{u['nome']}</strong>!</p>
+
+    <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
+      Você foi cadastrado no sistema <strong>QTQD — Quanto Tenho, Quanto Devo</strong>
+      da <strong>{tenant_nome}</strong> pela equipe <strong>Service Farma</strong>.
+    </p>
+
+    <div style="background:#f8fafc;border-radius:8px;padding:16px 20px;margin:0 0 24px;border:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Seus dados de acesso</p>
+      <p style="margin:0 0 4px;font-size:14px;color:#374151;">📧 <strong>E-mail:</strong> {u['email']}</p>
+      <p style="margin:0 0 4px;font-size:14px;color:#374151;">🔑 <strong>Permissão:</strong> {perm_label}</p>
+      {f'<p style="margin:0;font-size:14px;color:#374151;">💼 <strong>Função:</strong> {u["funcao"]}</p>' if u.get("funcao") else ''}
+    </div>
+
+    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#374151;">📱 Como instalar o aplicativo:</p>
+    <ol style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#374151;line-height:1.8;">
+      <li>Acesse: <a href="{portal_url}" style="color:#2563eb;">{portal_url}</a></li>
+      <li>No navegador, clique em <strong>"Instalar"</strong> ou <strong>"Adicionar à tela inicial"</strong></li>
+      <li>O ícone <strong>QT/QD</strong> aparecerá na sua área de trabalho</li>
+    </ol>
+
+    <div style="text-align:center;margin:24px 0;">
+      <a href="{portal_url}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;">
+        Acessar o Portal QTQD →
+      </a>
+    </div>
+
+    <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:16px;">
+      Em caso de dúvidas, entre em contato com a equipe Service Farma.<br>
+      Não responda a este e-mail.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>"""
+
+    try:
+        send_html(
+            to=[u["email"]],
+            subject=f"Convite QTQD — {portal_nome}",
+            html=html,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao enviar e-mail: {e}")
+
+    return {"ok": True, "enviado_para": u["email"]}
+
+
 @router.delete("/usuarios/{usuario_id}", status_code=204)
 def excluir_usuario(usuario_id: UUID) -> None:
     result = get_supabase().table("tenant_usuarios").delete().eq("id", str(usuario_id)).execute()

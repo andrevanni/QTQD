@@ -614,27 +614,14 @@ $('btnResetSenha')?.addEventListener('click', () => {
   alert(`Para resetar a senha de "${selectedUsuario.nome}", acesse o Supabase Dashboard > Authentication > Users, localize o e-mail "${selectedUsuario.email}" e clique em "Send password reset".\n\nEm breve essa ação será automática pelo painel.`);
 });
 
-$('btnConviteApp')?.addEventListener('click', () => {
+$('btnConviteApp')?.addEventListener('click', async () => {
   if (!selectedUsuario) return;
-  const client = clients.find(c => c.id === String(selectedUsuario.tenant_id));
-  const url = window.QTQD_APP_CONFIG?.apiBaseUrl?.replace('/api/v1','') || 'https://qtqd-vt2a.vercel.app';
-  const clienteUrl = `${url}/cliente`;
-  const subject = encodeURIComponent('Acesso ao Sistema QTQD — ' + (client?.nome || 'Service Farma'));
-  const body = encodeURIComponent(
-    `Olá, ${selectedUsuario.nome}!\n\n` +
-    `Você foi cadastrado no sistema QTQD — Quanto Tenho, Quanto Devo da ${client?.nome || 'Service Farma'}.\n\n` +
-    `📱 Para instalar o aplicativo na sua área de trabalho:\n` +
-    `1. Acesse: ${clienteUrl}\n` +
-    `2. No navegador, clique em "Instalar" ou "Adicionar à tela inicial"\n` +
-    `3. O ícone QTQD aparecerá na sua área de trabalho\n\n` +
-    `🔑 Suas credenciais de acesso:\n` +
-    `   E-mail: ${selectedUsuario.email}\n` +
-    `   Permissão: ${PERMISSAO_LABEL[selectedUsuario.permissao]}\n\n` +
-    `Em caso de dúvidas, entre em contato com a equipe Service Farma.\n\n` +
-    `Atenciosamente,\nEquipe Service Farma / QTQD`
-  );
-  window.open(`mailto:${selectedUsuario.email}?subject=${subject}&body=${body}`);
-  fb(`E-mail de convite preparado para ${selectedUsuario.email}. Verifique seu cliente de e-mail.`, 'success');
+  if (!confirm(`Enviar convite de instalação para "${selectedUsuario.nome}" (${selectedUsuario.email})?`)) return;
+  fb('Enviando convite...', 'info');
+  try {
+    await window.QTQD_API_CLIENT.enviarConvite(getToken(), selectedUsuario.id);
+    fb(`✓ Convite enviado para ${selectedUsuario.email} via comercial@servicefarma.far.br`, 'success');
+  } catch (e) { fb('Erro ao enviar convite: ' + e.message, 'error'); }
 });
 
 $('usuarioClientFilter')?.addEventListener('change', loadUsuarios);

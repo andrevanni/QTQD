@@ -196,6 +196,9 @@
     deleteUsuario(adminToken, id) {
       return request(base(`/admin/usuarios/${id}`), { method: 'DELETE', headers: adminHeaders(adminToken) });
     },
+    enviarConvite(adminToken, id) {
+      return request(base(`/admin/usuarios/${id}/enviar-convite`), { method: 'POST', headers: adminHeaders(adminToken) });
+    },
 
     /* ── Admin — importações ─────────────────────────── */
     listImportacoes(adminToken, tenantId) {
