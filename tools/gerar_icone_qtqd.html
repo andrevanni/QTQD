@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Gerador de Ícone QTQD</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 24px; }
+    canvas { border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+    button { padding: 12px 32px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    p { color: #64748b; font-size: 13px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<h2 style="color:#0f172a;font-family:system-ui">Ícone PWA — QT/QD</h2>
+
+<canvas id="c" width="512" height="512"></canvas>
+
+<button onclick="baixar()">⬇ Baixar icon-512.png</button>
+
+<p>Depois de baixar, coloque o arquivo em:<br>
+<code>frontend_cliente/assets/icon-512.png</code></p>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const W = 512, H = 512;
+
+// Fundo gradiente escuro
+const grad = ctx.createLinearGradient(0, 0, W, H);
+grad.addColorStop(0,   '#0f172a');
+grad.addColorStop(0.5, '#1e3a5f');
+grad.addColorStop(1,   '#172554');
+ctx.fillStyle = grad;
+ctx.beginPath();
+ctx.roundRect(0, 0, W, H, 60);
+ctx.fill();
+
+// Linha decorativa superior
+ctx.fillStyle = '#2563eb';
+ctx.fillRect(60, 60, W - 120, 6);
+
+// "QT" — topo
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Arial Narrow", Arial, sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('QT', W / 2, 195);
+
+// Barra separadora
+ctx.fillStyle = '#334155';
+ctx.fillRect(60, 270, W - 120, 3);
+
+// "QD" — base em azul
+ctx.fillStyle = '#2563eb';
+ctx.font = 'bold 160px "Arial Narrow", Arial, sans-serif';
+ctx.fillText('QD', W / 2, 340);
+
+// Linha decorativa inferior
+ctx.fillStyle = '#2563eb';
+ctx.fillRect(60, 444, W - 120, 6);
+
+// "Service Farma" — rodapé
+ctx.fillStyle = '#64748b';
+ctx.font = '500 28px Arial, sans-serif';
+ctx.fillText('Service Farma', W / 2, 478);
+
+function baixar() {
+  const a = document.createElement('a');
+  a.download = 'icon-512.png';
+  a.href = c.toDataURL('image/png');
+  a.click();
+}
+</script>
+</body>
+</html>
