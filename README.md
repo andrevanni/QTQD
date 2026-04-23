@@ -66,6 +66,7 @@ Ja foi estruturada a base tecnica para evoluir da simulacao para o ambiente real
 
 O passo a passo da implantacao real esta em:
 
+- `docs/STATUS_ATUAL_QTQD.md`
 - `docs/implantacao_supabase_vercel.md`
 - `docs/integracao_front_api.md`
 - `docs/publicacao_github.md`

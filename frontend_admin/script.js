@@ -616,3 +616,11 @@ async function initializeAdmin() {
 }
 
 initializeAdmin();
+
+;(function(){
+  var k='qtqd_mini', btn=document.getElementById('sidebarMiniToggle');
+  if(!btn) return;
+  function apply(v){ document.body.classList.toggle('sidebar-mini',v); localStorage.setItem(k,v?'1':'0'); }
+  apply(localStorage.getItem(k)==='1');
+  btn.addEventListener('click', function(){ apply(!document.body.classList.contains('sidebar-mini')); });
+})();

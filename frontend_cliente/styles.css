@@ -7,9 +7,9 @@
   --ink: #e6edf6;
   --muted: #97a9bc;
   --line: #223044;
-  --accent: #4fd1c5;
-  --accent-strong: #2ba79c;
-  --accent-soft: rgba(79, 209, 197, 0.14);
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-soft: rgba(37, 99, 235, 0.14);
   --good: #32d583;
   --bad: #ff8a7a;
   --warning: #ffd166;
@@ -25,9 +25,9 @@ body[data-theme="light"] {
   --ink: #1e1b17;
   --muted: #6b6257;
   --line: rgba(63, 43, 25, 0.14);
-  --accent: #0d5b57;
-  --accent-strong: #1a7f77;
-  --accent-soft: rgba(13, 91, 87, 0.12);
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-soft: rgba(37, 99, 235, 0.12);
   --good: #1d6a47;
   --bad: #a34a34;
   --warning: #ba8a18;
@@ -49,7 +49,7 @@ body {
 
 body[data-theme="light"] {
   background:
-    radial-gradient(circle at top left, rgba(110, 201, 184, 0.16), transparent 28%),
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 28%),
     radial-gradient(circle at bottom right, rgba(196, 107, 51, 0.18), transparent 24%),
     linear-gradient(135deg, #f8f5ef 0%, #efe6d8 100%);
 }
@@ -122,7 +122,7 @@ body.sidebar-collapsed .sidebar-reveal {
   opacity: 1;
   pointer-events: auto;
   background: rgba(20, 27, 38, 0.98);
-  border-color: rgba(79, 209, 197, .28);
+  border-color: rgba(37, 99, 235, .28);
 }
 
 .brand,
@@ -183,7 +183,7 @@ body[data-theme="light"] .sidebar-reveal {
   height: 52px;
   border-radius: 16px;
   object-fit: contain;
-  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(79, 209, 197, .12));
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(37, 99, 235, .12));
   padding: 6px;
   border: 1px solid rgba(255,255,255,.08);
 }
@@ -329,7 +329,7 @@ th,
 .chart-range-chip.active,
 .chart-mode-chip.active,
 .theme-chip.active {
-  background: linear-gradient(135deg, rgba(79, 209, 197, .2), rgba(43, 167, 156, .25));
+  background: linear-gradient(135deg, rgba(37, 99, 235, .2), rgba(29, 78, 216, .25));
   color: var(--ink);
 }
 
@@ -337,7 +337,7 @@ body[data-theme="light"] .nav-link.active,
 body[data-theme="light"] .chart-range-chip.active,
 body[data-theme="light"] .chart-mode-chip.active,
 body[data-theme="light"] .theme-chip.active {
-  background: linear-gradient(135deg, rgba(13, 91, 87, .14), rgba(26, 127, 119, .18));
+  background: linear-gradient(135deg, rgba(37, 99, 235, .14), rgba(29, 78, 216, .18));
 }
 
 .content {
@@ -482,7 +482,7 @@ body[data-theme="light"] .footer-logo-shell {
 }
 
 .btn-secondary {
-  background: rgba(79, 209, 197, .16);
+  background: rgba(37, 99, 235, .16);
   color: var(--ink);
 }
 
@@ -543,7 +543,7 @@ body[data-theme="light"] .chart-fields-card,
 body[data-theme="light"] .semaphore-item,
 body[data-theme="light"] .analysis-copy p,
 body[data-theme="light"] .analysis-list div {
-  background: rgba(13, 91, 87, .03);
+  background: rgba(37, 99, 235, .03);
 }
 
 .field-grid {
@@ -655,10 +655,16 @@ body[data-theme="light"] .analysis-list div {
   position: relative;
 }
 
-.matrix-grid {
-  display: grid;
+.matrix-table {
   width: max-content;
   min-width: 100%;
+  border-collapse: collapse;
+}
+
+.matrix-table th {
+  font-size: inherit;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .matrix-cell {
@@ -712,12 +718,12 @@ body[data-theme="light"] .matrix-head.matrix-sticky {
 }
 
 .matrix-cell.row-header {
-  background: rgba(79, 209, 197, .12) !important;
+  background: rgba(37, 99, 235, .12) !important;
   font-weight: 800 !important;
 }
 
 body[data-theme="light"] .matrix-cell.row-header {
-  background: rgba(13, 91, 87, .08) !important;
+  background: rgba(37, 99, 235, .08) !important;
 }
 
 .matrix-cell.row-section {
@@ -776,7 +782,7 @@ th {
 }
 
 .latest-row td {
-  background: rgba(79, 209, 197, .08);
+  background: rgba(37, 99, 235, .08);
 }
 
 .action-btn {
@@ -881,4 +887,61 @@ body.focus-painel #backFromPanelButton {
   .kpi-grid {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* ─── Transições suaves ───────────────────────────────────────────────────── */
+.app-shell { transition: grid-template-columns .2s ease; }
+.sidebar   { transition: width .2s ease, min-width .2s ease, padding .2s ease; }
+
+/* ─── Nav-link com ícone ─────────────────────────────────────────────────── */
+.nav-link { display: flex; align-items: center; gap: 12px; }
+
+.nav-icon {
+  display: flex; align-items: center; flex-shrink: 0;
+  color: var(--muted); transition: color .12s;
+}
+.nav-link.active .nav-icon,
+.nav-link:hover  .nav-icon { color: var(--ink); }
+
+/* ─── Botão de recolher ──────────────────────────────────────────────────── */
+.sidebar-toggle-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 8px 14px;
+  background: transparent; border: none; color: var(--muted);
+  cursor: pointer; border-radius: 10px;
+  transition: color .12s, background .12s;
+}
+.sidebar-toggle-btn:hover { color: var(--ink); background: rgba(255,255,255,.04); }
+
+.sidebar-toggle-icon-expand   { display: none; }
+.sidebar-toggle-icon-collapse { display: block; }
+
+/* ─── Modo mini ──────────────────────────────────────────────────────────── */
+body.sidebar-mini .app-shell { grid-template-columns: 56px minmax(0,1fr); }
+
+body.sidebar-mini .sidebar {
+  min-width: 56px; width: 56px; padding: 16px 8px; gap: 10px; overflow: hidden;
+}
+
+body.sidebar-mini .brand-text,
+body.sidebar-mini .sidebar-card,
+body.sidebar-mini .user-card-info,
+body.sidebar-mini .sidebar-powered > strong,
+body.sidebar-mini .sidebar-powered > span,
+body.sidebar-mini .nav-label { display: none; }
+
+body.sidebar-mini .brand                { justify-content: center; padding: 8px; }
+body.sidebar-mini .brand-logo           { width: 36px; height: 36px; }
+body.sidebar-mini .user-card            { justify-content: center; padding: 8px; }
+body.sidebar-mini .nav-link             { padding: 10px; justify-content: center; }
+body.sidebar-mini .sidebar-toggle-btn   { justify-content: center; padding: 10px; }
+body.sidebar-mini .sidebar-toggle-icon-expand   { display: block; }
+body.sidebar-mini .sidebar-toggle-icon-collapse { display: none; }
+body.sidebar-mini .footer-logo-shell    { width: 40px; height: 40px; padding: 6px; }
+body.sidebar-mini .sidebar-powered      { align-items: center; }
+
+@media (max-width: 1180px) {
+  body.sidebar-mini .app-shell { grid-template-columns: 1fr; }
+  body.sidebar-mini .sidebar   { width: auto; min-width: unset; padding: 22px 18px; overflow: visible; }
 }

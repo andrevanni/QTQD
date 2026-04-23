@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
   --bg: #0b0f14;
@@ -7,8 +7,8 @@
   --panel-soft: #111926;
   --text: #e6edf6;
   --muted: #9ab0c9;
-  --accent: #4fd1c5;
-  --accent-strong: #2ba79c;
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
   --line: #223044;
   --shadow: 0 18px 40px rgba(8, 12, 18, 0.45);
 }
@@ -20,8 +20,8 @@ body[data-theme="light"] {
   --panel-soft: #ffffff;
   --text: #1e1b17;
   --muted: #6b6257;
-  --accent: #0d5b57;
-  --accent-strong: #1a7f77;
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
   --line: rgba(63, 43, 25, 0.14);
   --shadow: 0 24px 50px rgba(44, 33, 20, 0.12);
 }
@@ -31,7 +31,7 @@ body[data-theme="light"] {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Space Grotesk", "Segoe UI", Tahoma, sans-serif;
+  font-family: "Manrope", "Space Grotesk", "Segoe UI", Tahoma, sans-serif;
   color: var(--text);
   background:
     radial-gradient(1000px 500px at 20% -10%, #132033 0%, transparent 60%),
@@ -41,7 +41,7 @@ body {
 
 body[data-theme="light"] {
   background:
-    radial-gradient(circle at top left, rgba(110, 201, 184, 0.16), transparent 28%),
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 28%),
     radial-gradient(circle at bottom right, rgba(196, 107, 51, 0.18), transparent 24%),
     linear-gradient(135deg, #f8f5ef 0%, #efe6d8 100%);
 }
@@ -182,7 +182,7 @@ body[data-theme="light"] .feedback-box {
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, rgba(79, 209, 197, 0.2), rgba(43, 167, 156, 0.25));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(29, 78, 216, 0.25));
 }
 
 .nav-link:hover,
@@ -223,11 +223,11 @@ body[data-theme="light"] .feedback-box {
 
 .theme-chip.active {
   color: var(--text);
-  background: linear-gradient(135deg, rgba(79, 209, 197, 0.2), rgba(43, 167, 156, 0.25));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(29, 78, 216, 0.25));
 }
 
 body[data-theme="light"] .theme-chip.active {
-  background: linear-gradient(135deg, rgba(13, 91, 87, 0.14), rgba(26, 127, 119, 0.18));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(29, 78, 216, 0.18));
 }
 
 .hero,
@@ -301,7 +301,7 @@ body[data-theme="light"] .theme-chip.active {
   display: inline-flex;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(79, 209, 197, 0.14);
+  background: rgba(37, 99, 235, 0.14);
   color: var(--accent-strong);
   font-size: .82rem;
   font-weight: 700;
@@ -356,7 +356,7 @@ body[data-theme="light"] .theme-chip.active {
   align-items: center;
   padding: 7px 10px;
   border-radius: 999px;
-  background: rgba(79, 209, 197, 0.14);
+  background: rgba(37, 99, 235, 0.14);
   color: var(--accent-strong);
   font-size: .78rem;
   font-weight: 700;
@@ -386,7 +386,7 @@ body[data-theme="light"] .theme-chip.active {
 .field-config-row code {
   padding: 6px 8px;
   border-radius: 10px;
-  background: rgba(79, 209, 197, 0.12);
+  background: rgba(37, 99, 235, 0.12);
   color: var(--accent);
 }
 
@@ -480,4 +480,58 @@ body[data-theme="light"] .theme-chip.active {
   .hero {
     flex-direction: column;
   }
+}
+
+
+/* ─── Transições suaves ───────────────────────────────────────────────────── */
+.page-shell { transition: grid-template-columns .2s ease; }
+.sidebar    { transition: width .2s ease, min-width .2s ease, padding .2s ease; }
+
+/* ─── Nav-link com ícone ─────────────────────────────────────────────────── */
+.nav-link { display: flex; align-items: center; gap: 12px; }
+
+.nav-icon {
+  display: flex; align-items: center; flex-shrink: 0;
+  color: var(--muted); transition: color .12s;
+}
+.nav-link.active .nav-icon,
+.nav-link:hover  .nav-icon { color: var(--text); }
+
+/* ─── Botão de recolher ──────────────────────────────────────────────────── */
+.sidebar-toggle-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 8px 14px;
+  background: transparent; border: none; color: var(--muted);
+  cursor: pointer; border-radius: 10px;
+  transition: color .12s, background .12s;
+}
+.sidebar-toggle-btn:hover { color: var(--text); background: rgba(255,255,255,.04); }
+
+.sidebar-toggle-icon-expand   { display: none; }
+.sidebar-toggle-icon-collapse { display: block; }
+
+/* ─── Modo mini ──────────────────────────────────────────────────────────── */
+body.sidebar-mini .page-shell { grid-template-columns: 56px minmax(0,1fr); }
+
+body.sidebar-mini .sidebar {
+  min-width: 56px; width: 56px; padding: 16px 8px; gap: 10px; overflow: hidden;
+}
+
+body.sidebar-mini .brand-copy,
+body.sidebar-mini .sidebar .eyebrow,
+body.sidebar-mini .sidebar h1,
+body.sidebar-mini .sidebar-copy,
+body.sidebar-mini .status-card,
+body.sidebar-mini .nav-label { display: none; }
+
+body.sidebar-mini .brand              { justify-content: center; padding: 8px; }
+body.sidebar-mini .brand-logo         { width: 36px; height: 36px; }
+body.sidebar-mini .nav-link           { padding: 10px; justify-content: center; }
+body.sidebar-mini .sidebar-toggle-btn { justify-content: center; padding: 10px; }
+body.sidebar-mini .sidebar-toggle-icon-expand   { display: block; }
+body.sidebar-mini .sidebar-toggle-icon-collapse { display: none; }
+
+@media (max-width: 1120px) {
+  body.sidebar-mini .page-shell { grid-template-columns: 1fr; }
+  body.sidebar-mini .sidebar    { width: auto; min-width: unset; padding: 22px 18px; overflow: visible; }
 }
