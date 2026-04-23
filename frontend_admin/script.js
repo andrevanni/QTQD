@@ -393,11 +393,10 @@ document.getElementById('downloadTemplateBtn')?.addEventListener('click', async 
   const weekHeaders = Array.from({ length: weeks }, (_, i) => `Semana ${i + 1}`);
   const header = ['Campo', ...weekHeaders];
 
-  // Primeira linha: Data (DD/MM/AAAA)
+  // Monta linhas: cabeçalho + data + campos financeiros
   const rows = [
     header,
     ['Data (DD/MM/AAAA)', ...Array(weeks).fill('')],
-    ['Status (rascunho/fechada)', ...Array(weeks).fill('rascunho')],
     ...fieldLabels.map(f => [f.label, ...Array(weeks).fill('')]),
   ];
 
