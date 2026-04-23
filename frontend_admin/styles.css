@@ -108,6 +108,11 @@ img{display:block;max-width:100%}
 .nav-link:hover .nav-icon{color:#fff}
 .nav-label{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden}
 
+/* Sidebar footer (logout) */
+.sidebar-footer{padding:8px 0;border-top:1px solid var(--sidebar-border);flex-shrink:0}
+.nav-link-danger{color:#ef4444}
+.nav-link-danger:hover{background:rgba(239,68,68,.12);color:#ef4444}
+
 /* Mini sidebar */
 body.sidebar-mini .sidebar{width:var(--sidebar-mini-w)}
 body.sidebar-mini .brand-copy{display:none}

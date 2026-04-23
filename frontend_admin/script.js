@@ -71,11 +71,27 @@ function fb(msg, type = 'info') {
 function fbClear() { const b=$('feedbackBox'); if(b){b.textContent='';b.className='feedback-box hidden';} }
 
 /* ── Navegação ───────────────────────────────────────── */
+const SECTION_META = {
+  clientes:   { eyebrow: 'Cadastro Comercial',  title: 'Clientes da plataforma' },
+  vigencias:  { eyebrow: 'Licenciamento',        title: 'Vigências e controle de acesso' },
+  importacao: { eyebrow: 'Primeira Carga',       title: 'Importação de dados' },
+  campos:     { eyebrow: 'Configuração',         title: 'Campos do formulário' },
+  identidade: { eyebrow: 'Identidade Visual',    title: 'Branding por cliente' },
+  ambiente:   { eyebrow: 'Conexão',              title: 'Ambiente e configurações' },
+};
+
 function openSection(id) {
   document.querySelectorAll('.admin-section').forEach(s => s.classList.toggle('hidden', s.id !== id));
   document.querySelectorAll('.nav-link[data-section]').forEach(b =>
     b.classList.toggle('active', b.dataset.section === id));
   fbClear();
+  const meta = SECTION_META[id];
+  if (meta) {
+    const ey = document.getElementById('heroEyebrow');
+    const ti = document.getElementById('heroTitle');
+    if (ey) ey.textContent = meta.eyebrow;
+    if (ti) ti.textContent = meta.title;
+  }
   if (id === 'clientes')   loadClients();
   if (id === 'vigencias')  loadLicenses();
   if (id === 'importacao') loadImports();
@@ -475,7 +491,7 @@ document.querySelectorAll('.nav-link[data-section]').forEach(b =>
 document.querySelectorAll('[data-theme-choice]').forEach(b =>
   b.addEventListener('click', () => applyTheme(b.dataset.themeChoice)));
 
-$('resetAdminButton')?.addEventListener('click', () => {
+document.getElementById('resetAdminButton')?.addEventListener('click', () => {
   clearToken();
   location.reload();
 });
