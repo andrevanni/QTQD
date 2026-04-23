@@ -18,13 +18,12 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict:
     import os
+    keys = [k for k in os.environ if not k.startswith("AWS") and "SECRET" not in k and "PASSWORD" not in k]
     return {
         "status": "ok",
         "env": settings.app_env,
-        "has_db": bool(settings.database_url and "supabase" in settings.database_url),
-        "has_token": bool(settings.admin_token and settings.admin_token != "trocar-este-token"),
-        "token_len": len(settings.admin_token),
-        "os_token_len": len(os.environ.get("ADMIN_TOKEN", "")),
+        "token_is_default": settings.admin_token == "trocar-este-token",
+        "os_env_keys": sorted(keys),
     }
 
 
