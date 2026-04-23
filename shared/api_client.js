@@ -171,6 +171,17 @@
       });
     },
 
+    /* ── Admin — PDF config ─────────────────────────── */
+    getPdfConfig(adminToken, tenantId) {
+      return request(base(`/admin/pdf-config/${tenantId}`), { method: 'GET', headers: adminHeaders(adminToken) });
+    },
+    savePdfConfig(adminToken, tenantId, payload) {
+      return request(base(`/admin/pdf-config/${tenantId}`), { method: 'PUT', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
+    },
+    enviarRelatorio(adminToken, tenantId) {
+      return request(base(`/admin/enviar-relatorio/${tenantId}`), { method: 'POST', headers: adminHeaders(adminToken) });
+    },
+
     /* ── Admin — usuários ───────────────────────────── */
     listUsuarios(adminToken, tenantId) {
       const qs = tenantId ? `?tenant_id=${tenantId}` : '';

@@ -407,6 +407,7 @@
         if (!name)                  { setFeedback('Informe um nome para o gráfico antes de salvar.'); return; }
         if (!cbState.fields.length) { setFeedback('Selecione ao menos um campo.'); return; }
 
+        const includePdf = document.getElementById('cbIncludePdf')?.checked ?? false;
         savedCharts.push({
           id:         crypto.randomUUID(),
           name,
@@ -416,6 +417,7 @@
           type:       cbState.type,
           mode:       cbState.mode,
           showLabels: false,
+          includePdf,
         });
         persistSaved();
 

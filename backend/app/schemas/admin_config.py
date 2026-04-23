@@ -69,6 +69,22 @@ class ComponenteConfigResponse(ComponenteConfigItem):
     updated_at: datetime
 
 
+class PdfConfigRequest(BaseModel):
+    n_retratos:       int  = 8
+    incluir_inspetor: bool = False
+    incluir_graficos: bool = False
+    envio_timing:     str  = "imediato"  # 'imediato' | 'agendado'
+    dias_apos:        int  = 0
+    ativo:            bool = True
+
+
+class PdfConfigResponse(PdfConfigRequest):
+    id:         UUID
+    tenant_id:  UUID
+    created_at: datetime
+    updated_at: datetime
+
+
 class UsuarioAdminCreateRequest(BaseModel):
     tenant_id: UUID
     nome: str

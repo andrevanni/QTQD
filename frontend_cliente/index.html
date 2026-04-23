@@ -274,10 +274,16 @@
           </div>
         </div>
 
-        <label class="field">
-          <span class="field-label">Nome do gráfico</span>
-          <input id="cbName" type="text" placeholder="Ex: Evolução do Saldo QT/QD — últimas 12 semanas" style="max-width:520px">
-        </label>
+        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+          <label class="field" style="flex:1;min-width:260px">
+            <span class="field-label">Nome do gráfico</span>
+            <input id="cbName" type="text" placeholder="Ex: Evolução do Saldo QT/QD — últimas 12 semanas">
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);padding-bottom:8px;white-space:nowrap">
+            <input id="cbIncludePdf" type="checkbox" style="width:16px;height:16px;accent-color:#2563eb">
+            📧 Incluir no relatório PDF
+          </label>
+        </div>
 
         <div>
           <p class="cb-section-label">Campos disponíveis <span class="txt-muted txt-xs">— clique para adicionar na ordem desejada</span></p>

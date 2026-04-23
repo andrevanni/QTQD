@@ -120,11 +120,94 @@ function fb(msg, type = 'info') {
 function fbClear() { const b=$('feedbackBox'); if(b){b.textContent='';b.className='feedback-box hidden';} }
 
 /* ── Navegação ───────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════
+   ENVIO PDF
+   ═══════════════════════════════════════════════════════ */
+function loadPdfSection() {
+  populateClientSelects();
+  $('pdfConfigPanel')?.classList.add('hidden');
+  $('pdfDestinatariosList').innerHTML = '';
+}
+
+$('pdfClient')?.addEventListener('change', async () => {
+  const tenantId = $('pdfClient').value;
+  const panel = $('pdfConfigPanel');
+  if (!tenantId) { panel.classList.add('hidden'); return; }
+  panel.classList.remove('hidden');
+
+  // Carrega config existente
+  try {
+    const cfg = await window.QTQD_API_CLIENT.getPdfConfig(getToken(), tenantId);
+    if (cfg) {
+      $('pdfNRetratos').value        = cfg.n_retratos ?? 8;
+      $('pdfInspetor').checked       = cfg.incluir_inspetor ?? false;
+      $('pdfGraficos').checked       = cfg.incluir_graficos ?? false;
+      $('pdfAtivo').checked          = cfg.ativo ?? true;
+      $('pdfTiming').value           = cfg.envio_timing ?? 'imediato';
+      $('pdfDiasApos').value         = cfg.dias_apos ?? 0;
+      $('pdfDiasAposWrap').classList.toggle('hidden', cfg.envio_timing !== 'agendado');
+    }
+  } catch {}
+
+  // Lista destinatários do cliente
+  try {
+    const usrs = await window.QTQD_API_CLIENT.listUsuarios(getToken(), tenantId);
+    const list  = $('pdfDestinatariosList');
+    list.innerHTML = '';
+    const ativos = usrs.filter(u => u.ativo);
+    if (!ativos.length) { list.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhum usuário ativo.</p>'; return; }
+    ativos.forEach(u => {
+      const card = el('article', 'entity-card');
+      card.innerHTML = `
+        <div class="entity-card-row">
+          <strong>${u.nome}</strong>
+          <span class="badge ${u.permissao}">${PERMISSAO_LABEL[u.permissao] || u.permissao}</span>
+        </div>
+        <span style="font-size:12px;color:var(--muted)">${u.email}</span>`;
+      list.appendChild(card);
+    });
+  } catch {}
+});
+
+$('pdfTiming')?.addEventListener('change', () => {
+  $('pdfDiasAposWrap').classList.toggle('hidden', $('pdfTiming').value !== 'agendado');
+});
+
+$('savePdfConfigBtn')?.addEventListener('click', async () => {
+  const tenantId = $('pdfClient').value;
+  if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
+  const payload = {
+    n_retratos:       parseInt($('pdfNRetratos').value || '8'),
+    incluir_inspetor: $('pdfInspetor').checked,
+    incluir_graficos: $('pdfGraficos').checked,
+    ativo:            $('pdfAtivo').checked,
+    envio_timing:     $('pdfTiming').value,
+    dias_apos:        parseInt($('pdfDiasApos').value || '0'),
+  };
+  try {
+    await window.QTQD_API_CLIENT.savePdfConfig(getToken(), tenantId, payload);
+    fb('Configuração de envio salva.', 'success');
+  } catch (e) { fb('Erro: ' + e.message, 'error'); }
+});
+
+$('sendNowBtn')?.addEventListener('click', async () => {
+  const tenantId = $('pdfClient').value;
+  if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
+  const clientNome = clients.find(c => c.id === tenantId)?.nome || 'cliente';
+  if (!confirm(`Enviar relatório para todos os usuários de "${clientNome}" agora?`)) return;
+  fb('Enviando...', 'info');
+  try {
+    const res = await window.QTQD_API_CLIENT.enviarRelatorio(getToken(), tenantId);
+    fb(`✓ Relatório enviado para ${res.enviado_para?.length || 0} destinatário(s) — ${res.n_periodos} períodos.`, 'success');
+  } catch (e) { fb('Erro ao enviar: ' + e.message, 'error'); }
+});
+
 const SECTION_META = {
   clientes:   { eyebrow: 'Cadastro Comercial',  title: 'Clientes da plataforma' },
   vigencias:  { eyebrow: 'Licenciamento',        title: 'Vigências e controle de acesso' },
   campos:     { eyebrow: 'Configuração',         title: 'Campos do formulário' },
   importacao: { eyebrow: 'Primeira Carga',       title: 'Importação de dados' },
+  enviopdf:   { eyebrow: 'Comunicação',          title: 'Envio de relatório por e-mail' },
   usuarios:   { eyebrow: 'Acesso ao Sistema',    title: 'Usuários do cliente' },
   identidade: { eyebrow: 'Identidade Visual',    title: 'Branding por cliente' },
   ambiente:   { eyebrow: 'Conexão',              title: 'Ambiente e configurações' },
@@ -147,6 +230,7 @@ function openSection(id) {
   if (id === 'importacao') loadImports();
   if (id === 'campos')     renderFieldConfig();
   if (id === 'usuarios')   loadUsuarios();
+  if (id === 'enviopdf')   loadPdfSection();
   if (id === 'identidade') loadBranding();
   if (id === 'ambiente')   renderAmbiente();
 }

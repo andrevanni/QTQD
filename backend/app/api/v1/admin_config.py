@@ -15,6 +15,8 @@ from backend.app.schemas.admin_config import (
     LicencaAdminCreateRequest,
     LicencaAdminResponse,
     LicencaAdminUpdateRequest,
+    PdfConfigRequest,
+    PdfConfigResponse,
     UsuarioAdminCreateRequest,
     UsuarioAdminResponse,
     UsuarioAdminUpdateRequest,
@@ -112,6 +114,99 @@ def salvar_componentes_config(tenant_id: UUID, payload: ComponentesConfigUpsertR
         if result.data:
             rows.append(ComponenteConfigResponse(**result.data[0]))
     return rows
+
+
+@router.get("/pdf-config/{tenant_id}", response_model=PdfConfigResponse | None)
+def obter_pdf_config(tenant_id: UUID) -> PdfConfigResponse | None:
+    result = get_supabase().table("tenant_pdf_config").select("*").eq("tenant_id", str(tenant_id)).limit(1).execute()
+    return PdfConfigResponse(**result.data[0]) if result.data else None
+
+
+@router.put("/pdf-config/{tenant_id}", response_model=PdfConfigResponse)
+def salvar_pdf_config(tenant_id: UUID, payload: PdfConfigRequest) -> PdfConfigResponse:
+    data = {"tenant_id": str(tenant_id), "updated_at": datetime.now(timezone.utc).isoformat(), **payload.model_dump()}
+    result = get_supabase().table("tenant_pdf_config").upsert(data, on_conflict="tenant_id").execute()
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Falha ao salvar configuracao de PDF.")
+    return PdfConfigResponse(**result.data[0])
+
+
+@router.post("/enviar-relatorio/{tenant_id}", status_code=200)
+def enviar_relatorio(tenant_id: UUID) -> dict:
+    from backend.app.schemas.avaliacoes import AvaliacaoValores
+    from backend.app.services.calculos_qtqd import calcular_indicadores
+    from backend.app.services.relatorio_html import build_relatorio_html
+    from backend.app.services.email_service import send_html
+
+    sb = get_supabase()
+
+    # Busca config PDF
+    cfg_res = sb.table("tenant_pdf_config").select("*").eq("tenant_id", str(tenant_id)).limit(1).execute()
+    cfg = cfg_res.data[0] if cfg_res.data else {}
+    n_retratos       = int(cfg.get("n_retratos", 8))
+    incluir_inspetor = bool(cfg.get("incluir_inspetor", False))
+    incluir_graficos  = bool(cfg.get("incluir_graficos", False))
+
+    # Busca nome do tenant
+    tenant_res = sb.table("tenants").select("nome").eq("id", str(tenant_id)).limit(1).execute()
+    tenant_nome = tenant_res.data[0]["nome"] if tenant_res.data else "Cliente"
+
+    # Busca últimas N avaliações
+    avals = sb.table("avaliacoes_semanais")\
+        .select("semana_referencia,valores")\
+        .eq("tenant_id", str(tenant_id))\
+        .order("semana_referencia", desc=True)\
+        .limit(n_retratos)\
+        .execute().data
+
+    if not avals:
+        raise HTTPException(status_code=404, detail="Nenhuma avaliacao encontrada para este tenant.")
+
+    avals_sorted = sorted(avals, key=lambda x: x["semana_referencia"])
+    periodos = []
+    for av in avals_sorted:
+        from datetime import date
+        try:
+            d = date.fromisoformat(av["semana_referencia"])
+            data_fmt = d.strftime("%d/%m/%Y")
+        except Exception:
+            data_fmt = av["semana_referencia"]
+        valores = AvaliacaoValores(**(av.get("valores") or {}))
+        periodos.append({"data": data_fmt, "indicadores": calcular_indicadores(valores)})
+
+    # Busca destinatários
+    usuarios_res = sb.table("tenant_usuarios")\
+        .select("email,nome")\
+        .eq("tenant_id", str(tenant_id))\
+        .eq("ativo", True)\
+        .execute()
+    destinatarios = [u["email"] for u in (usuarios_res.data or []) if u.get("email")]
+
+    if not destinatarios:
+        raise HTTPException(status_code=400, detail="Nenhum usuario ativo com e-mail encontrado para este tenant.")
+
+    # Busca branding para URL do portal
+    brand_res = sb.table("tenant_branding").select("nome_portal").eq("tenant_id", str(tenant_id)).limit(1).execute()
+    portal_url = "https://qtqd-vt2a.vercel.app/cliente"
+
+    html = build_relatorio_html(
+        tenant_nome=tenant_nome,
+        portal_url=portal_url,
+        periodos=periodos,
+        incluir_inspetor=incluir_inspetor,
+        incluir_graficos=incluir_graficos,
+    )
+
+    from datetime import date
+    today = date.today().strftime("%d/%m/%Y")
+    subject = f"Relatório QTQD — {tenant_nome} — {today}"
+
+    try:
+        send_html(destinatarios, subject, html)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao enviar e-mail: {e}")
+
+    return {"ok": True, "enviado_para": destinatarios, "n_periodos": len(periodos)}
 
 
 @router.get("/usuarios", response_model=list[UsuarioAdminResponse])
