@@ -429,10 +429,25 @@ function getLocalFieldConfig() {
   catch { return { ...defaultFields }; }
 }
 
-function renderFieldConfig() {
+function renderFieldConfig(apiConfig = null) {
   const list = $('fieldConfigList');
   if (!list) return;
-  const cfg = getLocalFieldConfig();
+  // Mescla defaults com config da API (se houver)
+  const cfg = { ...defaultFields };
+  if (apiConfig && Array.isArray(apiConfig)) {
+    apiConfig.forEach(item => {
+      if (cfg[item.codigo_componente]) {
+        cfg[item.codigo_componente] = {
+          label: item.label_customizado || cfg[item.codigo_componente].label,
+          visible: item.visivel,
+        };
+      }
+    });
+  } else {
+    // Fallback: localStorage
+    const local = getLocalFieldConfig();
+    Object.assign(cfg, local);
+  }
   list.innerHTML = '';
   Object.entries(cfg).forEach(([key, item]) => {
     const row = el('div', 'field-config-item');
@@ -446,22 +461,58 @@ function renderFieldConfig() {
   });
 }
 
-$('saveFieldConfigButton').addEventListener('click', () => {
-  const cfg = getLocalFieldConfig();
-  document.querySelectorAll('#fieldConfigList .field-config-item').forEach(row => {
+async function loadCamposConfig() {
+  const tenantId = $('camposClient')?.value;
+  if (!tenantId) {
+    renderFieldConfig(null);
+    return;
+  }
+  try {
+    const data = await window.QTQD_API_CLIENT.getComponentesConfig(getToken(), tenantId);
+    renderFieldConfig(data);
+    fb('Configuração carregada do banco para este cliente.', 'success');
+  } catch (e) {
+    renderFieldConfig(null);
+    fb('Erro ao carregar campos: ' + e.message, 'error');
+  }
+}
+
+$('saveFieldConfigButton').addEventListener('click', async () => {
+  const tenantId = $('camposClient')?.value;
+  // Coleta valores do formulário
+  const itens = [];
+  document.querySelectorAll('#fieldConfigList .field-config-item').forEach((row, idx) => {
     const cb  = row.querySelector('input[type="checkbox"]');
     const inp = row.querySelector('input[type="text"]');
     if (!cb || !inp) return;
     const key = cb.dataset.key;
-    cfg[key] = { label: inp.value.trim() || cfg[key].label, visible: cb.checked };
+    itens.push({
+      codigo_componente: key,
+      label_customizado: inp.value.trim() || defaultFields[key]?.label || key,
+      visivel: cb.checked,
+      obrigatorio: false,
+      ordem_exibicao: idx + 1,
+    });
   });
-  localStorage.setItem(FIELD_KEY, JSON.stringify(cfg));
-  fb('Configuração de campos salva localmente.', 'success');
+
+  if (tenantId) {
+    // Salva na API
+    try {
+      await window.QTQD_API_CLIENT.saveComponentesConfig(getToken(), tenantId, itens);
+      fb('Configuração de campos salva no banco para este cliente.', 'success');
+    } catch (e) { fb('Erro ao salvar: ' + e.message, 'error'); }
+  } else {
+    // Sem cliente selecionado → salva localmente como padrão
+    const cfg = {};
+    itens.forEach(i => { cfg[i.codigo_componente] = { label: i.label_customizado, visible: i.visivel }; });
+    localStorage.setItem(FIELD_KEY, JSON.stringify(cfg));
+    fb('Configuração padrão salva localmente (sem cliente selecionado).', 'success');
+  }
 });
 
 $('resetFieldConfigButton').addEventListener('click', () => {
   localStorage.removeItem(FIELD_KEY);
-  renderFieldConfig();
+  renderFieldConfig(null);
   fb('Configuração restaurada ao padrão.', 'success');
 });
 
