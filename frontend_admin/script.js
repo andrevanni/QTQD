@@ -8,30 +8,64 @@ const ADMIN_TOKEN_KEY = window.QTQD_APP_CONFIG?.adminTokenStorageKey || 'qtqd_ad
 const THEME_KEY       = 'qtqd_admin_theme';
 const FIELD_KEY       = 'qtqd_field_config_v1';
 
-const defaultFields = {
-  saldo_bancario:           { label: 'Saldo bancário',              visible: true },
-  contas_receber:           { label: 'Contas a receber',            visible: true },
-  cartoes:                  { label: 'Cartões',                     visible: true },
-  convenios:                { label: 'Convênios',                   visible: true },
-  cheques:                  { label: 'Cheques',                     visible: true },
-  trade_marketing:          { label: 'Trade marketing',             visible: true },
-  outros_qt:                { label: 'Outros QT',                   visible: true },
-  estoque_custo:            { label: 'Estoque (preço custo)',        visible: true },
-  contas_pagar:             { label: 'Contas a pagar',              visible: true },
-  fornecedores:             { label: 'Fornecedores',                visible: true },
-  investimentos_assumidos:  { label: 'Investimentos assumidos',     visible: true },
-  outras_despesas_assumidas:{ label: 'Outras despesas assumidas',   visible: true },
-  dividas:                  { label: 'Dívidas',                     visible: true },
-  financiamentos:           { label: 'Financiamentos',              visible: true },
-  tributos_atrasados:       { label: 'Tributos atrasados',          visible: true },
-  acoes_processos:          { label: 'Ações e processos',           visible: true },
-  faturamento_previsto_mes: { label: 'Faturamento previsto no mês', visible: true },
-  compras_mes:              { label: 'Compras no mês',              visible: true },
-  entrada_mes:              { label: 'Entrada no mês',              visible: true },
-  venda_cupom_mes:          { label: 'Venda cupom no mês',          visible: true },
-  venda_custo_mes:          { label: 'Venda custo no mês - CMV',    visible: true },
-  lucro_liquido_mes:        { label: 'Lucro líquido - mês',         visible: true },
+/* ── Catálogo de campos por grupo ────────────────────── */
+const FIELD_CATALOG = {
+  qt: {
+    label: 'QT — Quanto Tenho',
+    fields: {
+      saldo_bancario:           'Saldo bancário',
+      contas_receber:           'Contas a receber',
+      cartoes:                  'Cartões',
+      convenios:                'Convênios',
+      cheques:                  'Cheques',
+      trade_marketing:          'Trade marketing',
+      outros_qt:                'Outros QT',
+    },
+  },
+  qd: {
+    label: 'QD — Quanto Devo',
+    fields: {
+      estoque_custo:            'Estoque (preço custo)',
+      contas_pagar:             'Contas a pagar',
+      fornecedores:             'Fornecedores',
+      investimentos_assumidos:  'Investimentos assumidos',
+      outras_despesas_assumidas:'Outras despesas assumidas',
+      dividas:                  'Dívidas',
+      financiamentos:           'Financiamentos',
+      tributos_atrasados:       'Tributos atrasados',
+      acoes_processos:          'Ações e processos',
+    },
+  },
+  operacional: {
+    label: 'Operacional',
+    fields: {
+      faturamento_previsto_mes: 'Faturamento previsto no mês',
+      compras_mes:              'Compras no mês',
+      entrada_mes:              'Entrada no mês',
+      venda_cupom_mes:          'Venda cupom no mês',
+      venda_custo_mes:          'Venda custo no mês (CMV)',
+      lucro_liquido_mes:        'Lucro líquido no mês',
+    },
+  },
 };
+
+/* Campos calculados — somente leitura, exibidos como referência */
+const CALCULATED_CATALOG = [
+  { key: 'qt_total',         label: 'QT Total',                    formula: 'Soma de todos os campos QT' },
+  { key: 'qd_total',         label: 'QD Total',                    formula: 'Soma de todos os campos QD' },
+  { key: 'saldo',            label: 'Saldo (QT − QD)',             formula: 'QT Total − QD Total' },
+  { key: 'indice_cobertura', label: 'Índice de Cobertura (%)',      formula: 'QT Total ÷ QD Total × 100' },
+  { key: 'pme',              label: 'PME — Prazo Médio de Estoque', formula: 'Estoque ÷ CMV × 30' },
+  { key: 'pmr',              label: 'PMR — Prazo Médio de Receb.',  formula: 'Contas a receber ÷ (Faturamento ÷ 30)' },
+  { key: 'pmp',              label: 'PMP — Prazo Médio de Pgto.',   formula: 'Fornecedores ÷ (Compras ÷ 30)' },
+  { key: 'ciclo_operacional',label: 'Ciclo Operacional (dias)',     formula: 'PMR + PME' },
+  { key: 'ciclo_financeiro', label: 'Ciclo Financeiro (dias)',      formula: 'Ciclo Operacional − PMP' },
+];
+
+/* Compat: defaultFields mantido para template download */
+const defaultFields = Object.fromEntries(
+  Object.values(FIELD_CATALOG).flatMap(g => Object.entries(g.fields).map(([k, v]) => [k, { label: v, visible: true }]))
+);
 
 /* ── Estado ──────────────────────────────────────────── */
 let clients     = [];
@@ -472,89 +506,187 @@ $('importForm').addEventListener('submit', async e => {
 /* ═══════════════════════════════════════════════════════
    CAMPOS
    ═══════════════════════════════════════════════════════ */
+let _camposApiConfig = null; // cache da config atual
+
 function getLocalFieldConfig() {
   try { return { ...defaultFields, ...JSON.parse(localStorage.getItem(FIELD_KEY) || '{}') }; }
   catch { return { ...defaultFields }; }
 }
 
+function _buildConfigMap(apiConfig) {
+  const map = {};
+  if (apiConfig) apiConfig.forEach(c => { map[c.codigo_componente] = c; });
+  return map;
+}
+
 function renderFieldConfig(apiConfig = null) {
+  _camposApiConfig = apiConfig;
   const list = $('fieldConfigList');
   if (!list) return;
-  // Mescla defaults com config da API (se houver)
-  const cfg = { ...defaultFields };
-  if (apiConfig && Array.isArray(apiConfig)) {
-    apiConfig.forEach(item => {
-      if (cfg[item.codigo_componente]) {
-        cfg[item.codigo_componente] = {
-          label: item.label_customizado || cfg[item.codigo_componente].label,
-          visible: item.visivel,
-        };
-      }
-    });
-  } else {
-    // Fallback: localStorage
-    const local = getLocalFieldConfig();
-    Object.assign(cfg, local);
-  }
+  const configMap = _buildConfigMap(apiConfig);
   list.innerHTML = '';
-  Object.entries(cfg).forEach(([key, item]) => {
-    const row = el('div', 'field-config-item');
-    row.innerHTML = `
-      <label>
-        <input type="checkbox" data-key="${key}" ${item.visible ? 'checked' : ''}>
-        <span>${key}</span>
-      </label>
-      <input type="text" data-label="${key}" value="${item.label}" placeholder="Label do campo">`;
-    list.appendChild(row);
+
+  // ── Grupos de campos editáveis ─────────────────────────
+  Object.entries(FIELD_CATALOG).forEach(([groupKey, group]) => {
+    const groupDiv = el('div', 'field-group');
+
+    // Cabeçalho do grupo
+    const hdr = el('div', 'field-group-header');
+    hdr.innerHTML = `<span class="eyebrow">${group.label}</span>`;
+    const addBtn = document.createElement('button');
+    addBtn.className = 'secondary-button';
+    addBtn.style.cssText = 'padding:4px 10px;font-size:11px';
+    addBtn.textContent = '+ Novo campo';
+    addBtn.addEventListener('click', () => toggleAddFieldForm(groupKey));
+    hdr.appendChild(addBtn);
+    groupDiv.appendChild(hdr);
+
+    // Campos do catálogo
+    Object.entries(group.fields).forEach(([key, defaultLabel]) => {
+      const cfg    = configMap[key];
+      const visible = cfg ? cfg.visivel !== false : true;
+      const label   = cfg?.label_customizado || defaultLabel;
+      groupDiv.appendChild(_makeFieldRow(key, label, defaultLabel, visible, false));
+    });
+
+    // Campos personalizados do grupo (prefix: custom_<group>_)
+    if (apiConfig) {
+      apiConfig.filter(c => c.codigo_componente.startsWith(`custom_${groupKey}_`)).forEach(c => {
+        groupDiv.appendChild(_makeFieldRow(c.codigo_componente, c.label_customizado || '', c.label_customizado || '', true, true));
+      });
+    }
+
+    // Formulário inline "Novo campo"
+    const addForm = el('div', 'add-field-form');
+    addForm.id = `addFieldForm_${groupKey}`;
+    addForm.innerHTML = `
+      <div class="add-field-form-row">
+        <label class="field">
+          <span>Nome do campo</span>
+          <input type="text" id="newFieldLabel_${groupKey}" placeholder="Ex.: Cartão Crédito Loja">
+        </label>
+        <button class="primary-button" type="button" data-add-group="${groupKey}" style="margin-top:18px;white-space:nowrap">Adicionar</button>
+        <button class="secondary-button" type="button" data-cancel-group="${groupKey}" style="margin-top:18px">Cancelar</button>
+      </div>`;
+    addForm.querySelector(`[data-add-group]`).addEventListener('click', () => addCustomField(groupKey));
+    addForm.querySelector(`[data-cancel-group]`).addEventListener('click', () => toggleAddFieldForm(groupKey));
+    groupDiv.appendChild(addForm);
+
+    list.appendChild(groupDiv);
   });
+
+  // ── Campos calculados (somente leitura) ────────────────
+  const calcDiv = el('div', 'field-group');
+  const calcHdr = el('div', 'field-group-header');
+  calcHdr.innerHTML = '<span class="eyebrow">Campos Calculados — somente leitura</span>';
+  calcDiv.appendChild(calcHdr);
+  CALCULATED_CATALOG.forEach(calc => {
+    const row = el('div', 'field-config-item field-config-formula');
+    row.innerHTML = `
+      <div style="flex:1;min-width:0">
+        <span style="font-size:13px;font-weight:700;color:var(--ink)">${calc.label}</span>
+        <div class="formula-text">= ${calc.formula}</div>
+      </div>
+      <span class="badge">fórmula</span>`;
+    calcDiv.appendChild(row);
+  });
+  list.appendChild(calcDiv);
+}
+
+function _makeFieldRow(key, label, placeholder, visible, isCustom) {
+  const row = el('div', 'field-config-item');
+  row.innerHTML = `
+    <label>
+      <input type="checkbox" data-key="${key}" ${visible ? 'checked' : ''}>
+      <span class="key-tag">${key}${isCustom ? ' <span class="badge warn">custom</span>' : ''}</span>
+    </label>
+    <input type="text" data-label="${key}" value="${label}" placeholder="${placeholder}">
+    ${isCustom ? `<button class="danger-button" data-delete="${key}" style="padding:4px 10px;font-size:11px;flex-shrink:0">✕</button>` : ''}`;
+  if (isCustom) {
+    row.querySelector('[data-delete]').addEventListener('click', () => deleteCustomField(key));
+  }
+  return row;
+}
+
+function toggleAddFieldForm(groupKey) {
+  const form = document.getElementById(`addFieldForm_${groupKey}`);
+  if (form) form.classList.toggle('visible');
+}
+
+async function addCustomField(groupKey) {
+  const tenantId = $('camposClient')?.value;
+  if (!tenantId) { fb('Selecione um cliente antes de criar um campo personalizado.', 'error'); return; }
+  const labelInput = document.getElementById(`newFieldLabel_${groupKey}`);
+  const label = labelInput?.value.trim();
+  if (!label) { fb('Informe o nome do campo.', 'error'); return; }
+  const slug = label.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  const key  = `custom_${groupKey}_${slug}`;
+  try {
+    await window.QTQD_API_CLIENT.saveComponentesConfig(getToken(), tenantId, [{
+      codigo_componente: key, label_customizado: label, visivel: true, obrigatorio: false, ordem_exibicao: 999,
+    }]);
+    fb(`Campo "${label}" adicionado ao grupo ${FIELD_CATALOG[groupKey].label}.`, 'success');
+    await loadCamposConfig();
+  } catch (e) { fb('Erro ao criar campo: ' + e.message, 'error'); }
+}
+
+async function deleteCustomField(key) {
+  if (!confirm(`Excluir o campo "${key}"? Esta ação não pode ser desfeita.`)) return;
+  const tenantId = $('camposClient')?.value;
+  if (!tenantId || !_camposApiConfig) return;
+  const remaining = _camposApiConfig.filter(c => c.codigo_componente !== key);
+  try {
+    if (remaining.length) {
+      await window.QTQD_API_CLIENT.saveComponentesConfig(getToken(), tenantId,
+        remaining.map(c => ({ codigo_componente: c.codigo_componente, label_customizado: c.label_customizado, visivel: c.visivel, obrigatorio: c.obrigatorio, ordem_exibicao: c.ordem_exibicao }))
+      );
+    }
+    fb('Campo excluído.', 'success');
+    await loadCamposConfig();
+  } catch (e) { fb('Erro ao excluir: ' + e.message, 'error'); }
 }
 
 async function loadCamposConfig() {
   const tenantId = $('camposClient')?.value;
-  if (!tenantId) {
-    renderFieldConfig(null);
-    return;
-  }
+  if (!tenantId) { renderFieldConfig(null); return; }
   try {
     const data = await window.QTQD_API_CLIENT.getComponentesConfig(getToken(), tenantId);
     renderFieldConfig(data);
-    fb('Configuração carregada do banco para este cliente.', 'success');
+    fb('Configuração carregada para este cliente.', 'success');
   } catch (e) {
     renderFieldConfig(null);
     fb('Erro ao carregar campos: ' + e.message, 'error');
   }
 }
 
-$('saveFieldConfigButton').addEventListener('click', async () => {
-  const tenantId = $('camposClient')?.value;
-  // Coleta valores do formulário
+function _collectFieldItens() {
   const itens = [];
-  document.querySelectorAll('#fieldConfigList .field-config-item').forEach((row, idx) => {
+  let idx = 0;
+  document.querySelectorAll('#fieldConfigList .field-config-item:not(.field-config-formula)').forEach(row => {
     const cb  = row.querySelector('input[type="checkbox"]');
     const inp = row.querySelector('input[type="text"]');
     if (!cb || !inp) return;
     const key = cb.dataset.key;
-    itens.push({
-      codigo_componente: key,
-      label_customizado: inp.value.trim() || defaultFields[key]?.label || key,
-      visivel: cb.checked,
-      obrigatorio: false,
-      ordem_exibicao: idx + 1,
-    });
+    if (!key) return;
+    const defaultLabel = defaultFields[key]?.label || key;
+    itens.push({ codigo_componente: key, label_customizado: inp.value.trim() || defaultLabel, visivel: cb.checked, obrigatorio: false, ordem_exibicao: ++idx });
   });
+  return itens;
+}
 
+$('saveFieldConfigButton').addEventListener('click', async () => {
+  const tenantId = $('camposClient')?.value;
+  const itens    = _collectFieldItens();
   if (tenantId) {
-    // Salva na API
     try {
       await window.QTQD_API_CLIENT.saveComponentesConfig(getToken(), tenantId, itens);
-      fb('Configuração de campos salva no banco para este cliente.', 'success');
+      fb('Configuração salva no banco para este cliente.', 'success');
     } catch (e) { fb('Erro ao salvar: ' + e.message, 'error'); }
   } else {
-    // Sem cliente selecionado → salva localmente como padrão
     const cfg = {};
     itens.forEach(i => { cfg[i.codigo_componente] = { label: i.label_customizado, visible: i.visivel }; });
     localStorage.setItem(FIELD_KEY, JSON.stringify(cfg));
-    fb('Configuração padrão salva localmente (sem cliente selecionado).', 'success');
+    fb('Configuração padrão salva localmente (nenhum cliente selecionado).', 'success');
   }
 });
 
