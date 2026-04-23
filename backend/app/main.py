@@ -29,23 +29,25 @@ def health() -> dict:
     except Exception:
         db_host = "parse-error"
         db_user = ""
-    # Try a quick DB connect
+    # Try a quick DB connect using the same engine as the app
     db_ok = False
     db_err = ""
+    db_pw_len = len(settings.db_password) if settings.db_password else 0
     try:
+        from backend.app.db.session import engine
         import sqlalchemy
-        engine = sqlalchemy.create_engine(db_url, connect_args={"connect_timeout": 5})
         with engine.connect() as conn:
             conn.execute(sqlalchemy.text("SELECT 1"))
         db_ok = True
     except Exception as e:
-        db_err = str(e)[:200]
+        db_err = str(e)[:300]
     return {
         "status": "ok",
         "env": settings.app_env,
         "token_is_default": settings.admin_token == "trocar-este-token",
         "db_host": db_host,
         "db_user": db_user,
+        "db_pw_len": db_pw_len,
         "db_ok": db_ok,
         "db_err": db_err,
         "os_env_keys": sorted(keys),

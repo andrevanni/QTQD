@@ -7,8 +7,10 @@ class Settings(BaseSettings):
     app_name: str = "QTQD API"
     app_env: str = "local"
 
-    # Banco de dados (Supabase PostgreSQL via connection string)
+    # Banco de dados
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/qtqd"
+    # Senha separada para evitar problema de encoding de caracteres especiais na URL
+    db_password: str | None = None
 
     # Supabase
     supabase_url: str | None = None
