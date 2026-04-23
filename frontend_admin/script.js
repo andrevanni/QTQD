@@ -284,8 +284,21 @@ $('licenseForm').addEventListener('submit', async e => {
     fim_vigencia:    $('licenseEnd').value ? brToISO($('licenseEnd').value) : null,
     status:          $('licenseStatus').value,
   };
-  if (!payload.inicio_vigencia) { fb('Data de início inválida. Use DD/MM/AAAA.', 'error'); return; }
   if (!payload.tenant_id) { fb('Selecione um cliente.', 'error'); return; }
+  if (!payload.inicio_vigencia) { fb('Data de início inválida. Use DD/MM/AAAA.', 'error'); return; }
+
+  // Avisa se o cliente já tem vigência ativa
+  if (payload.status === 'ativo') {
+    const ativas = licenses.filter(l => String(l.tenant_id) === payload.tenant_id && l.status === 'ativo');
+    if (ativas.length > 0) {
+      const clientNome = clients.find(c => c.id === payload.tenant_id)?.nome || payload.tenant_id;
+      const ok = confirm(
+        `"${clientNome}" já possui ${ativas.length} vigência(s) ativa(s).\n\nDeseja criar a nova mesmo assim?\n\nRecomendado: abra as vigências anteriores e mude o status para "Bloqueado".`
+      );
+      if (!ok) return;
+    }
+  }
+
   try {
     await window.QTQD_API_CLIENT.createLicenca(getToken(), payload);
     fb('Vigência cadastrada com sucesso.', 'success');
