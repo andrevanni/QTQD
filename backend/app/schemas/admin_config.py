@@ -69,6 +69,34 @@ class ComponenteConfigResponse(ComponenteConfigItem):
     updated_at: datetime
 
 
+class UsuarioAdminCreateRequest(BaseModel):
+    tenant_id: UUID
+    nome: str
+    funcao: str | None = None
+    email: str
+    permissao: str = "visualiza"  # edita | visualiza | relatorio
+
+
+class UsuarioAdminUpdateRequest(BaseModel):
+    nome: str | None = None
+    funcao: str | None = None
+    permissao: str | None = None
+    ativo: bool | None = None
+
+
+class UsuarioAdminResponse(BaseModel):
+    id: UUID
+    tenant_id: UUID
+    nome: str
+    funcao: str | None = None
+    email: str
+    permissao: str
+    ativo: bool
+    user_id: UUID | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
 class ImportacaoAdminCreateRequest(BaseModel):
     tenant_id: UUID
     tipo: str = Field(default="primeira_carga")

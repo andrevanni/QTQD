@@ -91,6 +91,24 @@ window.addEventListener("storage",e=>{if(e.key===FIELD_CONFIG_KEY)renderAll();if
 async function initializeClient(){applyTheme();applyBranding();try{await loadRecordsFromSource()}catch(error){loadRecordsFromLocal();setFeedback(`Modo API configurado, mas foi mantido fallback local: ${error.message}`)}if(!records.length){records=seedRecords();saveRecords()}renderAll();const latest=getLatestRecord();if(latest){fillForm(latest);renderCalculatedPreview(latest)}else renderCalculatedPreview();openSection("cadastro")}
 initializeClient();
 
+// Injeta campos personalizados do admin no catálogo de gráficos
+(async function() {
+  if (!isApiMode() || !window.QTQD_API_CLIENT) return;
+  try {
+    const cfg = await window.QTQD_API_CLIENT.getMyComponentesConfig();
+    if (!Array.isArray(cfg)) return;
+    cfg.forEach(c => {
+      if (!c.codigo_componente.startsWith('custom_')) return;
+      if (!chartFieldCatalog.find(f => f.key === c.codigo_componente)) {
+        chartFieldCatalog.push({ key: c.codigo_componente, label: c.label_customizado || c.codigo_componente, format: 'currency' });
+      }
+      if (!defaultFieldConfig[c.codigo_componente]) {
+        defaultFieldConfig[c.codigo_componente] = { label: c.label_customizado || c.codigo_componente, visible: c.visivel !== false };
+      }
+    });
+  } catch {}
+})();
+
 ;(function(){
   var k='qtqd_mini', btn=document.getElementById('sidebarMiniToggle');
   if(!btn) return;

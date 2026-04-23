@@ -71,7 +71,9 @@ const defaultFields = Object.fromEntries(
 let clients     = [];
 let licenses    = [];
 let imports     = [];
-let selectedClient = null;
+let usuarios    = [];
+let selectedClient  = null;
+let selectedUsuario = null;
 
 /* ── Helpers DOM ─────────────────────────────────────── */
 const $  = id => document.getElementById(id);
@@ -121,8 +123,9 @@ function fbClear() { const b=$('feedbackBox'); if(b){b.textContent='';b.classNam
 const SECTION_META = {
   clientes:   { eyebrow: 'Cadastro Comercial',  title: 'Clientes da plataforma' },
   vigencias:  { eyebrow: 'Licenciamento',        title: 'Vigências e controle de acesso' },
-  importacao: { eyebrow: 'Primeira Carga',       title: 'Importação de dados' },
   campos:     { eyebrow: 'Configuração',         title: 'Campos do formulário' },
+  importacao: { eyebrow: 'Primeira Carga',       title: 'Importação de dados' },
+  usuarios:   { eyebrow: 'Acesso ao Sistema',    title: 'Usuários do cliente' },
   identidade: { eyebrow: 'Identidade Visual',    title: 'Branding por cliente' },
   ambiente:   { eyebrow: 'Conexão',              title: 'Ambiente e configurações' },
 };
@@ -143,6 +146,7 @@ function openSection(id) {
   if (id === 'vigencias')  loadLicenses();
   if (id === 'importacao') loadImports();
   if (id === 'campos')     renderFieldConfig();
+  if (id === 'usuarios')   loadUsuarios();
   if (id === 'identidade') loadBranding();
   if (id === 'ambiente')   renderAmbiente();
 }
@@ -339,7 +343,8 @@ function renderLicenses() {
 }
 
 function populateClientSelects() {
-  ['licenseClient', 'importClient', 'brandingClient', 'camposClient', 'templateClient'].forEach(id => {
+  ['licenseClient', 'importClient', 'brandingClient', 'camposClient', 'templateClient',
+   'usuarioClient', 'usuarioClientFilter'].forEach(id => {
     const sel = $(id);
     if (!sel) return;
     const cur = sel.value;
@@ -401,6 +406,154 @@ $('deleteLicenseButton')?.addEventListener('click', async () => {
     await loadLicenses();
   } catch (err) { fb('Erro ao excluir: ' + err.message, 'error'); }
 });
+
+/* ═══════════════════════════════════════════════════════
+   USUÁRIOS
+   ═══════════════════════════════════════════════════════ */
+const PERMISSAO_LABEL = { edita: 'Edita', visualiza: 'Visualiza', relatorio: 'Relatório' };
+
+async function loadUsuarios() {
+  const tenantId = $('usuarioClientFilter')?.value || '';
+  try {
+    usuarios = await window.QTQD_API_CLIENT.listUsuarios(getToken(), tenantId || undefined);
+    renderUsuarios();
+  } catch (e) { fb('Erro ao carregar usuários: ' + e.message, 'error'); }
+}
+
+function renderUsuarios() {
+  const list = $('usuarioList');
+  if (!list) return;
+  if (!usuarios.length) { list.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhum usuário cadastrado.</p>'; return; }
+  list.innerHTML = '';
+  usuarios.forEach(u => {
+    const client = clients.find(c => c.id === String(u.tenant_id));
+    const card = el('article', 'entity-card' + (selectedUsuario?.id === u.id ? ' selected' : ''));
+    const badgeCls = u.ativo ? '' : 'bloqueado';
+    card.innerHTML = `
+      <div class="entity-card-row">
+        <strong>${u.nome}</strong>
+        <span class="badge ${u.permissao}">${PERMISSAO_LABEL[u.permissao] || u.permissao}</span>
+      </div>
+      <span>${u.funcao || '—'} · ${client?.nome || u.tenant_id}</span>
+      <div class="entity-card-row">
+        <span style="font-size:11px;color:var(--muted)">${u.email}</span>
+        ${!u.ativo ? '<span class="badge bloqueado">inativo</span>' : ''}
+      </div>`;
+    card.addEventListener('click', () => selectUsuario(u));
+    list.appendChild(card);
+  });
+}
+
+function selectUsuario(u) {
+  selectedUsuario = u;
+  $('usuarioId').value       = u.id;
+  $('usuarioClient').value   = String(u.tenant_id);
+  $('usuarioNome').value     = u.nome;
+  $('usuarioFuncao').value   = u.funcao || '';
+  $('usuarioEmail').value    = u.email;
+  $('usuarioPermissao').value = u.permissao;
+  $('usuarioModeBadge').textContent = 'Editando';
+  $('deleteUsuarioButton').classList.remove('hidden');
+  const actions = $('usuarioActions');
+  if (actions) {
+    actions.classList.remove('hidden');
+    actions.style.display = 'flex';
+    $('btnInativar').textContent = u.ativo ? '⛔ Inativar' : '✅ Reativar';
+  }
+  renderUsuarios();
+}
+
+function resetUsuarioForm() {
+  selectedUsuario = null;
+  $('usuarioId').value = '';
+  $('usuarioForm').reset();
+  $('usuarioModeBadge').textContent = 'Novo';
+  $('deleteUsuarioButton').classList.add('hidden');
+  const actions = $('usuarioActions');
+  if (actions) { actions.classList.add('hidden'); actions.style.display = 'none'; }
+  renderUsuarios();
+}
+
+$('usuarioForm').addEventListener('submit', async e => {
+  e.preventDefault(); fbClear();
+  const id = $('usuarioId').value;
+  const payload = {
+    tenant_id:  $('usuarioClient').value,
+    nome:       $('usuarioNome').value.trim(),
+    funcao:     $('usuarioFuncao').value.trim() || null,
+    email:      $('usuarioEmail').value.trim(),
+    permissao:  $('usuarioPermissao').value,
+  };
+  try {
+    if (id) {
+      const { tenant_id, email, ...upd } = payload;
+      await window.QTQD_API_CLIENT.updateUsuario(getToken(), id, upd);
+      fb('Usuário atualizado.', 'success');
+    } else {
+      if (!payload.tenant_id) { fb('Selecione um cliente.', 'error'); return; }
+      await window.QTQD_API_CLIENT.createUsuario(getToken(), payload);
+      fb('Usuário cadastrado. Envie o convite para ele instalar o sistema.', 'success');
+    }
+    resetUsuarioForm();
+    await loadUsuarios();
+  } catch (err) { fb('Erro ao salvar: ' + err.message, 'error'); }
+});
+
+$('clearUsuarioFormButton')?.addEventListener('click', resetUsuarioForm);
+
+$('deleteUsuarioButton')?.addEventListener('click', async () => {
+  if (!selectedUsuario) return;
+  if (!confirm(`Excluir o usuário "${selectedUsuario.nome}"?`)) return;
+  try {
+    await window.QTQD_API_CLIENT.deleteUsuario(getToken(), selectedUsuario.id);
+    fb('Usuário excluído.', 'success');
+    resetUsuarioForm();
+    await loadUsuarios();
+  } catch (err) { fb('Erro ao excluir: ' + err.message, 'error'); }
+});
+
+$('btnInativar')?.addEventListener('click', async () => {
+  if (!selectedUsuario) return;
+  const novoStatus = !selectedUsuario.ativo;
+  const acao = novoStatus ? 'reativar' : 'inativar';
+  if (!confirm(`Deseja ${acao} o usuário "${selectedUsuario.nome}"?`)) return;
+  try {
+    await window.QTQD_API_CLIENT.updateUsuario(getToken(), selectedUsuario.id, { ativo: novoStatus });
+    fb(`Usuário ${novoStatus ? 'reativado' : 'inativado'}.`, 'success');
+    resetUsuarioForm();
+    await loadUsuarios();
+  } catch (err) { fb('Erro: ' + err.message, 'error'); }
+});
+
+$('btnResetSenha')?.addEventListener('click', () => {
+  if (!selectedUsuario) return;
+  alert(`Para resetar a senha de "${selectedUsuario.nome}", acesse o Supabase Dashboard > Authentication > Users, localize o e-mail "${selectedUsuario.email}" e clique em "Send password reset".\n\nEm breve essa ação será automática pelo painel.`);
+});
+
+$('btnConviteApp')?.addEventListener('click', () => {
+  if (!selectedUsuario) return;
+  const client = clients.find(c => c.id === String(selectedUsuario.tenant_id));
+  const url = window.QTQD_APP_CONFIG?.apiBaseUrl?.replace('/api/v1','') || 'https://qtqd-vt2a.vercel.app';
+  const clienteUrl = `${url}/cliente`;
+  const subject = encodeURIComponent('Acesso ao Sistema QTQD — ' + (client?.nome || 'Service Farma'));
+  const body = encodeURIComponent(
+    `Olá, ${selectedUsuario.nome}!\n\n` +
+    `Você foi cadastrado no sistema QTQD — Quanto Tenho, Quanto Devo da ${client?.nome || 'Service Farma'}.\n\n` +
+    `📱 Para instalar o aplicativo na sua área de trabalho:\n` +
+    `1. Acesse: ${clienteUrl}\n` +
+    `2. No navegador, clique em "Instalar" ou "Adicionar à tela inicial"\n` +
+    `3. O ícone QTQD aparecerá na sua área de trabalho\n\n` +
+    `🔑 Suas credenciais de acesso:\n` +
+    `   E-mail: ${selectedUsuario.email}\n` +
+    `   Permissão: ${PERMISSAO_LABEL[selectedUsuario.permissao]}\n\n` +
+    `Em caso de dúvidas, entre em contato com a equipe Service Farma.\n\n` +
+    `Atenciosamente,\nEquipe Service Farma / QTQD`
+  );
+  window.open(`mailto:${selectedUsuario.email}?subject=${subject}&body=${body}`);
+  fb(`E-mail de convite preparado para ${selectedUsuario.email}. Verifique seu cliente de e-mail.`, 'success');
+});
+
+$('usuarioClientFilter')?.addEventListener('change', loadUsuarios);
 
 /* ═══════════════════════════════════════════════════════
    TEMPLATE EXCEL

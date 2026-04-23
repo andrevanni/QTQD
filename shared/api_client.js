@@ -171,6 +171,21 @@
       });
     },
 
+    /* ── Admin — usuários ───────────────────────────── */
+    listUsuarios(adminToken, tenantId) {
+      const qs = tenantId ? `?tenant_id=${tenantId}` : '';
+      return request(base(`/admin/usuarios${qs}`), { method: 'GET', headers: adminHeaders(adminToken) });
+    },
+    createUsuario(adminToken, payload) {
+      return request(base('/admin/usuarios'), { method: 'POST', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
+    },
+    updateUsuario(adminToken, id, payload) {
+      return request(base(`/admin/usuarios/${id}`), { method: 'PATCH', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
+    },
+    deleteUsuario(adminToken, id) {
+      return request(base(`/admin/usuarios/${id}`), { method: 'DELETE', headers: adminHeaders(adminToken) });
+    },
+
     /* ── Admin — importações ─────────────────────────── */
     listImportacoes(adminToken, tenantId) {
       const qs = tenantId ? `?tenant_id=${tenantId}` : '';

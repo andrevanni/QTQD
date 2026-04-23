@@ -51,6 +51,10 @@
             <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></span>
             <span class="nav-label">Primeira Carga</span>
           </button>
+          <button class="nav-link" data-section="usuarios" type="button">
+            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 14.094A5.973 5.973 0 004 17v1H1v-1a3 3 0 013.75-2.906z"/></svg></span>
+            <span class="nav-label">Usuários</span>
+          </button>
           <button class="nav-link" data-section="identidade" type="button">
             <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg></span>
             <span class="nav-label">Identidade Visual</span>
@@ -220,6 +224,57 @@
             <div class="hero-actions">
               <button id="saveFieldConfigButton" class="primary-button" type="button">Salvar configuração</button>
               <button id="resetFieldConfigButton" class="secondary-button" type="button">Restaurar padrão</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Usuários ──────────────────────────────────── -->
+        <section id="usuarios" class="admin-section hidden">
+          <div class="board two-column">
+            <div>
+              <div class="board-header">
+                <div><p class="eyebrow">Acesso ao Sistema</p><h3>Usuários cadastrados</h3></div>
+              </div>
+              <label class="field" style="max-width:320px;margin-bottom:12px">
+                <span>Filtrar por cliente</span>
+                <select id="usuarioClientFilter"><option value="">Todos os clientes</option></select>
+              </label>
+              <div id="usuarioList" class="card-list"></div>
+            </div>
+
+            <div class="form-panel">
+              <div class="board-header">
+                <div><p class="eyebrow">Novo usuário</p><h3>Cadastrar acesso</h3></div>
+                <span id="usuarioModeBadge" class="badge">Novo</span>
+              </div>
+              <form id="usuarioForm" class="stack-form">
+                <input id="usuarioId" type="hidden">
+                <label class="field"><span>Cliente</span><select id="usuarioClient"><option value="">Selecione um cliente</option></select></label>
+                <label class="field"><span>Nome completo</span><input id="usuarioNome" type="text" required placeholder="Ex.: Maria Silva"></label>
+                <label class="field"><span>Função / Cargo</span><input id="usuarioFuncao" type="text" placeholder="Ex.: Gerente Financeiro"></label>
+                <label class="field"><span>E-mail</span><input id="usuarioEmail" type="email" required placeholder="usuario@farmacia.com.br"></label>
+                <label class="field"><span>Permissão</span>
+                  <select id="usuarioPermissao">
+                    <option value="edita">Edita — lança e altera avaliações</option>
+                    <option value="visualiza" selected>Só Visualiza — acesso de leitura</option>
+                    <option value="relatorio">Só Relatório — recebe relatórios</option>
+                  </select>
+                </label>
+                <div class="hero-actions">
+                  <button class="primary-button" type="submit">Salvar usuário</button>
+                  <button id="clearUsuarioFormButton" class="secondary-button" type="button">Novo</button>
+                  <button id="deleteUsuarioButton" class="danger-button hidden" type="button">Excluir</button>
+                </div>
+              </form>
+
+              <div id="usuarioActions" class="hidden" style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+                <p class="eyebrow" style="margin-bottom:4px">Ações do usuário</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button id="btnConviteApp" class="secondary-button" type="button">📱 Enviar convite + instalar app</button>
+                  <button id="btnResetSenha" class="secondary-button" type="button">🔑 Resetar senha</button>
+                  <button id="btnInativar" class="secondary-button" type="button">⛔ Inativar</button>
+                </div>
+              </div>
             </div>
           </div>
         </section>

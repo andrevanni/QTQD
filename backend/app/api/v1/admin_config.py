@@ -15,6 +15,9 @@ from backend.app.schemas.admin_config import (
     LicencaAdminCreateRequest,
     LicencaAdminResponse,
     LicencaAdminUpdateRequest,
+    UsuarioAdminCreateRequest,
+    UsuarioAdminResponse,
+    UsuarioAdminUpdateRequest,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin-config"], dependencies=[Depends(require_admin_token)])
@@ -109,6 +112,44 @@ def salvar_componentes_config(tenant_id: UUID, payload: ComponentesConfigUpsertR
         if result.data:
             rows.append(ComponenteConfigResponse(**result.data[0]))
     return rows
+
+
+@router.get("/usuarios", response_model=list[UsuarioAdminResponse])
+def listar_usuarios(tenant_id: UUID | None = None) -> list[UsuarioAdminResponse]:
+    query = get_supabase().table("tenant_usuarios").select("*")
+    if tenant_id:
+        query = query.eq("tenant_id", str(tenant_id))
+    result = query.order("nome").execute()
+    return [UsuarioAdminResponse(**r) for r in result.data]
+
+
+@router.post("/usuarios", response_model=UsuarioAdminResponse, status_code=201)
+def criar_usuario(payload: UsuarioAdminCreateRequest) -> UsuarioAdminResponse:
+    data = payload.model_dump()
+    data["tenant_id"] = str(data["tenant_id"])
+    result = get_supabase().table("tenant_usuarios").insert(data).execute()
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Falha ao criar usuario.")
+    return UsuarioAdminResponse(**result.data[0])
+
+
+@router.patch("/usuarios/{usuario_id}", response_model=UsuarioAdminResponse)
+def atualizar_usuario(usuario_id: UUID, payload: UsuarioAdminUpdateRequest) -> UsuarioAdminResponse:
+    values = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not values:
+        raise HTTPException(status_code=400, detail="Nenhum campo enviado.")
+    values["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = get_supabase().table("tenant_usuarios").update(values).eq("id", str(usuario_id)).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Usuario nao encontrado.")
+    return UsuarioAdminResponse(**result.data[0])
+
+
+@router.delete("/usuarios/{usuario_id}", status_code=204)
+def excluir_usuario(usuario_id: UUID) -> None:
+    result = get_supabase().table("tenant_usuarios").delete().eq("id", str(usuario_id)).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Usuario nao encontrado.")
 
 
 @router.get("/importacoes", response_model=list[ImportacaoAdminResponse])

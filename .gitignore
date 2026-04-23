@@ -39,3 +39,5 @@ copiar_schema_supabase.sql
 copiar_schema_supabase.txt
 copiar_seed_supabase.sql
 copiar_seed_supabase.txt
+
+.vercel
