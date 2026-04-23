@@ -48,6 +48,22 @@ const el = (tag, cls, html = '') => {
   return e;
 };
 
+/* ── Datas BR ────────────────────────────────────────── */
+function applyDateMask(input) {
+  input.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
+    if (v.length > 5) v = v.slice(0, 5) + '/' + v.slice(5, 9);
+    e.target.value = v;
+  });
+}
+function brToISO(br) {
+  const p = (br || '').split('/');
+  if (p.length !== 3 || p[2].length !== 4) return '';
+  return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+}
+document.querySelectorAll('input[data-date-br]').forEach(applyDateMask);
+
 /* ── Token ───────────────────────────────────────────── */
 function getToken()       { return localStorage.getItem(ADMIN_TOKEN_KEY) || ''; }
 function saveToken(t)     { localStorage.setItem(ADMIN_TOKEN_KEY, t); }
@@ -265,12 +281,13 @@ function populateClientSelects() {
 $('licenseForm').addEventListener('submit', async e => {
   e.preventDefault(); fbClear();
   const payload = {
-    tenant_id:         $('licenseClient').value,
-    plano:             $('licensePlan').value.trim(),
-    inicio_vigencia:   $('licenseStart').value,
-    fim_vigencia:      $('licenseEnd').value || null,
-    status:            $('licenseStatus').value,
+    tenant_id:       $('licenseClient').value,
+    plano:           $('licensePlan').value.trim(),
+    inicio_vigencia: brToISO($('licenseStart').value),
+    fim_vigencia:    $('licenseEnd').value ? brToISO($('licenseEnd').value) : null,
+    status:          $('licenseStatus').value,
   };
+  if (!payload.inicio_vigencia) { fb('Data de início inválida. Use DD/MM/AAAA.', 'error'); return; }
   if (!payload.tenant_id) { fb('Selecione um cliente.', 'error'); return; }
   try {
     await window.QTQD_API_CLIENT.createLicenca(getToken(), payload);

@@ -143,8 +143,8 @@
               <form id="licenseForm" class="stack-form">
                 <label class="field"><span>Cliente</span><select id="licenseClient"><option value="">Selecione um cliente</option></select></label>
                 <label class="field"><span>Plano</span><input id="licensePlan" type="text" value="premium"></label>
-                <label class="field"><span>Início</span><input id="licenseStart" type="date"></label>
-                <label class="field"><span>Fim</span><input id="licenseEnd" type="date"></label>
+                <label class="field"><span>Início</span><input id="licenseStart" type="text" data-date-br placeholder="DD/MM/AAAA" maxlength="10" autocomplete="off"></label>
+                <label class="field"><span>Fim</span><input id="licenseEnd" type="text" data-date-br placeholder="DD/MM/AAAA (opcional)" maxlength="10" autocomplete="off"></label>
                 <label class="field"><span>Status</span>
                   <select id="licenseStatus">
                     <option value="ativo">Ativo</option>
