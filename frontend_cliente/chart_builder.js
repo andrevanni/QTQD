@@ -266,26 +266,24 @@
     if (!window.Chart) return;
     if (savedInstances[ch.id]) { try { savedInstances[ch.id].destroy(); } catch {} delete savedInstances[ch.id]; }
 
-    /* Substituir canvas para evitar estado residual do Chart.js */
-    let canvas = document.getElementById(`cc-${ch.id}`);
-    if (!canvas) return;
-    const fresh = document.createElement('canvas');
-    fresh.id = `cc-${ch.id}`;
-    canvas.replaceWith(fresh);
-    canvas = fresh;
+    /* Resetar canvas via innerHTML no container */
+    const outer = document.getElementById(`cw-${ch.id}`);
+    if (!outer) return;
+    outer.innerHTML = `<canvas id="cc-${ch.id}"></canvas>`;
 
     const { labels, datasets, fields } = buildChartData(ch);
     const options = buildChartOptions(ch, ch.showLabels || false);
     const plugins = ch.showLabels && window.ChartDataLabels ? [ChartDataLabels] : [];
 
-    savedInstances[ch.id] = new Chart(canvas, {
-      type: ch.type,
-      data: { labels, datasets },
-      options,
-      plugins,
-    });
-
-    fillTable(ch, labels, datasets, fields);
+    /* Reflow antes de medir o canvas */
+    setTimeout(() => {
+      const canvas = document.getElementById(`cc-${ch.id}`);
+      if (!canvas) return;
+      try {
+        savedInstances[ch.id] = new Chart(canvas, { type: ch.type, data: { labels, datasets }, options, plugins });
+        fillTable(ch, labels, datasets, fields);
+      } catch (e) { console.error('Saved chart error:', e); }
+    }, 30);
   }
 
   function fillTable(ch, labels, datasets, fields) {
@@ -374,26 +372,29 @@
       previewBtn.addEventListener('click', () => {
         if (!cbState.fields.length) { setFeedback('Selecione ao menos um campo para pré-visualizar.'); return; }
 
-        /* Mostrar wrap antes de medir o canvas */
+        /* Mostrar o wrapper */
         const wrap = document.getElementById('cbPreviewWrap');
         if (wrap) wrap.classList.remove('hidden');
 
-        /* Destruir instância anterior */
-        if (cbPreviewInstance) { cbPreviewInstance.destroy(); cbPreviewInstance = null; }
+        /* Destruir instância anterior via API oficial */
+        if (cbPreviewInstance) { try { cbPreviewInstance.destroy(); } catch {} cbPreviewInstance = null; }
 
-        /* Substituir canvas por elemento novo — evita estado residual do Chart.js */
-        let canvas = document.getElementById('cbCanvas');
-        if (canvas) {
-          const fresh = document.createElement('canvas');
-          fresh.id = 'cbCanvas';
-          canvas.replaceWith(fresh);
-          canvas = fresh;
-        }
-        if (!canvas || !window.Chart) return;
+        /* Resetar o canvas via innerHTML — forma mais confiável de limpar estado do Chart.js */
+        const outer = wrap ? wrap.querySelector('.chart-canvas-outer') : null;
+        if (!outer || !window.Chart) return;
+        outer.innerHTML = '<canvas id="cbCanvas"></canvas>';
 
         const { labels, datasets } = buildChartData(cbState);
         const options = buildChartOptions(cbState, false);
-        cbPreviewInstance = new Chart(canvas, { type: cbState.type, data: { labels, datasets }, options });
+
+        /* setTimeout garante que o browser fez reflow e o canvas tem dimensões reais */
+        setTimeout(() => {
+          const canvas = document.getElementById('cbCanvas');
+          if (!canvas) return;
+          try {
+            cbPreviewInstance = new Chart(canvas, { type: cbState.type, data: { labels, datasets }, options });
+          } catch (e) { console.error('Preview chart error:', e); }
+        }, 30);
       });
     }
 
