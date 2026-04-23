@@ -705,26 +705,22 @@ function renderImports() {
 
 $('importForm').addEventListener('submit', async e => {
   e.preventDefault(); fbClear();
-  const tenantId = $('importClient').value;
-  if (!tenantId) { fb('Selecione um cliente destino.', 'error'); return; }
+  const tenantId  = $('importClient').value;
   const fileInput = $('importFile');
-  const fileName  = fileInput.files[0]?.name || 'sem-arquivo';
-  const payload = {
-    tenant_id:           tenantId,
-    tipo:                'primeira_carga',
-    origem_arquivo_nome: fileName,
-    status:              'recebido',
-    observacoes:         $('importNotes').value.trim() || null,
-    registros_processados: 0,
-    registros_com_erro:    0,
-    payload_resumo:        {},
-  };
+  const file      = fileInput.files[0];
+  if (!tenantId) { fb('Selecione um cliente destino.', 'error'); return; }
+  if (!file)     { fb('Selecione o arquivo Excel preenchido.', 'error'); return; }
+
+  fb('Processando planilha...', 'info');
   try {
-    await window.QTQD_API_CLIENT.createImportacao(getToken(), payload);
-    fb('Importação registrada. Processamento acontece no backend.', 'success');
+    const res = await window.QTQD_API_CLIENT.processarExcel(getToken(), tenantId, file);
+    let msg = `✓ ${res.criadas} avaliação(ões) importada(s) com sucesso.`;
+    if (res.ignoradas) msg += ` ${res.ignoradas} já existiam (ignoradas).`;
+    if (res.erros?.length) msg += ` ⚠️ ${res.erros.length} erro(s).`;
+    fb(msg, res.erros?.length ? 'error' : 'success');
     $('importForm').reset();
     await loadImports();
-  } catch (err) { fb('Erro ao registrar importação: ' + err.message, 'error'); }
+  } catch (err) { fb('Erro ao processar: ' + err.message, 'error'); }
 });
 
 /* ═══════════════════════════════════════════════════════

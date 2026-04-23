@@ -212,5 +212,14 @@
         body: JSON.stringify(payload),
       });
     },
+    processarExcel(adminToken, tenantId, file) {
+      const form = new FormData();
+      form.append('arquivo', file);
+      return request(base(`/admin/importacoes/processar/${tenantId}`), {
+        method: 'POST',
+        headers: { 'x-admin-token': adminToken },
+        body: form,
+      });
+    },
   };
 })();
