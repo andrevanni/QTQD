@@ -29,27 +29,32 @@ def health() -> dict:
     except Exception:
         db_host = "parse-error"
         db_user = ""
-    # Try a quick DB connect using the same engine as the app
-    db_ok = False
-    db_err = ""
     db_pw_len = len(settings.db_password) if settings.db_password else 0
-    try:
-        from backend.app.db.session import engine
-        import sqlalchemy
-        with engine.connect() as conn:
-            conn.execute(sqlalchemy.text("SELECT 1"))
-        db_ok = True
-    except Exception as e:
-        db_err = str(e)[:300]
+    # Try each pooler region to find which one accepts the credentials
+    import psycopg
+    regions = ["us-east-1", "us-west-1", "eu-west-1", "eu-central-1", "ap-southeast-1", "sa-east-1"]
+    region_results = {}
+    pw = settings.db_password or ""
+    user = f"postgres.{db_user.split('.')[-1]}" if "." in db_user else db_user
+    for r in regions:
+        host = f"aws-0-{r}.pooler.supabase.com"
+        try:
+            conn = psycopg.connect(
+                host=host, port=6543, user=user, password=pw,
+                dbname="postgres", sslmode="require", connect_timeout=5
+            )
+            conn.close()
+            region_results[r] = "OK"
+        except Exception as e:
+            msg = str(e)[:80]
+            region_results[r] = msg
     return {
         "status": "ok",
         "env": settings.app_env,
         "token_is_default": settings.admin_token == "trocar-este-token",
-        "db_host": db_host,
         "db_user": db_user,
         "db_pw_len": db_pw_len,
-        "db_ok": db_ok,
-        "db_err": db_err,
+        "region_scan": region_results,
         "os_env_keys": sorted(keys),
     }
 
