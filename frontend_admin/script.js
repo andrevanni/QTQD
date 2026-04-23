@@ -305,7 +305,7 @@ function renderLicenses() {
 }
 
 function populateClientSelects() {
-  ['licenseClient', 'importClient', 'brandingClient', 'camposClient'].forEach(id => {
+  ['licenseClient', 'importClient', 'brandingClient', 'camposClient', 'templateClient'].forEach(id => {
     const sel = $(id);
     if (!sel) return;
     const cur = sel.value;
@@ -366,6 +366,55 @@ $('deleteLicenseButton')?.addEventListener('click', async () => {
     resetLicenseForm();
     await loadLicenses();
   } catch (err) { fb('Erro ao excluir: ' + err.message, 'error'); }
+});
+
+/* ═══════════════════════════════════════════════════════
+   TEMPLATE EXCEL
+   ═══════════════════════════════════════════════════════ */
+document.getElementById('downloadTemplateBtn')?.addEventListener('click', async () => {
+  const tenantId = $('templateClient')?.value;
+  const weeks    = parseInt($('templateWeeks')?.value || '8', 10);
+
+  // Carrega config do cliente se selecionado
+  let fieldLabels = Object.entries(defaultFields).map(([k, v]) => ({ key: k, label: v.label }));
+  if (tenantId) {
+    try {
+      const cfg = await window.QTQD_API_CLIENT.getComponentesConfig(getToken(), tenantId);
+      if (cfg && cfg.length) {
+        fieldLabels = cfg
+          .filter(c => c.visivel !== false)
+          .sort((a, b) => (a.ordem_exibicao || 999) - (b.ordem_exibicao || 999))
+          .map(c => ({ key: c.codigo_componente, label: c.label_customizado || defaultFields[c.codigo_componente]?.label || c.codigo_componente }));
+      }
+    } catch {}
+  }
+
+  // Monta cabeçalho: coluna A = "Campo" + semanas
+  const weekHeaders = Array.from({ length: weeks }, (_, i) => `Semana ${i + 1}`);
+  const header = ['Campo', ...weekHeaders];
+
+  // Primeira linha: Data (DD/MM/AAAA)
+  const rows = [
+    header,
+    ['Data (DD/MM/AAAA)', ...Array(weeks).fill('')],
+    ['Status (rascunho/fechada)', ...Array(weeks).fill('rascunho')],
+    ...fieldLabels.map(f => [f.label, ...Array(weeks).fill('')]),
+  ];
+
+  // Gera xlsx
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Largura das colunas
+  ws['!cols'] = [{ wch: 36 }, ...Array(weeks).fill({ wch: 18 })];
+
+  // Estilo do cabeçalho (negrito) — SheetJS CE não faz styles, mas a estrutura fica ok
+  XLSX.utils.book_append_sheet(wb, ws, 'QTQD Carga');
+
+  const clientNome = clients.find(c => c.id === tenantId)?.nome || 'padrao';
+  const fileName = `QTQD_template_${clientNome.replace(/\s+/g, '_')}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  fb(`Template "${fileName}" baixado com ${fieldLabels.length} campos e ${weeks} semanas.`, 'success');
 });
 
 /* ═══════════════════════════════════════════════════════

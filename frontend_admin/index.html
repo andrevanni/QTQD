@@ -166,13 +166,37 @@
 
         <!-- ── Primeira Carga ─────────────────────────────── -->
         <section id="importacao" class="admin-section hidden">
+          <div class="board" style="margin-bottom:16px">
+            <div class="board-header">
+              <div>
+                <p class="eyebrow">Template de Dados</p>
+                <h3>Baixar planilha modelo</h3>
+              </div>
+            </div>
+            <p class="board-copy">Baixe o modelo preenchível com os campos do cliente selecionado. Preencha uma coluna por semana e envie para importação.</p>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px">
+              <label class="field" style="flex:1;min-width:240px;margin:0">
+                <span>Cliente (para campos configurados)</span>
+                <select id="templateClient"><option value="">Campos padrão</option></select>
+              </label>
+              <label class="field" style="width:100px;margin:0">
+                <span>Semanas</span>
+                <input id="templateWeeks" type="number" value="8" min="1" max="52">
+              </label>
+              <button id="downloadTemplateBtn" class="primary-button" type="button" style="margin-top:18px">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="flex-shrink:0"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                Baixar Template .xlsx
+              </button>
+            </div>
+          </div>
+
           <div class="board two-column">
             <div class="form-panel">
-              <div class="board-header"><div><p class="eyebrow">Primeira carga</p><h3>Importação inicial Excel</h3></div></div>
+              <div class="board-header"><div><p class="eyebrow">Primeira carga</p><h3>Registrar importação</h3></div></div>
               <form id="importForm" class="stack-form">
                 <label class="field"><span>Cliente destino</span><select id="importClient"><option value="">Selecione um cliente</option></select></label>
-                <label class="field"><span>Arquivo da base inicial</span><input id="importFile" type="file" accept=".xlsx,.xls,.csv"></label>
-                <label class="field"><span>Observações</span><textarea id="importNotes" rows="4" placeholder="Ex.: primeira carga histórica do cliente"></textarea></label>
+                <label class="field"><span>Arquivo preenchido (.xlsx ou .csv)</span><input id="importFile" type="file" accept=".xlsx,.xls,.csv"></label>
+                <label class="field"><span>Observações</span><textarea id="importNotes" rows="3" placeholder="Ex.: primeira carga histórica do cliente"></textarea></label>
                 <div class="hero-actions"><button class="primary-button" type="submit">Registrar importação</button></div>
               </form>
             </div>
@@ -307,6 +331,7 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
     <script src="../shared/app_config.js"></script>
