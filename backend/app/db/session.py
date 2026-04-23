@@ -8,11 +8,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from backend.app.core.config import settings
 
 
-def _build_engine_url() -> str | URL:
-    # If DB_PASSWORD is set separately, avoid URL-encoding issues with special chars
+def _build_engine_url() -> tuple[str | URL, dict]:
+    # Supabase Transaction Pooler requires SSL
+    connect_args: dict = {"sslmode": "require"}
     if settings.db_password:
         parsed = urlparse(settings.database_url)
-        return URL.create(
+        url = URL.create(
             drivername=parsed.scheme or "postgresql+psycopg",
             username=parsed.username,
             password=settings.db_password,
@@ -20,10 +21,12 @@ def _build_engine_url() -> str | URL:
             port=parsed.port,
             database=(parsed.path or "/postgres").lstrip("/"),
         )
-    return settings.database_url
+        return url, connect_args
+    return settings.database_url, connect_args
 
 
-engine = create_engine(_build_engine_url(), future=True, pool_pre_ping=True)
+_url, _connect_args = _build_engine_url()
+engine = create_engine(_url, future=True, pool_pre_ping=True, connect_args=_connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
