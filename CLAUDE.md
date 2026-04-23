@@ -8,7 +8,8 @@ Compara **QT (Quanto Tenho)** com **QD (Quanto Devo)** e gera indicadores de sa�
 **Design de referência:** Comercial_A3 — mesma linguagem visual (sidebar escura, azul #2563eb, Manrope/Space Grotesk)
 **Produção:** https://qtqd-vt2a.vercel.app
 **Repositório:** https://github.com/andrevanni/QTQD
-**Supabase:** (definir project ref)
+**Supabase project ref:** `ludbgghdknwfzcrqfdge`
+**Supabase URL:** `https://ludbgghdknwfzcrqfdge.supabase.co`
 
 ---
 
@@ -16,7 +17,7 @@ Compara **QT (Quanto Tenho)** com **QD (Quanto Devo)** e gera indicadores de sa�
 
 - **Frontend:** HTML + CSS + JavaScript puro (sem framework)
 - **Backend:** FastAPI (Python), publicado via `@vercel/python`
-- **Banco:** Supabase (PostgreSQL multi-tenant)
+- **Banco:** Supabase (PostgreSQL multi-tenant) — acesso via Supabase Python SDK (HTTPS/REST)
 - **Deploy:** Vercel — auto-deploy via `git push origin main`
 
 ---
@@ -40,6 +41,7 @@ Compara **QT (Quanto Tenho)** com **QD (Quanto Devo)** e gera indicadores de sa�
 | `/admin/(.*)` | `frontend_admin/$1` |
 | `/shared/(.*)` | `shared/$1` |
 | `/api/(.*)` | `api/index.py` |
+| `/health` | `api/index.py` |
 | `/` | `validar_fronts.html` |
 
 ---
@@ -52,6 +54,7 @@ QTQD/
     index.html
     styles.css
     script.js
+    chart_builder.js      Gerador de gráficos customizados
     assets/logo_alta.jpg
     data/qtqd_seed.js
   frontend_admin/         Painel administrativo
@@ -61,12 +64,162 @@ QTQD/
   shared/                 Recursos compartilhados
     app_config.js         Configuração da API (modo: simulation/api)
     api_client.js         Cliente HTTP para o backend
+  backend/app/
+    core/
+      config.py           Settings via pydantic-settings
+      auth.py             Validação JWT Supabase (JWKS/ES256) + resolução de tenant_id
+      admin_auth.py       Validação do X-Admin-Token
+    db/
+      client.py           Supabase SDK client (get_supabase())
+    api/
+      router.py           Agrega todos os routers em /api/v1
+      v1/
+        avaliacoes.py
+        cliente_config.py
+        admin_clientes.py
+        admin_config.py
+    schemas/
+    services/
+      calculos_qtqd.py
   api/
-    index.py              FastAPI app
-  docs/                   Documentação
+    index.py              Entry point Vercel
   vercel.json
   requirements.txt
 ```
+
+---
+
+## Vercel — Configuração de produção
+
+**Projeto de produção:** `qtqd-vt2a` (ID: `prj_59oqSmERo1jp5hn7RwcaVBuRf9Hn`)
+> Não confundir com o projeto `qtqd` — esse é outro projeto diferente.
+
+### Variáveis de ambiente no Vercel (já configuradas)
+
+| Variável | Descrição |
+|----------|-----------|
+| `SUPABASE_URL` | `https://ludbgghdknwfzcrqfdge.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave JWT legacy do Supabase (começa com `eyJ...`) |
+| `ADMIN_TOKEN` | Token do painel admin |
+| `CORS_ORIGINS` | Origens permitidas |
+| `DB_PASSWORD` | Senha do banco (mantida por compatibilidade, não usada com SDK) |
+
+### Como atualizar variáveis de ambiente via API (quando necessário)
+
+```powershell
+$token = "<vercel_token_em_auth.json>"  # %APPDATA%\com.vercel.cli\Data\auth.json
+$headers = @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" }
+$envs = Invoke-RestMethod -Uri "https://api.vercel.com/v9/projects/prj_59oqSmERo1jp5hn7RwcaVBuRf9Hn/env" -Headers $headers
+```
+
+---
+
+## Backend — FastAPI + Supabase SDK
+
+### Stack atual
+- **FastAPI** + **Supabase Python SDK** (`supabase==2.10.0`) — acesso ao banco via HTTPS/REST
+- **PyJWT[crypto]** para validação de tokens JWT do Supabase Auth (ES256)
+- Deploy via `@vercel/python` — entry point: `api/index.py` → importa `backend.app.main:app`
+
+### Por que Supabase SDK e não SQLAlchemy/psycopg?
+
+A conexão TCP direta ao PostgreSQL do Supabase **não funciona no Vercel Lambda** por dois motivos:
+1. A conexão direta (`db.PROJECT.supabase.co:5432`) é **IPv6 only** — Vercel Lambda não suporta IPv6
+2. O Transaction Pooler (`aws-0-*.pooler.supabase.com:6543`) retorna "Tenant or user not found" — problema de autenticação não resolvível sem acesso direto à config do PgBouncer
+
+**Solução definitiva:** usar o Supabase Python SDK (`supabase-py`) que conecta via **HTTPS** ao PostgREST — funciona sempre no Vercel, sem problemas de rede.
+
+### Autenticação — dois níveis
+
+| Nível | Como funciona | Endpoints |
+|-------|---------------|-----------|
+| **Cliente** | `Authorization: Bearer <supabase_jwt>` | `/api/v1/avaliacoes/*`, `/api/v1/me/*` |
+| **Admin** | `X-Admin-Token: <admin_token>` | `/api/v1/admin/*` |
+
+O JWT do cliente é validado via **JWKS** (`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`), suportando ES256 (ECC P-256) e HS256 (legado). O `sub` do JWT resolve o `tenant_id` via tabela `tenant_users`.
+
+### Endpoints disponíveis
+
+**Cliente (JWT):**
+- `GET  /api/v1/avaliacoes` — lista avaliações do tenant
+- `POST /api/v1/avaliacoes` — cria avaliação (status 201)
+- `GET  /api/v1/avaliacoes/{id}` — obtém avaliação
+- `PATCH /api/v1/avaliacoes/{id}` — atualiza avaliação
+- `POST /api/v1/avaliacoes/{id}/fechar` — fecha avaliação
+- `DELETE /api/v1/avaliacoes/{id}` — exclui avaliação
+- `GET /api/v1/me/branding` — branding do tenant
+- `GET /api/v1/me/componentes-config` — config de campos do tenant
+
+**Admin (X-Admin-Token):**
+- `GET/POST /api/v1/admin/clientes` — gestão de tenants
+- `PATCH /api/v1/admin/clientes/{id}` — atualiza tenant
+- `GET/POST /api/v1/admin/licencas` — vigências
+- `GET/PUT /api/v1/admin/branding/{tenant_id}` — branding por tenant
+- `GET/PUT /api/v1/admin/componentes-config/{tenant_id}` — config de campos
+- `GET/POST /api/v1/admin/importacoes` — importações
+
+**Saúde:**
+- `GET /health` — retorna `supabase_ok: true` se a conexão estiver OK
+
+### Supabase SDK — padrões de uso
+
+```python
+from backend.app.db.client import get_supabase
+
+sb = get_supabase()
+
+# SELECT
+result = sb.table("tenants").select("*").order("created_at", desc=True).execute()
+rows = result.data  # lista de dicts
+
+# INSERT (retorna o registro criado)
+result = sb.table("tenants").insert(data_dict).execute()
+row = result.data[0]
+
+# UPDATE
+result = sb.table("tenants").update(data_dict).eq("id", str(tenant_id)).execute()
+
+# UPSERT (insert ou update por conflict)
+result = sb.table("tenant_branding").upsert(data, on_conflict="tenant_id").execute()
+
+# DELETE
+result = sb.table("avaliacoes_semanais").delete().eq("id", str(id)).eq("tenant_id", str(tid)).execute()
+```
+
+**Regras importantes:**
+- UUIDs devem ser passados como `str()` — PostgREST não aceita objetos UUID nativos
+- Datas devem ser passadas como `str()` — ex: `str(payload.inicio_vigencia)`
+- JSONB (ex: campo `valores`) vem do banco já como `dict` Python — não precisa de `json.loads()`
+- Ao escrever JSONB, passe um `dict` — não passe JSON string
+- `updated_at` não atualiza automaticamente (sem trigger) — incluir `"updated_at": datetime.now(timezone.utc).isoformat()` em todo UPDATE/UPSERT
+
+### Modelo de dados no Supabase
+
+```
+tenants                   → um por cliente (farmácia)
+tenant_users              → vínculo usuário Supabase Auth ↔ tenant
+tenant_branding           → logo, cores, nome do portal
+tenant_licencas           → vigência e limites de uso
+tenant_componentes_config → labels e visibilidade dos campos por tenant
+avaliacoes_semanais       → avaliação semanal (valores QT/QD como JSONB)
+avaliacao_analises        → análises manuais ou por IA
+tenant_importacoes        → log de importações de dados
+```
+
+Os indicadores financeiros são **calculados em tempo de leitura** pelo backend (`services/calculos_qtqd.py`), não são persistidos.
+
+---
+
+## Supabase — Como obter a chave de serviço correta
+
+O Supabase tem **dois formatos** de chave para a `service_role`. Apenas o formato JWT funciona com o PostgREST:
+
+| Aba no Dashboard | Formato | Funciona? |
+|-----------------|---------|-----------|
+| "Publishable and secret API keys" | `sb_secret_...` | ❌ NÃO funciona com PostgREST |
+| **"Legacy anon, service_role API keys"** | `eyJ...` (JWT) | ✅ Funciona |
+
+**Caminho:** Settings → API Keys → aba "Legacy anon, service_role API keys" → `service_role` → Reveal
 
 ---
 
@@ -172,118 +325,32 @@ QTQD/
 
 ---
 
----
-
-## Backend — FastAPI
-
-### Stack
-- **FastAPI** + **SQLAlchemy** (raw SQL via `text()`) + **psycopg** (driver PostgreSQL)
-- **PyJWT** para validação de tokens do Supabase Auth
-- Deploy via `@vercel/python` — entry point: `api/index.py` → importa `backend.app.main:app`
-
-### Variáveis de ambiente obrigatórias (Vercel + .env local)
-
-| Variável | Descrição |
-|----------|-----------|
-| `DATABASE_URL` | `postgresql+psycopg://...` (connection string do Supabase) |
-| `SUPABASE_URL` | URL do projeto Supabase (ex: `https://abc.supabase.co`) — usado para buscar o JWKS |
-| `ADMIN_TOKEN` | Token secreto para endpoints `/admin/*` |
-| `CORS_ORIGINS` | Origens permitidas, separadas por vírgula |
-| `VERCEL_PROJECT_URL` | URL do projeto na Vercel (incluída no CORS automaticamente) |
-
-### Autenticação — dois níveis
-
-| Nível | Como funciona | Endpoints |
-|-------|---------------|-----------|
-| **Cliente** | `Authorization: Bearer <supabase_jwt>` | `/api/v1/avaliacoes/*`, `/api/v1/me/*` |
-| **Admin** | `X-Admin-Token: <admin_token>` | `/api/v1/admin/*` |
-
-O JWT do cliente é validado via **JWKS** (`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`), suportando ES256 (chave ECC P-256 atual do Supabase) e HS256 (legado). O `sub` do JWT é usado para resolver o `tenant_id` na tabela `tenant_users`. Não é necessário configurar nenhum segredo JWT manualmente.
-
-### Endpoints disponíveis
-
-**Cliente (JWT):**
-- `GET  /api/v1/avaliacoes` — lista avaliações do tenant
-- `POST /api/v1/avaliacoes` — cria avaliação (status 201)
-- `GET  /api/v1/avaliacoes/{id}` — obtém avaliação
-- `PATCH /api/v1/avaliacoes/{id}` — atualiza avaliação
-- `POST /api/v1/avaliacoes/{id}/fechar` — fecha avaliação
-- `DELETE /api/v1/avaliacoes/{id}` — exclui avaliação
-- `GET /api/v1/me/branding` — branding do tenant do usuário
-- `GET /api/v1/me/componentes-config` — config de campos do tenant
-
-**Admin (X-Admin-Token):**
-- `GET/POST /api/v1/admin/clientes` — gestão de tenants
-- `PATCH /api/v1/admin/clientes/{id}` — atualiza tenant
-- `GET/POST /api/v1/admin/licencas` — vigências
-- `GET/PUT /api/v1/admin/branding/{tenant_id}` — branding por tenant
-- `GET/PUT /api/v1/admin/componentes-config/{tenant_id}` — config de campos
-- `GET/POST /api/v1/admin/importacoes` — importações
-
-**Saúde:**
-- `GET /health`
-
-### Estrutura do backend
-
-```
-backend/app/
-  core/
-    config.py       Settings via pydantic-settings (.env + variáveis de ambiente)
-    auth.py         Validação JWT Supabase + resolução de tenant_id
-    admin_auth.py   Validação do X-Admin-Token
-  db/
-    session.py      SQLAlchemy engine + get_db_session dependency
-  api/
-    router.py       Agrega todos os routers em /api/v1
-    v1/
-      avaliacoes.py       CRUD de avaliações semanais (JWT)
-      cliente_config.py   /me/branding e /me/componentes-config (JWT)
-      admin_clientes.py   CRUD de tenants (admin token)
-      admin_config.py     Licenças, branding, componentes, importações (admin token)
-  schemas/
-    avaliacoes.py   AvaliacaoValores, AvaliacaoCreateRequest, AvaliacaoResponse, IndicadorCalculado
-    admin_clientes.py
-    admin_config.py
-  services/
-    calculos_qtqd.py  Cálculos de QT, QD, saldo, índice, PME, ciclo, prazos
-api/
-  index.py          Entry point Vercel: from backend.app.main import app
-```
-
-### Modelo de dados no Supabase
-
-Os valores QT/QD de cada avaliação ficam em uma coluna `valores JSONB` na tabela `avaliacoes_semanais`. Os indicadores são **calculados pelo backend em tempo de leitura** (não são persistidos).
-
-```
-tenants              → um por cliente
-tenant_users         → vínculo usuário Supabase Auth ↔ tenant
-tenant_branding      → logo, cores, nome do portal
-tenant_licencas      → vigência e limites
-tenant_componentes_config → labels e visibilidade dos campos por tenant
-avaliacoes_semanais  → avaliação semanal (valores como JSONB)
-avaliacao_analises   → análises manuais ou por IA
-tenant_importacoes   → log de importações
-```
-
-### Como ativar o modo API no frontend
-
-1. Usuário faz login via Supabase Auth → obtém JWT
-2. Chama `QTQD_API_CLIENT.setJwt(token)` para armazenar o JWT
-3. `script.js` chama `isApiMode()` — retorna `true` se `mode === "api"` E `tenantId` está configurado E `QTQD_API_CLIENT` existe
-4. Todos os endpoints de avaliações passam o JWT automaticamente via `Authorization: Bearer`
-
----
-
 ## Histórico de problemas resolvidos
 
 1. **CSS não carregava na Vercel:** URL `/cliente` (sem trailing slash) fazia `href="styles.css"` resolver para `/styles.css` (404). **Fix:** `<base href="/cliente/">` no `<head>`.
 
 2. **Coluna fixa do painel não funcionava:** CSS Grid com `position: sticky` é instável. **Fix:** Usar `<table>` HTML real — `<th>`/`<td>` com `position: sticky; left: 0` funciona de forma garantida em todos os navegadores modernos.
 
+3. **Segundo gráfico não aparecia após `destroy()`:** Chart.js deixa estado residual no canvas. **Fix:** `outer.innerHTML = '<canvas id="cbCanvas"></canvas>'` + `setTimeout(30)` antes de criar nova instância.
+
+4. **JWT ES256 vs HS256:** Backend foi escrito para HS256, mas Supabase agora usa ECC P-256 (ES256). **Fix:** usar `PyJWKClient` do PyJWT para validação via JWKS automática.
+
+5. **Rota `/health` não encontrada:** Faltava no `vercel.json`. **Fix:** adicionar `{ "src": "/health", "dest": "/api/index.py" }`.
+
+6. **Variáveis de ambiente não chegavam ao Python:** Foram adicionadas ao projeto errado (`qtqd` em vez de `qtqd-vt2a`). **Fix:** usar Vercel REST API diretamente no projeto `prj_59oqSmERo1jp5hn7RwcaVBuRf9Hn`.
+
+7. **Conexão direta ao banco falhou (IPv6 + pooler):**
+   - Conexão direta `db.PROJECT.supabase.co:5432` é IPv6 only — Vercel Lambda não alcança
+   - Transaction Pooler `aws-0-*.pooler.supabase.com:6543` retorna "Tenant or user not found" (problema de auth no PgBouncer)
+   - **Fix definitivo:** substituir SQLAlchemy/psycopg pelo **Supabase Python SDK** — usa HTTPS, sempre funciona no Vercel
+
+8. **Chave de serviço inválida (`sb_secret_...`):** O Supabase tem duas abas de chaves. O PostgREST exige o formato JWT (`eyJ...`). **Fix:** usar a aba "Legacy anon, service_role API keys" no Supabase Dashboard → Settings → API Keys.
+
+9. **Campo email vazio causava erro 422:** O script enviava `""` para o campo `contato_email`, mas `EmailStr` do Pydantic não aceita string vazia. O `detail` do erro 422 é um array, aparecia como `[object Object]`. **Fix:** `$('clientEmail').value.trim() || null` no script.js, e `api_client.js` agora formata arrays de erro corretamente.
+
 ---
 
 ## Segurança (pendente)
 
-- Regenerar `SUPABASE_SERVICE_ROLE_KEY`
-- Trocar senha do banco Supabase
-- Revogar tokens GitHub usados durante implantação
+- Regenerar `SUPABASE_SERVICE_ROLE_KEY` após estabilização
+- Revogar tokens GitHub usados durante implantação inicial
