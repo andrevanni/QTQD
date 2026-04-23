@@ -255,43 +255,85 @@
 
     <!-- ═══ SEÇÃO: Gráficos ═══ -->
     <section id="graficos" class="section-view hidden">
+
+      <!-- Elementos ocultos para compatibilidade com script.js legado -->
+      <div style="display:none" aria-hidden="true">
+        <div id="chartFieldsGrid"></div>
+        <input id="chartRangeCount" type="number" value="12">
+        <span id="chartPanelTitle"></span>
+        <canvas id="financialTimelineChart"></canvas>
+      </div>
+
+      <!-- ── Gerador de gráficos ── -->
       <div class="card">
         <div class="card-header">
           <div>
-            <p class="eyebrow">Análise Visual</p>
-            <h2 class="card-title">Gráficos Financeiros</h2>
-            <p class="txt-muted txt-sm">Visão por semanas, meses e anos, com escolha de campos em valor ou percentual.</p>
+            <p class="eyebrow">Gerador de Gráficos</p>
+            <h2 class="card-title">Criar novo gráfico</h2>
+            <p class="txt-muted txt-sm">Selecione os campos na ordem desejada, configure o período e tipo, depois salve com um nome.</p>
           </div>
         </div>
 
-        <div class="chart-toolbar">
-          <div class="chip-group" role="group" aria-label="Período">
-            <button class="chip active" data-chart-range="weeks" type="button">Semanas</button>
-            <button class="chip" data-chart-range="months" type="button">Meses</button>
-            <button class="chip" data-chart-range="years" type="button">Anos</button>
+        <label class="field">
+          <span class="field-label">Nome do gráfico</span>
+          <input id="cbName" type="text" placeholder="Ex: Evolução do Saldo QT/QD — últimas 12 semanas" style="max-width:520px">
+        </label>
+
+        <div>
+          <p class="cb-section-label">Campos disponíveis <span class="txt-muted txt-xs">— clique para adicionar na ordem desejada</span></p>
+          <div id="cbFieldButtons" class="cb-field-buttons"></div>
+        </div>
+
+        <div>
+          <p class="cb-section-label">Selecionados: <span id="cbCount">0</span></p>
+          <div id="cbSelectedFields" class="cb-selected-fields"></div>
+        </div>
+
+        <div class="cb-opts">
+          <div>
+            <p class="field-label cb-opt-label">Período</p>
+            <div class="chip-group">
+              <button class="chip active" data-cb-range="weeks" type="button">Semanas</button>
+              <button class="chip" data-cb-range="months" type="button">Meses</button>
+              <button class="chip" data-cb-range="years" type="button">Anos</button>
+            </div>
           </div>
-          <label class="field compact">
-            <span class="field-label">Quantidade</span>
-            <input id="chartRangeCount" type="number" min="1" max="52" value="12">
+          <label class="field" style="max-width:88px">
+            <span class="field-label">Qtde</span>
+            <input id="cbCountInput" type="number" min="1" max="52" value="12">
           </label>
-          <div class="chip-group" role="group" aria-label="Modo">
-            <button class="chip active" data-chart-mode="value" type="button">Valor</button>
-            <button class="chip" data-chart-mode="percent" type="button">Percentual</button>
+          <div>
+            <p class="field-label cb-opt-label">Tipo</p>
+            <div class="chip-group">
+              <button class="chip active" data-cb-type="line" type="button">Linha</button>
+              <button class="chip" data-cb-type="bar" type="button">Barra</button>
+            </div>
+          </div>
+          <div>
+            <p class="field-label cb-opt-label">Escala</p>
+            <div class="chip-group">
+              <button class="chip active" data-cb-mode="value" type="button">Valor real</button>
+              <button class="chip" data-cb-mode="percent" type="button">% variação</button>
+            </div>
           </div>
         </div>
 
-        <div class="fields-picker">
-          <p class="eyebrow">Campos do gráfico</p>
-          <h3 class="metric-title">Selecione os indicadores</h3>
-          <div id="chartFieldsGrid" class="chart-fields-grid"></div>
+        <div class="form-actions">
+          <button id="cbPreview" class="btn btn-ghost" type="button">Pré-visualizar</button>
+          <button id="cbSave" class="btn" type="button">Salvar Gráfico</button>
+          <button id="cbClear" class="btn btn-ghost" type="button">Limpar</button>
         </div>
 
-        <div class="chart-card">
-          <p class="eyebrow">Evolução</p>
-          <h3 id="chartPanelTitle" class="metric-title">Índice QT/QD e Saldo QT/QD</h3>
-          <canvas id="financialTimelineChart"></canvas>
+        <div id="cbPreviewWrap" class="cb-preview-wrap hidden">
+          <p class="eyebrow" style="margin-bottom:8px">Pré-visualização</p>
+          <div class="chart-canvas-outer">
+            <canvas id="cbCanvas"></canvas>
+          </div>
         </div>
       </div>
+
+      <!-- Gráficos salvos -->
+      <div id="savedChartsContainer"></div>
     </section>
 
     <!-- ═══ SEÇÃO: Inspetor ═══ -->
@@ -412,9 +454,11 @@
 <script src="../shared/api_client.js"></script>
 <script src="data/qtqd_seed.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/simple-statistics@7.8.8/dist/simple-statistics.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script src="script.js"></script>
+<script src="chart_builder.js"></script>
 </body>
 </html>
