@@ -186,7 +186,7 @@ QTQD/
 | Variável | Descrição |
 |----------|-----------|
 | `DATABASE_URL` | `postgresql+psycopg://...` (connection string do Supabase) |
-| `SUPABASE_JWT_SECRET` | Supabase Dashboard → Settings → API → JWT Secret |
+| `SUPABASE_URL` | URL do projeto Supabase (ex: `https://abc.supabase.co`) — usado para buscar o JWKS |
 | `ADMIN_TOKEN` | Token secreto para endpoints `/admin/*` |
 | `CORS_ORIGINS` | Origens permitidas, separadas por vírgula |
 | `VERCEL_PROJECT_URL` | URL do projeto na Vercel (incluída no CORS automaticamente) |
@@ -198,7 +198,7 @@ QTQD/
 | **Cliente** | `Authorization: Bearer <supabase_jwt>` | `/api/v1/avaliacoes/*`, `/api/v1/me/*` |
 | **Admin** | `X-Admin-Token: <admin_token>` | `/api/v1/admin/*` |
 
-O JWT do cliente é validado com `SUPABASE_JWT_SECRET` (HS256). O `sub` do JWT é usado para resolver o `tenant_id` na tabela `tenant_users`.
+O JWT do cliente é validado via **JWKS** (`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`), suportando ES256 (chave ECC P-256 atual do Supabase) e HS256 (legado). O `sub` do JWT é usado para resolver o `tenant_id` na tabela `tenant_users`. Não é necessário configurar nenhum segredo JWT manualmente.
 
 ### Endpoints disponíveis
 

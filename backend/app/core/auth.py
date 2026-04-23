@@ -1,15 +1,15 @@
 """
-Autenticação via JWT do Supabase.
+Autenticação via JWT do Supabase — suporte a ECC (P-256 / ES256).
 
-Fluxo:
-  1. Frontend autentica o usuário no Supabase Auth e obtém um JWT.
-  2. Frontend envia o JWT no header: Authorization: Bearer <token>
-  3. Este módulo valida o JWT com SUPABASE_JWT_SECRET e extrai o user_id (sub).
-  4. O user_id é usado para resolver o tenant_id na tabela tenant_users.
+Usa o endpoint JWKS do Supabase para buscar a chave pública e validar
+tokens de forma automática, sem necessidade de configurar um segredo manualmente.
+
+Endpoint JWKS: {SUPABASE_URL}/auth/v1/.well-known/jwks.json
 """
 from uuid import UUID
 
 import jwt
+from jwt import PyJWKClient
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -17,37 +17,56 @@ from sqlalchemy.orm import Session
 from backend.app.core.config import settings
 from backend.app.db.session import get_db_session
 
+# Cliente JWKS — inicializado uma vez, faz cache das chaves automaticamente
+_jwks_client: PyJWKClient | None = None
+
+
+def _get_jwks_client() -> PyJWKClient:
+    global _jwks_client
+    if _jwks_client is None:
+        if not settings.supabase_url:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="SUPABASE_URL nao configurado no servidor.",
+            )
+        jwks_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+        _jwks_client = PyJWKClient(jwks_url, cache_jwk_set=True, lifespan=3600)
+    return _jwks_client
+
 
 def _verify_jwt(authorization: str | None = Header(default=None)) -> dict:
+    """Valida o JWT do Supabase Auth (ES256 ou HS256 legado)."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Header Authorization ausente ou mal formatado. Use: Bearer <token>",
+            detail="Header Authorization ausente. Use: Bearer <token>",
         )
     token = authorization[7:]
-    if not settings.supabase_jwt_secret:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="SUPABASE_JWT_SECRET nao configurado no servidor.",
-        )
     try:
+        client = _get_jwks_client()
+        signing_key = client.get_signing_key_from_jwt(token)
         return jwt.decode(
             token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
+            signing_key.key,
+            algorithms=["ES256", "RS256", "HS256"],
             audience="authenticated",
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expirado.")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token invalido.")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Falha na validacao do token: {e}",
+        )
 
 
 def get_current_tenant(
     payload: dict = Depends(_verify_jwt),
     db: Session = Depends(get_db_session),
 ) -> UUID:
-    """Retorna o tenant_id do usuário autenticado."""
+    """Resolve o tenant_id do usuário autenticado via JWT."""
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
