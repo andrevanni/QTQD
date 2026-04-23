@@ -182,6 +182,7 @@
               </div>
             </div>
             <p class="board-copy">Se um campo for desativado aqui, ele deixa de aparecer em todo o portal do Cliente, inclusive no lançamento de uma nova data.</p>
+            <label class="field" style="max-width:320px"><span>Cliente (opcional)</span><select id="camposClient"><option value="">Configuração local</option></select></label>
             <div id="fieldConfigList" class="field-config-list"></div>
             <div class="hero-actions">
               <button id="saveFieldConfigButton" class="primary-button" type="button">Salvar configuração</button>
@@ -200,6 +201,7 @@
                 </div>
               </div>
               <form id="brandingForm" class="stack-form">
+                <label class="field"><span>Cliente</span><select id="brandingClient"><option value="">Selecione um cliente</option></select></label>
                 <label class="field"><span>Nome exibido no portal</span><input id="brandingClientName" type="text" placeholder="Cliente Demonstração"></label>
                 <label class="field"><span>Logo do cliente</span><input id="brandingClientLogo" type="file" accept=".jpg,.jpeg,.png,.webp"></label>
                 <div class="hero-actions">
