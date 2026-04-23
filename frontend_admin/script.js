@@ -189,8 +189,8 @@ $('clientForm').addEventListener('submit', async e => {
     slug:           $('clientSlug').value.trim(),
     status:         $('clientStatus').value,
     plano:          $('clientPlan').value.trim(),
-    contato_nome:   $('clientContact').value.trim(),
-    contato_email:  $('clientEmail').value.trim(),
+    contato_nome:   $('clientContact').value.trim() || null,
+    contato_email:  $('clientEmail').value.trim() || null,
   };
   try {
     if (id) {

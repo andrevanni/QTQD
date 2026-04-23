@@ -39,7 +39,14 @@
     const res = await fetch(url, options);
     if (!res.ok) {
       let detail = `Erro HTTP ${res.status}`;
-      try { const body = await res.json(); detail = body.detail || detail; } catch {}
+      try {
+        const body = await res.json();
+        if (body.detail) {
+          detail = Array.isArray(body.detail)
+            ? body.detail.map(e => e.msg || JSON.stringify(e)).join('; ')
+            : String(body.detail);
+        }
+      } catch {}
       throw new Error(detail);
     }
     if (res.status === 204) return null;
