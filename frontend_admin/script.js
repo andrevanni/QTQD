@@ -48,21 +48,18 @@ const el = (tag, cls, html = '') => {
   return e;
 };
 
-/* ── Datas BR ────────────────────────────────────────── */
-function applyDateMask(input) {
-  input.addEventListener('input', e => {
-    let v = e.target.value.replace(/\D/g, '');
-    if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
-    if (v.length > 5) v = v.slice(0, 5) + '/' + v.slice(5, 9);
-    e.target.value = v;
-  });
-}
+/* ── Datas BR (flatpickr) ────────────────────────────── */
 function brToISO(br) {
   const p = (br || '').split('/');
   if (p.length !== 3 || p[2].length !== 4) return '';
   return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
 }
-document.querySelectorAll('input[data-date-br]').forEach(applyDateMask);
+if (typeof flatpickr !== 'undefined') {
+  flatpickr.localize(flatpickr.l10ns.pt);
+  document.querySelectorAll('input[data-date-br]').forEach(el => {
+    flatpickr(el, { dateFormat: 'd/m/Y', allowInput: true, locale: 'pt' });
+  });
+}
 
 /* ── Token ───────────────────────────────────────────── */
 function getToken()       { return localStorage.getItem(ADMIN_TOKEN_KEY) || ''; }
