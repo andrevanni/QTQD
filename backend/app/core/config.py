@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     supabase_url: str | None = None
     supabase_anon_key: str | None = None
     supabase_service_role_key: str | None = None
-    # JWT Secret: encontrado em Supabase Dashboard > Settings > API > JWT Secret
     supabase_jwt_secret: str | None = None
 
     # Token administrativo para endpoints de admin (X-Admin-Token header)
