@@ -263,9 +263,16 @@
   }
 
   function drawSaved(ch) {
-    const canvas = document.getElementById(`cc-${ch.id}`);
-    if (!canvas || !window.Chart) return;
-    if (savedInstances[ch.id]) { try { savedInstances[ch.id].destroy(); } catch {} }
+    if (!window.Chart) return;
+    if (savedInstances[ch.id]) { try { savedInstances[ch.id].destroy(); } catch {} delete savedInstances[ch.id]; }
+
+    /* Substituir canvas para evitar estado residual do Chart.js */
+    let canvas = document.getElementById(`cc-${ch.id}`);
+    if (!canvas) return;
+    const fresh = document.createElement('canvas');
+    fresh.id = `cc-${ch.id}`;
+    canvas.replaceWith(fresh);
+    canvas = fresh;
 
     const { labels, datasets, fields } = buildChartData(ch);
     const options = buildChartOptions(ch, ch.showLabels || false);
@@ -366,11 +373,24 @@
     if (previewBtn) {
       previewBtn.addEventListener('click', () => {
         if (!cbState.fields.length) { setFeedback('Selecione ao menos um campo para pré-visualizar.'); return; }
+
+        /* Mostrar wrap antes de medir o canvas */
         const wrap = document.getElementById('cbPreviewWrap');
         if (wrap) wrap.classList.remove('hidden');
+
+        /* Destruir instância anterior */
         if (cbPreviewInstance) { cbPreviewInstance.destroy(); cbPreviewInstance = null; }
-        const canvas = document.getElementById('cbCanvas');
+
+        /* Substituir canvas por elemento novo — evita estado residual do Chart.js */
+        let canvas = document.getElementById('cbCanvas');
+        if (canvas) {
+          const fresh = document.createElement('canvas');
+          fresh.id = 'cbCanvas';
+          canvas.replaceWith(fresh);
+          canvas = fresh;
+        }
         if (!canvas || !window.Chart) return;
+
         const { labels, datasets } = buildChartData(cbState);
         const options = buildChartOptions(cbState, false);
         cbPreviewInstance = new Chart(canvas, { type: cbState.type, data: { labels, datasets }, options });
