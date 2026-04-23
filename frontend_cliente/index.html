@@ -1,412 +1,420 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <base href="/cliente/">
-    <title>QTQD - Área Cliente</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar" id="sidebar">
-        <div class="brand">
-          <img id="sidebarLogo" class="brand-logo" src="assets/logo_alta.jpg" alt="Service Farma">
-          <div class="brand-text">
-            <strong>QTQD</strong>
-            <span>Portal do Cliente</span>
-          </div>
-        </div>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/cliente/">
+  <title>QTQD - Portal do Cliente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
-        <div class="user-card">
-          <div class="client-logo-shell">
-            <img id="clientSidebarLogo" class="client-logo" alt="Logo do cliente">
-            <div id="clientSidebarFallback" class="client-logo-fallback">CD</div>
-          </div>
-          <div class="user-card-info">
-            <strong id="clientSidebarName">Cliente Demonstração</strong>
-            <span class="muted">Ambiente operacional</span>
-          </div>
-        </div>
+<div class="layout">
 
-        <section class="sidebar-card">
-          <p class="eyebrow">Cliente</p>
-          <h1>Avaliação Financeira Semanal</h1>
-        </section>
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
 
-        <button class="sidebar-toggle-btn" id="sidebarMiniToggle" type="button" aria-label="Recolher menu">
-          <span class="sidebar-toggle-icon-collapse">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h1a1 1 0 010 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
-          </span>
-          <span class="sidebar-toggle-icon-expand">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
-          </span>
-          <span class="nav-label">Recolher menu</span>
-        </button>
-
-        <nav class="sidebar-nav">
-          <button class="nav-link active" data-section="cadastro" type="button">
-            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></span>
-            <span class="nav-label">Lançamentos</span>
-          </button>
-          <button class="nav-link" data-section="painel" type="button">
-            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clip-rule="evenodd"/></svg></span>
-            <span class="nav-label">Painel de Avaliação</span>
-          </button>
-          <button class="nav-link" data-section="graficos" type="button">
-            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg></span>
-            <span class="nav-label">Gráficos</span>
-          </button>
-          <button class="nav-link" data-section="inspetor" type="button">
-            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg></span>
-            <span class="nav-label">Inspetor IA</span>
-          </button>
-          <button class="nav-link" data-section="historico" type="button">
-            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg></span>
-            <span class="nav-label">Histórico</span>
-          </button>
-        </nav>
-
-        <div class="sidebar-powered">
-          <div class="footer-logo-shell sidebar-powered-logo">
-            <img src="assets/logo_alta.jpg" alt="Service Farma">
-          </div>
-          <strong>Powered by Service Farma</strong>
-          <span>Grupo A3 - Direitos Reservados</span>
-        </div>
-      </aside>
-
-      <button id="sidebarRevealButton" class="sidebar-reveal" type="button" aria-label="Abrir menu">
-        Menu
+    <div class="sb-header">
+      <div class="sb-brand">
+        <img id="sidebarLogo" src="assets/logo_alta.jpg" alt="Service Farma" class="sb-logo">
+        <span class="sb-title">QTQD</span>
+      </div>
+      <button id="sidebarMiniToggle" class="sb-toggle" type="button" aria-label="Recolher menu">
+        <svg class="icon-collapse" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+          <path fill-rule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+          <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h1a1 1 0 010 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <svg class="icon-expand" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+          <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+        </svg>
       </button>
-
-      <main class="content">
-        <div class="topbar">
-          <div class="topbar-actions">
-            <div class="theme-toggle" role="group" aria-label="Tema visual">
-              <button class="theme-chip" id="themeLightButton" type="button" data-theme-choice="light">Claro</button>
-              <button class="theme-chip active" id="themeDarkButton" type="button" data-theme-choice="dark">Escuro</button>
-            </div>
-
-            <div class="top-client-card">
-              <div class="client-logo-shell small">
-                <img id="clientTopLogo" class="client-logo" alt="Logo do cliente">
-                <div id="clientTopFallback" class="client-logo-fallback">CD</div>
-              </div>
-              <div class="top-client-copy">
-                <strong id="clientTopName">Cliente Demonstração</strong>
-                <span class="muted">Cliente ativo</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <header class="hero">
-          <div>
-            <p class="eyebrow">Portal Financeiro</p>
-            <h2>Avaliação Semanal</h2>
-            <p id="connectionModeLabel" class="muted"></p>
-          </div>
-          <div class="hero-actions">
-            <button id="newEntryButton" class="btn" type="button">Nova Semana</button>
-            <button id="seedDemoButton" class="btn btn-outline" type="button">Recarregar Base</button>
-            <button id="openGraphsButton" class="btn btn-outline" type="button">Gráficos</button>
-            <button id="openInspectorButton" class="btn btn-secondary" type="button">Inspetor IA</button>
-          </div>
-        </header>
-
-        <div id="feedbackBox" class="feedback hidden"></div>
-
-        <section id="cadastro" class="section-view">
-          <div class="panel">
-            <div class="form-card form-card-full">
-              <div class="section-header">
-                <div>
-                  <p class="eyebrow">Entrada de Dados</p>
-                  <h3>Preenchimento semanal</h3>
-                </div>
-                <span id="formModeBadge" class="badge">Nova semana</span>
-              </div>
-
-              <form id="weeklyForm" class="weekly-form">
-                <input id="recordId" type="hidden">
-                <div class="field-grid">
-                  <label class="field">
-                    <span>Data da semana</span>
-                    <input id="weekDate" type="date" required>
-                  </label>
-                  <label class="field">
-                    <span>Status</span>
-                    <select id="recordStatus">
-                      <option value="rascunho">Rascunho</option>
-                      <option value="fechada">Fechada</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div class="metric-section">
-                  <div class="section-header tight">
-                    <div>
-                      <p class="eyebrow">QT</p>
-                      <h4>Quanto Tenho</h4>
-                    </div>
-                  </div>
-                  <div class="field-grid three">
-                    <label class="field"><span>Saldo bancário</span><input id="saldo_bancario" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Contas a receber</span><input id="contas_receber" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Cartões</span><input id="cartoes" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Convênios</span><input id="convenios" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Cheques</span><input id="cheques" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Trade marketing</span><input id="trade_marketing" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Outros QT</span><input id="outros_qt" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Estoque custo</span><input id="estoque_custo" type="number" step="0.01" min="0"></label>
-                  </div>
-                </div>
-
-                <div class="metric-section">
-                  <div class="section-header tight">
-                    <div>
-                      <p class="eyebrow">QD</p>
-                      <h4>Quanto Devo</h4>
-                    </div>
-                  </div>
-                  <div class="field-grid three">
-                    <label class="field"><span>Contas a pagar</span><input id="contas_pagar" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Fornecedores</span><input id="fornecedores" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Investimentos assumidos</span><input id="investimentos_assumidos" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Outras despesas assumidas</span><input id="outras_despesas_assumidas" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Dívidas</span><input id="dividas" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Financiamentos</span><input id="financiamentos" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Tributos atrasados</span><input id="tributos_atrasados" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Ações e processos</span><input id="acoes_processos" type="number" step="0.01" min="0"></label>
-                  </div>
-                </div>
-
-                <div class="metric-section">
-                  <div class="section-header tight">
-                    <div>
-                      <p class="eyebrow">Resultados</p>
-                      <h4>Calculo automatico</h4>
-                    </div>
-                  </div>
-                  <div id="formCalculatedKpis" class="kpi-grid"></div>
-                </div>
-
-                <div class="metric-section">
-                  <div class="section-header tight">
-                    <div>
-                      <p class="eyebrow">Informações Complementares</p>
-                      <h4>Operacional</h4>
-                    </div>
-                  </div>
-                  <div class="field-grid three">
-                    <label class="field"><span>Faturamento previsto no mês</span><input id="faturamento_previsto_mes" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Compras no mês</span><input id="compras_mes" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Entrada no mês</span><input id="entrada_mes" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Venda cupom no mês</span><input id="venda_cupom_mes" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Venda custo no mês</span><input id="venda_custo_mes" type="number" step="0.01" min="0"></label>
-                    <label class="field"><span>Lucro líquido no mês</span><input id="lucro_liquido_mes" type="number" step="0.01" min="0"></label>
-                  </div>
-                </div>
-
-                <div class="form-actions">
-                  <button class="btn" type="submit">Salvar dados</button>
-                  <button id="evaluateButton" class="btn btn-secondary" type="button">Avaliar dados</button>
-                  <button id="resetFormButton" class="btn btn-ghost" type="button">Limpar</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </section>
-
-        <section id="painel" class="section-view hidden">
-          <div class="panel">
-            <div class="panel-topbar">
-              <button id="toggleFocusButton" class="btn btn-outline" type="button">Maximizar</button>
-              <button id="backFromPanelButton" class="btn btn-outline" type="button">Voltar</button>
-            </div>
-            <div class="section-header">
-              <div>
-                <h3>Painel de Avaliação</h3>
-              </div>
-            </div>
-            <div class="matrix-shell">
-              <div id="matrixTableWrap" class="matrix-wrap"></div>
-            </div>
-          </div>
-        </section>
-
-        <section id="graficos" class="section-view hidden">
-          <div class="panel">
-            <div class="section-header">
-              <div>
-                <p class="eyebrow">Analise visual</p>
-                <h3>Gráficos financeiros</h3>
-                <p class="muted">Visão por semanas, meses e anos, com escolha de campos em valor ou percentual.</p>
-              </div>
-            </div>
-
-            <div class="charts-toolbar">
-              <div class="chart-period-switch" role="group" aria-label="Período dos gráficos">
-                <button class="chart-range-chip active" type="button" data-chart-range="weeks">Semanas</button>
-                <button class="chart-range-chip" type="button" data-chart-range="months">Meses</button>
-                <button class="chart-range-chip" type="button" data-chart-range="years">Anos</button>
-              </div>
-
-              <label class="field compact">
-                <span>Quantidade</span>
-                <input id="chartRangeCount" type="number" min="1" max="52" value="12">
-              </label>
-
-              <div class="chart-period-switch" role="group" aria-label="Modo dos valores">
-                <button class="chart-mode-chip active" type="button" data-chart-mode="value">Valor</button>
-                <button class="chart-mode-chip" type="button" data-chart-mode="percent">Percentual</button>
-              </div>
-            </div>
-
-            <div class="chart-fields-card">
-              <div class="section-header tight">
-                <div>
-                  <p class="eyebrow">Campos do grafico</p>
-                  <h4>Selecione os indicadores</h4>
-                </div>
-              </div>
-              <div id="chartFieldsGrid" class="chart-fields-grid"></div>
-            </div>
-
-            <article class="inspector-card chart-card chart-main-card">
-              <p class="eyebrow">Evolucao</p>
-              <h4 id="chartPanelTitle">Indice QT/QD e Saldo QT/QD</h4>
-              <canvas id="financialTimelineChart"></canvas>
-            </article>
-          </div>
-        </section>
-
-        <section id="inspetor" class="section-view hidden">
-          <div class="panel inspector-panel">
-            <div class="section-header">
-              <div>
-                <p class="eyebrow">Analise Profunda</p>
-                <h3>Inspetor IA Financeiro</h3>
-                <p class="muted">Leitura executiva do histórico semanal com tendências, riscos, eficiência operacional e recomendações práticas.</p>
-              </div>
-              <div class="hero-actions">
-                <button id="refreshInspectorButton" class="btn btn-outline" type="button">Atualizar analise</button>
-                <button id="downloadPdfButton" class="btn" type="button">Gerar PDF executivo</button>
-              </div>
-            </div>
-
-            <div id="inspectorHero" class="inspector-hero-grid"></div>
-            <article class="inspector-card">
-              <p class="eyebrow">Semaforo Executivo</p>
-              <h4>Estado financeiro consolidado</h4>
-              <div id="inspectorSemaphore" class="semaphore-grid"></div>
-            </article>
-            <div class="inspector-grid">
-              <article class="inspector-card">
-                <p class="eyebrow">Blocos de analise</p>
-                <h4>QT, QD, capital de giro e solvencia</h4>
-                <div id="inspectorBlocks" class="analysis-list"></div>
-              </article>
-              <article class="inspector-card">
-                <p class="eyebrow">Conclusoes por periodo</p>
-                <h4>Leitura comparativa</h4>
-                <div id="inspectorPeriods" class="analysis-list"></div>
-              </article>
-            </div>
-            <div class="inspector-grid charts">
-              <article class="inspector-card chart-card">
-                <p class="eyebrow">Capital de Giro</p>
-                <h4>Evolucao do ciclo e prazos medios</h4>
-                <canvas id="liquidityChart"></canvas>
-              </article>
-              <article class="inspector-card chart-card">
-                <p class="eyebrow">Estrutura</p>
-                <h4>QT, QD e saldo financeiro</h4>
-                <canvas id="efficiencyChart"></canvas>
-              </article>
-            </div>
-            <div class="inspector-grid">
-              <article class="inspector-card">
-                <p class="eyebrow">Diagnostico</p>
-                <h4>Leitura executiva</h4>
-                <div id="inspectorNarrative" class="analysis-copy"></div>
-              </article>
-              <article class="inspector-card">
-                <p class="eyebrow">Tendencias</p>
-                <h4>Variações e consistência</h4>
-                <div id="inspectorTrendTable" class="table-wrap"></div>
-              </article>
-            </div>
-            <div class="inspector-grid">
-              <article class="inspector-card">
-                <p class="eyebrow">Riscos</p>
-                <h4>Pontos de atencao</h4>
-                <div id="inspectorRisks" class="analysis-list"></div>
-              </article>
-              <article class="inspector-card">
-                <p class="eyebrow">Ações</p>
-                <h4>Plano recomendado</h4>
-                <div id="inspectorActions" class="analysis-list"></div>
-              </article>
-            </div>
-            <article class="inspector-card">
-              <p class="eyebrow">Base Analitica</p>
-              <h4>Tabela executiva do relatorio</h4>
-              <div id="inspectorDataTable" class="table-wrap"></div>
-            </article>
-          </div>
-        </section>
-
-        <section id="historico" class="section-view hidden">
-          <div class="panel">
-            <div class="section-header">
-              <div>
-                <p class="eyebrow">Histórico</p>
-                <h3>Semanas registradas</h3>
-              </div>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Data</th>
-                    <th>Status</th>
-                    <th>QT</th>
-                    <th>QD</th>
-                    <th>Saldo</th>
-                    <th>Indice</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="historyTable"></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <div class="page-footer-brand">
-          <div class="footer-logo-shell">
-            <img id="footerLogo" src="assets/logo_alta.jpg" alt="Service Farma">
-          </div>
-          <div class="copyright">
-            <strong>Powered by Service Farma</strong>
-            <span>Grupo A3 - Direitos Reservados</span>
-          </div>
-        </div>
-      </main>
     </div>
 
-    <script src="../shared/app_config.js"></script>
-    <script src="../shared/api_client.js"></script>
-    <script src="data/qtqd_seed.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/simple-statistics@7.8.8/dist/simple-statistics.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
-    <script src="script.js"></script>
-  </body>
+    <div class="sb-user">
+      <div class="client-logo-shell">
+        <img id="clientSidebarLogo" class="client-logo" alt="Logo do cliente">
+        <span id="clientSidebarFallback" class="client-fallback">CD</span>
+      </div>
+      <div class="sb-user-info">
+        <strong id="clientSidebarName">Cliente Demonstração</strong>
+        <span class="txt-muted txt-xs">Área do cliente</span>
+      </div>
+    </div>
+
+    <nav class="sb-nav">
+      <p class="nav-group-label">AVALIAÇÃO</p>
+
+      <button class="nav-link active" data-section="cadastro" type="button">
+        <span class="nav-icon">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        </span>
+        <span class="nav-label">Lançamentos</span>
+      </button>
+
+      <button class="nav-link" data-section="painel" type="button">
+        <span class="nav-icon">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clip-rule="evenodd"/></svg>
+        </span>
+        <span class="nav-label">Painel de Avaliação</span>
+      </button>
+
+      <button class="nav-link" data-section="graficos" type="button">
+        <span class="nav-icon">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+        </span>
+        <span class="nav-label">Gráficos</span>
+      </button>
+
+      <button class="nav-link" data-section="inspetor" type="button">
+        <span class="nav-icon">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+        </span>
+        <span class="nav-label">Inspetor IA</span>
+      </button>
+
+      <button class="nav-link" data-section="historico" type="button">
+        <span class="nav-icon">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+        </span>
+        <span class="nav-label">Histórico</span>
+      </button>
+    </nav>
+
+    <div class="sb-footer">
+      <div class="sb-footer-logo">
+        <img id="footerLogo" src="assets/logo_alta.jpg" alt="Service Farma">
+      </div>
+      <div class="sb-footer-info">
+        <strong>Powered by Service Farma</strong>
+        <span class="txt-muted txt-xs">Grupo A3 · Direitos Reservados</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Mobile reveal -->
+  <button id="sidebarRevealButton" class="sidebar-reveal" type="button" aria-label="Abrir menu">
+    <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+  </button>
+
+  <!-- ═══ CONTEÚDO PRINCIPAL ═══ -->
+  <main class="content">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <span id="connectionModeLabel" class="txt-muted txt-xs"></span>
+      <div class="topbar-right">
+        <div class="client-chip">
+          <div class="client-logo-shell sm">
+            <img id="clientTopLogo" class="client-logo" alt="Logo do cliente">
+            <span id="clientTopFallback" class="client-fallback">CD</span>
+          </div>
+          <span id="clientTopName" class="txt-sm txt-bold">Cliente Demonstração</span>
+        </div>
+        <div class="theme-toggle" role="group" aria-label="Tema">
+          <button class="theme-btn" data-theme-choice="light" type="button">Claro</button>
+          <button class="theme-btn active" data-theme-choice="dark" type="button">Escuro</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="page-hero">
+      <div>
+        <p class="eyebrow">Portal Financeiro</p>
+        <h1 class="page-title">Avaliação Semanal</h1>
+      </div>
+      <div class="hero-actions">
+        <button id="newEntryButton" class="btn" type="button">Nova Semana</button>
+        <button id="seedDemoButton" class="btn btn-ghost" type="button">Recarregar Base</button>
+        <button id="openGraphsButton" class="btn btn-ghost" type="button">Gráficos</button>
+        <button id="openInspectorButton" class="btn btn-outline" type="button">Inspetor IA</button>
+      </div>
+    </div>
+
+    <!-- Feedback -->
+    <div id="feedbackBox" class="feedback hidden"></div>
+
+    <!-- ═══ SEÇÃO: Lançamentos ═══ -->
+    <section id="cadastro" class="section-view">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Entrada de Dados</p>
+            <h2 class="card-title">Preenchimento semanal</h2>
+          </div>
+          <span id="formModeBadge" class="badge">Nova semana</span>
+        </div>
+
+        <form id="weeklyForm" class="form-grid">
+          <input id="recordId" type="hidden">
+
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label">Data da semana</span>
+              <input id="weekDate" type="date" required>
+            </label>
+            <label class="field">
+              <span class="field-label">Status</span>
+              <select id="recordStatus">
+                <option value="rascunho">Rascunho</option>
+                <option value="fechada">Fechada</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- QT -->
+          <div class="metric-block">
+            <div class="metric-block-header">
+              <p class="eyebrow">QT</p>
+              <h3 class="metric-title">Quanto Tenho</h3>
+            </div>
+            <div class="field-grid-3">
+              <label class="field"><span class="field-label">Saldo bancário</span><input id="saldo_bancario" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Contas a receber</span><input id="contas_receber" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Cartões</span><input id="cartoes" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Convênios</span><input id="convenios" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Cheques</span><input id="cheques" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Trade marketing</span><input id="trade_marketing" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Outros QT</span><input id="outros_qt" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Estoque custo</span><input id="estoque_custo" type="number" step="0.01" min="0" placeholder="0,00"></label>
+            </div>
+          </div>
+
+          <!-- QD -->
+          <div class="metric-block">
+            <div class="metric-block-header">
+              <p class="eyebrow">QD</p>
+              <h3 class="metric-title">Quanto Devo</h3>
+            </div>
+            <div class="field-grid-3">
+              <label class="field"><span class="field-label">Contas a pagar</span><input id="contas_pagar" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Fornecedores</span><input id="fornecedores" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Investimentos assumidos</span><input id="investimentos_assumidos" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Outras despesas assumidas</span><input id="outras_despesas_assumidas" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Dívidas</span><input id="dividas" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Financiamentos</span><input id="financiamentos" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Tributos atrasados</span><input id="tributos_atrasados" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Ações e processos</span><input id="acoes_processos" type="number" step="0.01" min="0" placeholder="0,00"></label>
+            </div>
+          </div>
+
+          <!-- Resultados calculados -->
+          <div class="metric-block">
+            <div class="metric-block-header">
+              <p class="eyebrow">Resultados</p>
+              <h3 class="metric-title">Cálculo automático</h3>
+            </div>
+            <div id="formCalculatedKpis" class="kpi-grid"></div>
+          </div>
+
+          <!-- Informações complementares -->
+          <div class="metric-block">
+            <div class="metric-block-header">
+              <p class="eyebrow">Informações Complementares</p>
+              <h3 class="metric-title">Operacional</h3>
+            </div>
+            <div class="field-grid-3">
+              <label class="field"><span class="field-label">Faturamento previsto no mês</span><input id="faturamento_previsto_mes" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Compras no mês</span><input id="compras_mes" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Entrada no mês</span><input id="entrada_mes" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Venda cupom no mês</span><input id="venda_cupom_mes" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Venda custo no mês</span><input id="venda_custo_mes" type="number" step="0.01" min="0" placeholder="0,00"></label>
+              <label class="field"><span class="field-label">Lucro líquido no mês</span><input id="lucro_liquido_mes" type="number" step="0.01" min="0" placeholder="0,00"></label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn" type="submit">Salvar dados</button>
+            <button id="evaluateButton" class="btn btn-outline" type="button">Avaliar dados</button>
+            <button id="resetFormButton" class="btn btn-ghost" type="button">Limpar</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ═══ SEÇÃO: Painel ═══ -->
+    <section id="painel" class="section-view hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Análise Comparativa</p>
+            <h2 class="card-title">Painel de Avaliação</h2>
+          </div>
+          <div class="card-actions">
+            <button id="toggleFocusButton" class="btn btn-ghost" type="button">Maximizar</button>
+            <button id="backFromPanelButton" class="btn btn-ghost" type="button">Voltar</button>
+          </div>
+        </div>
+        <div id="matrixTableWrap"></div>
+      </div>
+    </section>
+
+    <!-- ═══ SEÇÃO: Gráficos ═══ -->
+    <section id="graficos" class="section-view hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Análise Visual</p>
+            <h2 class="card-title">Gráficos Financeiros</h2>
+            <p class="txt-muted txt-sm">Visão por semanas, meses e anos, com escolha de campos em valor ou percentual.</p>
+          </div>
+        </div>
+
+        <div class="chart-toolbar">
+          <div class="chip-group" role="group" aria-label="Período">
+            <button class="chip active" data-chart-range="weeks" type="button">Semanas</button>
+            <button class="chip" data-chart-range="months" type="button">Meses</button>
+            <button class="chip" data-chart-range="years" type="button">Anos</button>
+          </div>
+          <label class="field compact">
+            <span class="field-label">Quantidade</span>
+            <input id="chartRangeCount" type="number" min="1" max="52" value="12">
+          </label>
+          <div class="chip-group" role="group" aria-label="Modo">
+            <button class="chip active" data-chart-mode="value" type="button">Valor</button>
+            <button class="chip" data-chart-mode="percent" type="button">Percentual</button>
+          </div>
+        </div>
+
+        <div class="fields-picker">
+          <p class="eyebrow">Campos do gráfico</p>
+          <h3 class="metric-title">Selecione os indicadores</h3>
+          <div id="chartFieldsGrid" class="chart-fields-grid"></div>
+        </div>
+
+        <div class="chart-card">
+          <p class="eyebrow">Evolução</p>
+          <h3 id="chartPanelTitle" class="metric-title">Índice QT/QD e Saldo QT/QD</h3>
+          <canvas id="financialTimelineChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SEÇÃO: Inspetor ═══ -->
+    <section id="inspetor" class="section-view hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Análise Profunda</p>
+            <h2 class="card-title">Inspetor IA Financeiro</h2>
+            <p class="txt-muted txt-sm">Leitura executiva do histórico semanal com tendências, riscos e recomendações práticas.</p>
+          </div>
+          <div class="card-actions">
+            <button id="refreshInspectorButton" class="btn btn-ghost" type="button">Atualizar análise</button>
+            <button id="downloadPdfButton" class="btn btn-outline" type="button">Gerar PDF</button>
+          </div>
+        </div>
+
+        <div id="inspectorHero" class="inspector-hero-grid"></div>
+
+        <div class="card-inner">
+          <p class="eyebrow">Semáforo Executivo</p>
+          <h3 class="metric-title">Estado financeiro consolidado</h3>
+          <div id="inspectorSemaphore" class="semaphore-grid"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card-inner">
+            <p class="eyebrow">Blocos de análise</p>
+            <h3 class="metric-title">QT, QD, capital de giro e solvência</h3>
+            <div id="inspectorBlocks" class="analysis-list"></div>
+          </div>
+          <div class="card-inner">
+            <p class="eyebrow">Conclusões por período</p>
+            <h3 class="metric-title">Leitura comparativa</h3>
+            <div id="inspectorPeriods" class="analysis-list"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card-inner chart-card-inner">
+            <p class="eyebrow">Capital de Giro</p>
+            <h3 class="metric-title">Evolução do ciclo e prazos médios</h3>
+            <canvas id="liquidityChart"></canvas>
+          </div>
+          <div class="card-inner chart-card-inner">
+            <p class="eyebrow">Estrutura</p>
+            <h3 class="metric-title">QT, QD e saldo financeiro</h3>
+            <canvas id="efficiencyChart"></canvas>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card-inner">
+            <p class="eyebrow">Diagnóstico</p>
+            <h3 class="metric-title">Leitura executiva</h3>
+            <div id="inspectorNarrative" class="analysis-copy"></div>
+          </div>
+          <div class="card-inner">
+            <p class="eyebrow">Tendências</p>
+            <h3 class="metric-title">Variações e consistência</h3>
+            <div id="inspectorTrendTable" class="table-wrap"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card-inner">
+            <p class="eyebrow">Riscos</p>
+            <h3 class="metric-title">Pontos de atenção</h3>
+            <div id="inspectorRisks" class="analysis-list"></div>
+          </div>
+          <div class="card-inner">
+            <p class="eyebrow">Ações</p>
+            <h3 class="metric-title">Plano recomendado</h3>
+            <div id="inspectorActions" class="analysis-list"></div>
+          </div>
+        </div>
+
+        <div class="card-inner">
+          <p class="eyebrow">Base Analítica</p>
+          <h3 class="metric-title">Tabela executiva do relatório</h3>
+          <div id="inspectorDataTable" class="table-wrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SEÇÃO: Histórico ═══ -->
+    <section id="historico" class="section-view hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Histórico</p>
+            <h2 class="card-title">Semanas registradas</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Status</th>
+                <th>QT</th>
+                <th>QD</th>
+                <th>Saldo</th>
+                <th>Índice</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="historyTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="../shared/app_config.js"></script>
+<script src="../shared/api_client.js"></script>
+<script src="data/qtqd_seed.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/simple-statistics@7.8.8/dist/simple-statistics.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="script.js"></script>
+</body>
 </html>
