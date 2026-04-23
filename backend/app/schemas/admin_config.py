@@ -19,6 +19,16 @@ class LicencaAdminCreateRequest(LicencaAdminBase):
     pass
 
 
+class LicencaAdminUpdateRequest(BaseModel):
+    plano: str | None = None
+    status: str | None = None
+    inicio_vigencia: date | None = None
+    fim_vigencia: date | None = None
+    limite_usuarios: int | None = None
+    limite_avaliacoes_mes: int | None = None
+    observacoes: str | None = None
+
+
 class LicencaAdminResponse(LicencaAdminBase):
     id: UUID
     created_at: datetime

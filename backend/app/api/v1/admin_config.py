@@ -14,6 +14,7 @@ from backend.app.schemas.admin_config import (
     ImportacaoAdminResponse,
     LicencaAdminCreateRequest,
     LicencaAdminResponse,
+    LicencaAdminUpdateRequest,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin-config"], dependencies=[Depends(require_admin_token)])
@@ -26,6 +27,29 @@ def listar_licencas(tenant_id: UUID | None = None) -> list[LicencaAdminResponse]
         query = query.eq("tenant_id", str(tenant_id))
     result = query.order("inicio_vigencia", desc=True).execute()
     return [LicencaAdminResponse(**row) for row in result.data]
+
+
+@router.delete("/licencas/{licenca_id}", status_code=204)
+def excluir_licenca(licenca_id: UUID) -> None:
+    result = get_supabase().table("tenant_licencas").delete().eq("id", str(licenca_id)).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Vigencia nao encontrada.")
+
+
+@router.patch("/licencas/{licenca_id}", response_model=LicencaAdminResponse)
+def atualizar_licenca(licenca_id: UUID, payload: LicencaAdminUpdateRequest) -> LicencaAdminResponse:
+    values = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not values:
+        raise HTTPException(status_code=400, detail="Nenhum campo enviado para atualizacao.")
+    if "inicio_vigencia" in values:
+        values["inicio_vigencia"] = str(values["inicio_vigencia"])
+    if "fim_vigencia" in values:
+        values["fim_vigencia"] = str(values["fim_vigencia"])
+    values["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = get_supabase().table("tenant_licencas").update(values).eq("id", str(licenca_id)).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Vigencia nao encontrada.")
+    return LicencaAdminResponse(**result.data[0])
 
 
 @router.post("/licencas", response_model=LicencaAdminResponse, status_code=201)

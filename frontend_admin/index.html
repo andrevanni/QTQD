@@ -142,6 +142,7 @@
             <div class="form-panel">
               <div class="board-header"><div><p class="eyebrow">Nova vigência</p><h3>Controle de acesso</h3></div></div>
               <form id="licenseForm" class="stack-form">
+                <input id="licenseId" type="hidden">
                 <label class="field"><span>Cliente</span><select id="licenseClient"><option value="">Selecione um cliente</option></select></label>
                 <label class="field"><span>Plano</span><input id="licensePlan" type="text" value="premium"></label>
                 <label class="field"><span>Início</span><input id="licenseStart" type="text" data-date-br placeholder="DD/MM/AAAA" maxlength="10" autocomplete="off"></label>
@@ -153,7 +154,11 @@
                     <option value="bloqueado">Bloqueado</option>
                   </select>
                 </label>
-                <div class="hero-actions"><button class="primary-button" type="submit">Salvar vigência</button></div>
+                <div class="hero-actions">
+                  <button class="primary-button" type="submit">Salvar vigência</button>
+                  <button id="clearLicenseFormButton" class="secondary-button" type="button">Nova</button>
+                  <button id="deleteLicenseButton" class="danger-button hidden" type="button">Excluir</button>
+                </div>
               </form>
             </div>
           </div>

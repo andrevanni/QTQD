@@ -133,6 +133,19 @@
         body: JSON.stringify(payload),
       });
     },
+    updateLicenca(adminToken, licencaId, payload) {
+      return request(base(`/admin/licencas/${licencaId}`), {
+        method: 'PATCH',
+        headers: adminHeaders(adminToken),
+        body: JSON.stringify(payload),
+      });
+    },
+    deleteLicenca(adminToken, licencaId) {
+      return request(base(`/admin/licencas/${licencaId}`), {
+        method: 'DELETE',
+        headers: adminHeaders(adminToken),
+      });
+    },
 
     /* ── Admin — branding ────────────────────────────── */
     getBranding(adminToken, tenantId) {

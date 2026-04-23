@@ -205,6 +205,8 @@ h3{font-family:"Space Grotesk",sans-serif;font-size:15px;font-weight:700;color:v
 .primary-button:hover{background:var(--accent-h);transform:translateY(-1px)}
 .secondary-button{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;font-size:13px;font-weight:700;background:transparent;color:var(--ink);transition:background var(--t)}
 .secondary-button:hover{background:var(--surface-2)}
+.danger-button{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:1px solid rgba(220,38,38,.4);cursor:pointer;font-size:13px;font-weight:700;background:transparent;color:var(--bad);transition:background var(--t)}
+.danger-button:hover{background:var(--bad-soft)}
 
 /* ── Formulário ───────────────────────────────────────── */
 .stack-form{display:flex;flex-direction:column;gap:12px}

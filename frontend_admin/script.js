@@ -246,20 +246,60 @@ async function loadLicenses() {
   } catch (e) { fb('Erro ao carregar vigências: ' + e.message, 'error'); }
 }
 
+function isoToBr(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function setDeleteLicenseVisible(show) {
+  const btn = $('deleteLicenseButton');
+  if (btn) btn.classList.toggle('hidden', !show);
+}
+
+function selectLicense(l) {
+  $('licenseId').value      = l.id;
+  setDeleteLicenseVisible(true);
+  $('licenseClient').value  = String(l.tenant_id);
+  $('licensePlan').value    = l.plano || 'premium';
+  $('licenseStatus').value  = l.status;
+  // Preenche as datas no formato BR
+  const startFp = $('licenseStart')._flatpickr;
+  const endFp   = $('licenseEnd')._flatpickr;
+  if (startFp) startFp.setDate(l.inicio_vigencia, false, 'Y-m-d');
+  else $('licenseStart').value = isoToBr(l.inicio_vigencia);
+  if (endFp) endFp.setDate(l.fim_vigencia || '', false, 'Y-m-d');
+  else $('licenseEnd').value = isoToBr(l.fim_vigencia || '');
+  renderLicenses();
+}
+
+function resetLicenseForm() {
+  $('licenseId').value = '';
+  setDeleteLicenseVisible(false);
+  $('licenseForm').reset();
+  const startFp = $('licenseStart')._flatpickr;
+  const endFp   = $('licenseEnd')._flatpickr;
+  if (startFp) startFp.clear();
+  if (endFp)   endFp.clear();
+  renderLicenses();
+}
+
 function renderLicenses() {
   const list = $('licenseList');
   if (!list) return;
   if (!licenses.length) { list.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhuma vigência cadastrada.</p>'; return; }
   list.innerHTML = '';
+  const selectedId = $('licenseId').value;
   licenses.forEach(l => {
     const client = clients.find(c => c.id === String(l.tenant_id));
-    const card = el('article', 'entity-card');
+    const card = el('article', 'entity-card' + (l.id === selectedId ? ' selected' : ''));
     card.innerHTML = `
       <div class="entity-card-row">
         <strong>${client?.nome || l.tenant_id}</strong>
         <span class="badge ${l.status}">${l.status}</span>
       </div>
-      <span>${l.plano} · ${l.inicio_vigencia} → ${l.fim_vigencia || 'sem fim'}</span>`;
+      <span>${l.plano} · ${isoToBr(l.inicio_vigencia)} → ${isoToBr(l.fim_vigencia) || 'sem fim'}</span>`;
+    card.addEventListener('click', () => selectLicense(l));
     list.appendChild(card);
   });
 }
@@ -277,34 +317,55 @@ function populateClientSelects() {
 
 $('licenseForm').addEventListener('submit', async e => {
   e.preventDefault(); fbClear();
-  const payload = {
-    tenant_id:       $('licenseClient').value,
-    plano:           $('licensePlan').value.trim(),
-    inicio_vigencia: brToISO($('licenseStart').value),
-    fim_vigencia:    $('licenseEnd').value ? brToISO($('licenseEnd').value) : null,
-    status:          $('licenseStatus').value,
-  };
-  if (!payload.tenant_id) { fb('Selecione um cliente.', 'error'); return; }
-  if (!payload.inicio_vigencia) { fb('Data de início inválida. Use DD/MM/AAAA.', 'error'); return; }
+  const id             = $('licenseId').value;
+  const inicio_vigencia = brToISO($('licenseStart').value);
+  const fim_str         = $('licenseEnd').value;
+  const fim_vigencia    = fim_str ? brToISO(fim_str) : null;
+  const status          = $('licenseStatus').value;
+  const tenant_id       = $('licenseClient').value;
 
-  // Avisa se o cliente já tem vigência ativa
-  if (payload.status === 'ativo') {
-    const ativas = licenses.filter(l => String(l.tenant_id) === payload.tenant_id && l.status === 'ativo');
-    if (ativas.length > 0) {
-      const clientNome = clients.find(c => c.id === payload.tenant_id)?.nome || payload.tenant_id;
-      const ok = confirm(
-        `"${clientNome}" já possui ${ativas.length} vigência(s) ativa(s).\n\nDeseja criar a nova mesmo assim?\n\nRecomendado: abra as vigências anteriores e mude o status para "Bloqueado".`
-      );
-      if (!ok) return;
-    }
-  }
+  if (!inicio_vigencia) { fb('Data de início inválida. Use DD/MM/AAAA.', 'error'); return; }
 
   try {
-    await window.QTQD_API_CLIENT.createLicenca(getToken(), payload);
-    fb('Vigência cadastrada com sucesso.', 'success');
-    $('licenseForm').reset();
+    if (id) {
+      // Edição
+      const payload = { plano: $('licensePlan').value.trim(), inicio_vigencia, fim_vigencia, status };
+      await window.QTQD_API_CLIENT.updateLicenca(getToken(), id, payload);
+      fb('Vigência atualizada com sucesso.', 'success');
+    } else {
+      // Nova
+      if (!tenant_id) { fb('Selecione um cliente.', 'error'); return; }
+      // Avisa se já existe vigência ativa para o cliente
+      if (status === 'ativo') {
+        const ativas = licenses.filter(l => String(l.tenant_id) === tenant_id && l.status === 'ativo');
+        if (ativas.length > 0) {
+          const nome = clients.find(c => c.id === tenant_id)?.nome || tenant_id;
+          const ok = confirm(`"${nome}" já possui vigência ativa.\n\nDeseja criar mesmo assim?\nRecomendado: edite a vigência anterior e mude para "Bloqueado".`);
+          if (!ok) return;
+        }
+      }
+      const payload = { tenant_id, plano: $('licensePlan').value.trim(), inicio_vigencia, fim_vigencia, status };
+      await window.QTQD_API_CLIENT.createLicenca(getToken(), payload);
+      fb('Vigência cadastrada com sucesso.', 'success');
+    }
+    resetLicenseForm();
     await loadLicenses();
   } catch (err) { fb('Erro ao salvar vigência: ' + err.message, 'error'); }
+});
+
+$('clearLicenseFormButton')?.addEventListener('click', resetLicenseForm);
+
+$('deleteLicenseButton')?.addEventListener('click', async () => {
+  const id = $('licenseId').value;
+  if (!id) return;
+  const client = clients.find(c => c.id === $('licenseClient').value);
+  if (!confirm(`Excluir esta vigência de "${client?.nome || 'cliente'}"? Esta ação não pode ser desfeita.`)) return;
+  try {
+    await window.QTQD_API_CLIENT.deleteLicenca(getToken(), id);
+    fb('Vigência excluída.', 'success');
+    resetLicenseForm();
+    await loadLicenses();
+  } catch (err) { fb('Erro ao excluir: ' + err.message, 'error'); }
 });
 
 /* ═══════════════════════════════════════════════════════
