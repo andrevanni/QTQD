@@ -736,7 +736,14 @@ body.sidebar-mini .icon-expand       { display: block; }
   color: var(--ink);
 }
 
-/* Primeira coluna congelada — position:sticky em td/th funciona garantidamente */
+/* Cabeçalho congelado (linha + coluna) */
+.matrix-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+/* Primeira coluna congelada */
 .matrix-sticky {
   position: sticky;
   left: 0;
@@ -751,6 +758,8 @@ body.sidebar-mini .icon-expand       { display: block; }
   word-break: break-word;
   line-height: 1.35;
   text-align: left;
+  border-left: 3px solid transparent;
+  transition: border-color .2s;
 }
 
 /* Seletor de ano no painel */
@@ -772,9 +781,28 @@ body.sidebar-mini .icon-expand       { display: block; }
 .year-filter-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .matrix-head.matrix-sticky {
-  z-index: 3;
+  z-index: 5;
   background: var(--surface-2) !important;
 }
+
+/* Ícone no cabeçalho do grupo */
+.matrix-icon { margin-right: 6px; font-size: 14px; }
+
+/* Sub-itens: indent e fonte menor */
+.matrix-sticky.matrix-subitem {
+  padding-left: 22px !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  color: var(--muted) !important;
+}
+
+.matrix-cell.matrix-subitem {
+  font-size: 12px !important;
+  color: var(--muted) !important;
+}
+
+/* Row-header colorida por grupo */
+.matrix-cell.row-header { font-size: 12.5px !important; letter-spacing: .02em; }
 
 /* Tipos de linha */
 .matrix-cell.row-header {
