@@ -430,7 +430,12 @@
       saveBtn.addEventListener('click', () => {
         const nameEl = document.getElementById('cbName');
         const name   = nameEl ? nameEl.value.trim() : '';
-        if (!name)                  { setFeedback('Informe um nome para o gráfico antes de salvar.'); return; }
+        if (!name) {
+          if (nameEl) { nameEl.focus(); nameEl.style.borderColor = 'var(--danger, #ef4444)'; setTimeout(() => nameEl.style.borderColor = '', 2000); }
+          setFeedback('Informe um nome para o gráfico antes de salvar.');
+          nameEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
         if (!cbState.fields.length) { setFeedback('Selecione ao menos um campo.'); return; }
 
         const includePdf = document.getElementById('cbIncludePdf')?.checked ?? false;
