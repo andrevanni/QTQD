@@ -752,14 +752,25 @@ body.sidebar-mini .icon-expand       { display: block; }
   min-width: 280px;
   width: 280px;
   max-width: 280px;
-  box-shadow: 2px 0 8px rgba(0,0,0,.10);
+  box-shadow: 4px 0 16px rgba(0,0,0,.25);
+  border-right: 2px solid var(--border);
   font-weight: 600;
   white-space: normal;
   word-break: break-word;
   line-height: 1.35;
   text-align: left;
   border-left: 3px solid transparent;
-  transition: border-color .2s;
+}
+
+/* Sticky row-header: fundo sólido (nunca transparente) */
+.matrix-table td.matrix-sticky.row-header,
+.matrix-table th.matrix-sticky.row-header {
+  background: var(--surface-2) !important;
+}
+
+/* Sticky section: fundo sólido */
+.matrix-table td.matrix-sticky.row-section {
+  background: var(--surface-2) !important;
 }
 
 /* Seletor de ano no painel */
