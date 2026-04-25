@@ -715,7 +715,7 @@ body.sidebar-mini .icon-expand       { display: block; }
 }
 
 .matrix-cell {
-  padding: 11px 16px;
+  padding: 10px 14px;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   font-size: 12.5px;
@@ -723,6 +723,7 @@ body.sidebar-mini .icon-expand       { display: block; }
   white-space: nowrap;
   vertical-align: middle;
   min-height: 44px;
+  text-align: right;
 }
 
 .matrix-head {
@@ -739,12 +740,34 @@ body.sidebar-mini .icon-expand       { display: block; }
   left: 0;
   z-index: 2;
   background: var(--surface) !important;
-  min-width: 260px;
-  width: 260px;
-  max-width: 260px;
-  box-shadow: 2px 0 6px rgba(0,0,0,.06);
+  min-width: 280px;
+  width: 280px;
+  max-width: 280px;
+  box-shadow: 2px 0 8px rgba(0,0,0,.10);
   font-weight: 600;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.35;
+  text-align: left;
 }
+
+/* Seletor de ano no painel */
+.year-filter-select {
+  appearance: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: "Manrope", sans-serif;
+  padding: 6px 28px 6px 10px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 20 20' fill='%23888'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  min-width: 120px;
+}
+.year-filter-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .matrix-head.matrix-sticky {
   z-index: 3;
@@ -860,22 +883,51 @@ th {
 }
 
 .chart-fields-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-field-group {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+}
+
+.chart-field-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chart-field-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .chart-field-option {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
   border: 1px solid var(--border);
   background: var(--surface);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.chart-field-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .chart-card {
@@ -1020,17 +1072,17 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
   .field-row { grid-template-columns: 1fr; }
   .field-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .field-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .chart-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-field-pills { gap: 4px; }
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .inspector-hero-grid { grid-template-columns: 1fr 1fr; }
   .semaphore-grid { grid-template-columns: 1fr 1fr; }
-  .matrix-sticky { min-width: 180px; width: 180px; max-width: 180px; }
+  .matrix-sticky { min-width: 200px; width: 200px; max-width: 200px; }
 }
 
 @media (max-width: 480px) {
   .field-grid-3 { grid-template-columns: 1fr; }
   .field-grid-4 { grid-template-columns: 1fr; }
-  .chart-fields-grid { grid-template-columns: 1fr; }
+  .chart-field-option { font-size: 11px; padding: 5px 8px; }
   .kpi-grid { grid-template-columns: 1fr; }
 }
 
