@@ -174,16 +174,42 @@
     const el = document.getElementById('cbFieldButtons');
     if (!el) return;
 
-    const visible = chartFieldCatalog.filter(f => isFieldVisible(f.key));
-    el.innerHTML = visible.map(f => {
-      const idx = cbState.fields.indexOf(f.key);
+    const ALWAYS = ['saldo_qt_qd', 'indice_qt_qd'];
+    const impliedHeaders = {
+      qt_total:    'QT — Quanto Tenho',
+      qd_total:    'QD — Quanto Devo',
+      saldo_qt_qd: 'Indicadores QT/QD',
+    };
+
+    let html = '';
+    let inGroup = false;
+
+    (typeof matrixRows !== 'undefined' ? matrixRows : []).forEach(row => {
+      if (row.type === 'empty') return;
+
+      if (row.type === 'section') {
+        if (inGroup) html += '</div></div>';
+        html += `<div class="cb-field-group"><div class="cb-field-group-label">${row.label}</div><div class="cb-field-pills">`;
+        inGroup = true;
+        return;
+      }
+
+      if (row.rowClass === 'row-header' && impliedHeaders[row.key]) {
+        if (inGroup) html += '</div></div>';
+        html += `<div class="cb-field-group"><div class="cb-field-group-label">${impliedHeaders[row.key]}</div><div class="cb-field-pills">`;
+        inGroup = true;
+      }
+
+      if (!row.key) return;
+      if (!ALWAYS.includes(row.key) && !isFieldVisible(row.key)) return;
+
+      const idx = cbState.fields.indexOf(row.key);
       const sel = idx >= 0;
-      return `<button class="cb-field-btn${sel ? ' selected' : ''}"
-                data-field="${f.key}" type="button">
-        ${sel ? `<span class="cb-order">${idx + 1}</span>` : ''}
-        ${getFieldLabel(f.key, f.label)}
-      </button>`;
-    }).join('');
+      html += `<button class="cb-field-btn${sel ? ' selected' : ''}" data-field="${row.key}" type="button">${sel ? `<span class="cb-order">${idx + 1}</span>` : ''}${getFieldLabel(row.key, row.label)}</button>`;
+    });
+
+    if (inGroup) html += '</div></div>';
+    el.innerHTML = html;
   }
 
   /* ── Render: campos selecionados ────────────────────── */
