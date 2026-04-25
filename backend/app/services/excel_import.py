@@ -9,8 +9,6 @@ import io
 from datetime import datetime
 from typing import Any
 
-import openpyxl
-
 # Mapeamento label → código do campo (normalizado)
 _LABEL_TO_KEY: dict[str, str] = {
     "saldo bancário": "saldo_bancario",
@@ -87,6 +85,10 @@ def parse_excel(file_bytes: bytes) -> list[dict]:
     Retorna lista de dicts prontos para inserir em avaliacoes_semanais.
     Cada dict: { semana_referencia: str, status: 'rascunho', valores: dict }
     """
+    try:
+        import openpyxl
+    except ImportError:
+        raise ValueError("Biblioteca openpyxl nao instalada no servidor.")
     wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
     ws = wb.active
 
