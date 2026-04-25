@@ -27,6 +27,13 @@ class AvaliacaoValores(BaseModel):
     venda_cupom_mes: float = 0
     venda_custo_mes: float = 0
     lucro_liquido_mes: float = 0
+    pmp: float = 0
+    pmv: float = 0
+    indice_faltas: float = 0
+    excesso_curva_a: float = 0
+    excesso_curva_b: float = 0
+    excesso_curva_c: float = 0
+    excesso_curva_d: float = 0
 
 
 class AvaliacaoCreateRequest(AvaliacaoValores):

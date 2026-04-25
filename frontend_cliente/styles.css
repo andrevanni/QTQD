@@ -591,6 +591,13 @@ body.sidebar-mini .icon-expand       { display: block; }
   gap: 12px;
 }
 
+.field-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -1012,6 +1019,7 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
   .hero-actions { width: 100%; }
   .field-row { grid-template-columns: 1fr; }
   .field-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .field-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .chart-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .inspector-hero-grid { grid-template-columns: 1fr 1fr; }
@@ -1021,6 +1029,7 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
 
 @media (max-width: 480px) {
   .field-grid-3 { grid-template-columns: 1fr; }
+  .field-grid-4 { grid-template-columns: 1fr; }
   .chart-fields-grid { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: 1fr; }
 }
