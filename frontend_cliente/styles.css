@@ -1117,50 +1117,57 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
 .cb-field-buttons {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 36px;
+  gap: 0;
 }
 
 .cb-field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
 }
 
+.cb-field-group:last-child { border-bottom: none; }
+
 .cb-field-group-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .08em;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .10em;
   text-transform: uppercase;
   color: var(--accent);
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border);
+  padding-top: 3px;
+  padding-right: 12px;
+  line-height: 1.4;
 }
 
 .cb-field-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
 }
 
 .cb-field-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 4px;
   border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 12px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color var(--transition), background var(--transition), color var(--transition);
+  transition: border-color .12s, background .12s, color .12s;
+  white-space: nowrap;
 }
 
 .cb-field-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .cb-field-btn.selected {
@@ -1174,11 +1181,11 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.25);
-  font-size: 10px;
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.3);
+  font-size: 9px;
   font-weight: 800;
   flex-shrink: 0;
 }
