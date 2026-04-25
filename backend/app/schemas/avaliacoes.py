@@ -29,6 +29,13 @@ class AvaliacaoValores(BaseModel):
     lucro_liquido_mes: float = 0
     pmp: float = 0
     pmv: float = 0
+    pmv_avista: float = 0
+    pmv_30: float = 0
+    pmv_60: float = 0
+    pmv_90: float = 0
+    pmv_120: float = 0
+    pmv_outros: float = 0
+    pme_excel: float = 0
     indice_faltas: float = 0
     excesso_curva_a: float = 0
     excesso_curva_b: float = 0
