@@ -387,83 +387,124 @@
     <!-- ═══ SEÇÃO: Inspetor ═══ -->
     <section id="inspetor" class="section-view hidden">
       <div class="card">
+
+        <!-- Cabeçalho -->
         <div class="card-header">
           <div>
             <p class="eyebrow">Análise Profunda</p>
             <h2 class="card-title">Inspetor IA Financeiro</h2>
-            <p class="txt-muted txt-sm">Leitura executiva do histórico semanal com tendências, riscos e recomendações práticas.</p>
+            <p class="txt-muted txt-sm">Diagnóstico automático do histórico semanal com tendências, composição e recomendações.</p>
           </div>
           <div class="card-actions">
-            <button id="refreshInspectorButton" class="btn btn-ghost" type="button">Atualizar análise</button>
+            <button id="refreshInspectorButton" class="btn" type="button">Analisar</button>
             <button id="downloadPdfButton" class="btn btn-outline" type="button">Gerar PDF</button>
           </div>
         </div>
 
-        <div id="inspectorHero" class="inspector-hero-grid"></div>
-
-        <div class="card-inner">
-          <p class="eyebrow">Semáforo Executivo</p>
-          <h3 class="metric-title">Estado financeiro consolidado</h3>
-          <div id="inspectorSemaphore" class="semaphore-grid"></div>
+        <!-- Estado inicial (antes de analisar) -->
+        <div id="inspectorInitial" class="insp-initial">
+          <div class="insp-feature-grid">
+            <div class="insp-feature-card">
+              <span class="insp-feature-icon">📊</span>
+              <strong>Composição QT e QD</strong>
+              <p>Visualização proporcional de cada componente do ativo e passivo financeiro.</p>
+            </div>
+            <div class="insp-feature-card">
+              <span class="insp-feature-icon">📈</span>
+              <strong>Evolução histórica</strong>
+              <p>Gráfico de tendência do Índice QT/QD, saldo e totais ao longo das semanas.</p>
+            </div>
+            <div class="insp-feature-card">
+              <span class="insp-feature-icon">⚠️</span>
+              <strong>Pontos de atenção</strong>
+              <p>Identificação automática de riscos, desvios e situações que exigem ação.</p>
+            </div>
+            <div class="insp-feature-card">
+              <span class="insp-feature-icon">🎯</span>
+              <strong>Recomendações prioritárias</strong>
+              <p>Plano de ação contextualizado com base nos dados mais recentes.</p>
+            </div>
+          </div>
         </div>
 
-        <div class="grid-2">
-          <div class="card-inner">
-            <p class="eyebrow">Blocos de análise</p>
-            <h3 class="metric-title">QT, QD, capital de giro e solvência</h3>
-            <div id="inspectorBlocks" class="analysis-list"></div>
-          </div>
-          <div class="card-inner">
-            <p class="eyebrow">Conclusões por período</p>
-            <h3 class="metric-title">Leitura comparativa</h3>
-            <div id="inspectorPeriods" class="analysis-list"></div>
-          </div>
-        </div>
+        <!-- Conteúdo (exibido após análise) -->
+        <div id="inspectorContent" class="hidden">
 
-        <div class="grid-2">
+          <!-- KPIs -->
+          <div id="inspectorHero" class="inspector-hero-grid"></div>
+
+          <!-- Semáforo -->
+          <div class="card-inner" style="margin-top:4px">
+            <p class="eyebrow">Semáforo Executivo</p>
+            <div id="inspectorSemaphore" class="semaphore-grid" style="margin-top:10px"></div>
+          </div>
+
+          <!-- Composição QT + QD -->
+          <div class="grid-2">
+            <div class="card-inner">
+              <p class="eyebrow">QT — Quanto Tenho</p>
+              <h3 class="metric-title" style="margin-bottom:14px">Composição do ativo</h3>
+              <div id="inspectorQtBars" class="comp-bars"></div>
+            </div>
+            <div class="card-inner">
+              <p class="eyebrow">QD — Quanto Devo</p>
+              <h3 class="metric-title" style="margin-bottom:14px">Composição do passivo</h3>
+              <div id="inspectorQdBars" class="comp-bars"></div>
+            </div>
+          </div>
+
+          <!-- Gráfico evolução -->
           <div class="card-inner chart-card-inner">
-            <p class="eyebrow">Capital de Giro</p>
-            <h3 class="metric-title">Evolução do ciclo e prazos médios</h3>
-            <canvas id="liquidityChart"></canvas>
+            <p class="eyebrow">Evolução histórica</p>
+            <h3 class="metric-title">Índice QT/QD · QT · QD · Saldo</h3>
+            <canvas id="efficiencyChart" style="margin-top:12px"></canvas>
           </div>
-          <div class="card-inner chart-card-inner">
-            <p class="eyebrow">Estrutura</p>
-            <h3 class="metric-title">QT, QD e saldo financeiro</h3>
-            <canvas id="efficiencyChart"></canvas>
+
+          <!-- Diagnóstico IA streaming -->
+          <div class="card-inner insp-ai-card">
+            <div class="insp-ai-header">
+              <span class="insp-ai-icon">🧠</span>
+              <div>
+                <p class="eyebrow">Diagnóstico IA</p>
+                <h3 class="metric-title">Análise executiva</h3>
+              </div>
+              <span id="inspectorAnalysisStatus" class="insp-ai-status"></span>
+            </div>
+            <div id="inspectorNarrative" class="insp-ai-body"></div>
           </div>
+
+          <!-- Tendências + Riscos/Ações -->
+          <div class="grid-2">
+            <div class="card-inner">
+              <p class="eyebrow">Tendências</p>
+              <h3 class="metric-title">Atual vs. média histórica</h3>
+              <div id="inspectorTrendTable" class="table-wrap" style="margin-top:12px"></div>
+            </div>
+            <div class="card-inner">
+              <p class="eyebrow">Pontos de atenção</p>
+              <h3 class="metric-title">Riscos identificados</h3>
+              <div id="inspectorRisks" class="insp-risk-list" style="margin-top:12px"></div>
+              <p class="eyebrow" style="margin-top:20px">Plano recomendado</p>
+              <div id="inspectorActions" class="insp-action-list" style="margin-top:10px"></div>
+            </div>
+          </div>
+
+          <!-- Tabela histórica -->
+          <div class="card-inner">
+            <p class="eyebrow">Base Analítica</p>
+            <h3 class="metric-title">Histórico semanal completo</h3>
+            <div id="inspectorDataTable" class="table-wrap" style="margin-top:12px"></div>
+          </div>
+
+        </div><!-- /inspectorContent -->
+
+        <!-- IDs legado ocultos para compatibilidade -->
+        <div style="display:none" aria-hidden="true">
+          <div id="inspectorBlocks"></div>
+          <div id="inspectorPeriods"></div>
+          <canvas id="liquidityChart"></canvas>
         </div>
 
-        <div class="grid-2">
-          <div class="card-inner">
-            <p class="eyebrow">Diagnóstico</p>
-            <h3 class="metric-title">Leitura executiva</h3>
-            <div id="inspectorNarrative" class="analysis-copy"></div>
-          </div>
-          <div class="card-inner">
-            <p class="eyebrow">Tendências</p>
-            <h3 class="metric-title">Variações e consistência</h3>
-            <div id="inspectorTrendTable" class="table-wrap"></div>
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <div class="card-inner">
-            <p class="eyebrow">Riscos</p>
-            <h3 class="metric-title">Pontos de atenção</h3>
-            <div id="inspectorRisks" class="analysis-list"></div>
-          </div>
-          <div class="card-inner">
-            <p class="eyebrow">Ações</p>
-            <h3 class="metric-title">Plano recomendado</h3>
-            <div id="inspectorActions" class="analysis-list"></div>
-          </div>
-        </div>
-
-        <div class="card-inner">
-          <p class="eyebrow">Base Analítica</p>
-          <h3 class="metric-title">Tabela executiva do relatório</h3>
-          <div id="inspectorDataTable" class="table-wrap"></div>
-        </div>
       </div>
     </section>
 
