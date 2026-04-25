@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # Token administrativo para endpoints de admin (X-Admin-Token header)
     admin_token: str = "trocar-este-token"
 
+    # Credenciais do usuário admin do portal cliente (para geração de token via /admin/abrir-portal)
+    portal_admin_email: str = "andre@servicefarma.far.br"
+    portal_admin_password: str = ""
+
     # CORS — origens separadas por vírgula
     cors_origins: str = "http://localhost:3000,http://localhost:8080"
     frontend_client_url: str | None = None

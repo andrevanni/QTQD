@@ -12,7 +12,7 @@ const chartState={range:"weeks",count:12,mode:"value",fields:["indice_qt_qd","sa
 const form=document.getElementById("weeklyForm"),historyTable=document.getElementById("historyTable"),matrixTableWrap=document.getElementById("matrixTableWrap"),formCalculatedKpis=document.getElementById("formCalculatedKpis"),feedbackBox=document.getElementById("feedbackBox"),formModeBadge=document.getElementById("formModeBadge"),recordIdInput=document.getElementById("recordId"),connectionModeLabel=document.getElementById("connectionModeLabel"),chartFieldsGrid=document.getElementById("chartFieldsGrid"),chartRangeCountInput=document.getElementById("chartRangeCount"),chartPanelTitle=document.getElementById("chartPanelTitle");
 let records=[],liquidityChartInstance=null,efficiencyChartInstance=null,financialTimelineChart=null;
 const $=id=>document.getElementById(id);
-const getRuntimeConfig=()=>window.QTQD_APP_CONFIG||{mode:"simulation",tenantId:""};
+const getRuntimeConfig=()=>{const cfg=window.QTQD_APP_CONFIG||{mode:"simulation",tenantId:""};const storedTenant=localStorage.getItem("qtqd_tenant_id_v1");const hasJwt=!!localStorage.getItem("qtqd_jwt_v1");if(hasJwt&&storedTenant)return{...cfg,mode:"api",tenantId:storedTenant};return cfg};
 const isApiMode=()=>{const r=getRuntimeConfig();return r.mode==="api"&&!!r.tenantId&&!!window.QTQD_API_CLIENT};
 const parseMoney=v=>Number.isFinite(Number(v))?Number(v):0;
 const safeDivide=(a,b)=>b?a/b:null;
@@ -90,6 +90,7 @@ form.addEventListener("input",()=>renderCalculatedPreview());
 window.addEventListener("resize",()=>{if(window.innerWidth<=1180)document.body.classList.remove("sidebar-collapsed","sidebar-open");renderChartsPanel();generateInspectorCharts()});
 window.addEventListener("storage",e=>{if(e.key===FIELD_CONFIG_KEY)renderAll();if(e.key===BRANDING_KEY)applyBranding();if(e.key===THEME_KEY){applyTheme();renderAll()}});
 async function initializeClient(){applyTheme();applyBranding();try{await loadRecordsFromSource()}catch(error){loadRecordsFromLocal();setFeedback(`Modo API configurado, mas foi mantido fallback local: ${error.message}`)}if(!records.length){records=seedRecords();saveRecords()}renderAll();const latest=getLatestRecord();if(latest){fillForm(latest);renderCalculatedPreview(latest)}else renderCalculatedPreview();openSection("cadastro")}
+(function(){const p=new URLSearchParams(location.search);const token=p.get("token");const tenantId=p.get("tenant_id");if(token&&tenantId&&window.QTQD_API_CLIENT){window.QTQD_API_CLIENT.setJwt(token);window.QTQD_API_CLIENT.setTenantId(tenantId);history.replaceState(null,"",location.pathname)}})();
 initializeClient();
 
 // Injeta campos personalizados do admin no catálogo de gráficos

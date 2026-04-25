@@ -304,9 +304,33 @@ function renderClients() {
         <span class="badge ${c.status}">${c.status}</span>
       </div>
       <span>${c.slug} · ${c.plano || '-'}</span>
-      <span style="font-size:11px;color:var(--muted)">${c.contato_email || ''}</span>`;
-    card.addEventListener('click', () => selectClient(c));
+      <span style="font-size:11px;color:var(--muted)">${c.contato_email || ''}</span>
+      <button class="btn btn-sm" data-portal-tenant="${c.id}" data-portal-nome="${c.nome}"
+        style="margin-top:8px;width:100%;font-size:12px" type="button">Acessar Portal</button>`;
+    card.addEventListener('click', e => { if (!e.target.closest('[data-portal-tenant]')) selectClient(c); });
     list.appendChild(card);
+  });
+
+  // Delegação do botão Acessar Portal
+  list.querySelectorAll('[data-portal-tenant]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const tenantId = btn.dataset.portalTenant;
+      const nome     = btn.dataset.portalNome;
+      btn.disabled = true;
+      btn.textContent = 'Abrindo...';
+      try {
+        const res = await window.QTQD_API_CLIENT.abrirPortal(getToken(), tenantId);
+        const url = `https://qtqd-vt2a.vercel.app/cliente?token=${encodeURIComponent(res.access_token)}&tenant_id=${encodeURIComponent(res.tenant_id)}`;
+        window.open(url, '_blank');
+        fb(`Portal de ${nome} aberto em nova aba.`, 'success');
+      } catch (err) {
+        fb(`Erro ao abrir portal: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Acessar Portal';
+      }
+    });
   });
 }
 

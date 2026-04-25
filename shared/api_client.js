@@ -9,7 +9,8 @@
  */
 (function () {
   const config = window.QTQD_APP_CONFIG || {};
-  const JWT_KEY = 'qtqd_jwt_v1';
+  const JWT_KEY    = 'qtqd_jwt_v1';
+  const TENANT_KEY = 'qtqd_tenant_id_v1';
 
   /* ── Helpers internos ──────────────────────────────── */
   function base(path) {
@@ -20,11 +21,17 @@
     return localStorage.getItem(JWT_KEY) || '';
   }
 
+  function getTenantId() {
+    return localStorage.getItem(TENANT_KEY) || config.tenantId || '';
+  }
+
   function authHeaders() {
-    const token = getJwt();
+    const token    = getJwt();
+    const tenantId = getTenantId();
     return {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token    ? { Authorization: `Bearer ${token}` } : {}),
+      ...(tenantId ? { 'X-Tenant-Id': tenantId }          : {}),
     };
   }
 
@@ -57,9 +64,22 @@
   window.QTQD_API_CLIENT = {
 
     /* JWT management */
-    setJwt(token) { localStorage.setItem(JWT_KEY, token); },
-    clearJwt()    { localStorage.removeItem(JWT_KEY); },
-    hasJwt()      { return !!getJwt(); },
+    setJwt(token)      { localStorage.setItem(JWT_KEY, token); },
+    clearJwt()         { localStorage.removeItem(JWT_KEY); },
+    hasJwt()           { return !!getJwt(); },
+
+    /* Tenant management */
+    setTenantId(id)    { localStorage.setItem(TENANT_KEY, id); },
+    clearTenantId()    { localStorage.removeItem(TENANT_KEY); },
+    getTenantId()      { return getTenantId(); },
+
+    /* Admin — abrir portal do cliente */
+    abrirPortal(adminToken, tenantId) {
+      return request(base(`/admin/abrir-portal/${tenantId}`), {
+        method: 'POST',
+        headers: adminHeaders(adminToken),
+      });
+    },
 
     /* Health */
     health() {

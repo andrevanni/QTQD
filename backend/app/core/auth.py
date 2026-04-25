@@ -50,7 +50,10 @@ def _verify_jwt(authorization: str | None = Header(default=None)) -> dict:
         )
 
 
-def get_current_tenant(payload: dict = Depends(_verify_jwt)) -> UUID:
+def get_current_tenant(
+    payload: dict = Depends(_verify_jwt),
+    x_tenant_id: str | None = Header(default=None),
+) -> UUID:
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
@@ -58,6 +61,20 @@ def get_current_tenant(payload: dict = Depends(_verify_jwt)) -> UUID:
             detail="Token sem identificacao de usuario (sub).",
         )
     sb = get_supabase()
+
+    if x_tenant_id:
+        result = (
+            sb.table("tenant_users")
+            .select("tenant_id")
+            .eq("user_id", user_id)
+            .eq("tenant_id", x_tenant_id)
+            .eq("ativo", True)
+            .limit(1)
+            .execute()
+        )
+        if result.data:
+            return UUID(x_tenant_id)
+
     result = (
         sb.table("tenant_users")
         .select("tenant_id")
