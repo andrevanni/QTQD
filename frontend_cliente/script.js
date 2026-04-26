@@ -125,7 +125,7 @@ historyTable.addEventListener("click",async e=>{const button=e.target.closest("[
 form.addEventListener("input",()=>renderCalculatedPreview());
 window.addEventListener("resize",()=>{if(window.innerWidth<=1180)document.body.classList.remove("sidebar-collapsed","sidebar-open");renderChartsPanel();generateInspectorCharts()});
 window.addEventListener("storage",e=>{if(e.key===FIELD_CONFIG_KEY)renderAll();if(e.key===BRANDING_KEY)applyBranding();if(e.key===THEME_KEY){applyTheme();renderAll()}});
-async function initializeClient(){applyTheme();applyBranding();try{await loadRecordsFromSource()}catch(error){loadRecordsFromLocal();setFeedback(`Modo API configurado, mas foi mantido fallback local: ${error.message}`)}if(!records.length){records=seedRecords();saveRecords()}renderAll();const latest=getLatestRecord();if(latest){fillForm(latest);renderCalculatedPreview(latest)}else renderCalculatedPreview();openSection("cadastro")}
+async function initializeClient(){applyTheme();applyBranding();try{await loadRecordsFromSource()}catch(error){loadRecordsFromLocal();setFeedback(`Modo API configurado, mas foi mantido fallback local: ${error.message}`)}if(!records.length){records=seedRecords();saveRecords()}renderAll();const latest=getLatestRecord();if(latest){fillForm(latest);renderCalculatedPreview(latest)}else renderCalculatedPreview();openSection("inspetor")}
 (function(){const p=new URLSearchParams(location.search);const token=p.get("token");const tenantId=p.get("tenant_id");if(token&&tenantId&&window.QTQD_API_CLIENT){window.QTQD_API_CLIENT.setJwt(token);window.QTQD_API_CLIENT.setTenantId(tenantId);history.replaceState(null,"",location.pathname)}})();
 initializeClient();
 
