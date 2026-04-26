@@ -306,14 +306,26 @@
         <canvas id="financialTimelineChart"></canvas>
       </div>
 
-      <!-- ── Gerador de gráficos ── -->
-      <div class="card">
+      <!-- Gráficos salvos — aparecem primeiro -->
+      <div id="savedChartsContainer"></div>
+
+      <!-- Botão para abrir o configurador -->
+      <div style="margin-top:12px">
+        <button id="cbToggleNew" class="btn btn-ghost" type="button" style="display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+          Criar novo gráfico
+        </button>
+      </div>
+
+      <!-- ── Gerador de gráficos (oculto por padrão) ── -->
+      <div id="cbNewCard" class="card hidden" style="margin-top:12px">
         <div class="card-header">
           <div>
             <p class="eyebrow">Gerador de Gráficos</p>
             <h2 class="card-title">Criar novo gráfico</h2>
             <p class="txt-muted txt-sm">Selecione os campos na ordem desejada, configure o período e tipo, depois salve com um nome.</p>
           </div>
+          <button id="cbCollapseNew" class="btn btn-ghost" type="button" style="align-self:flex-start">Fechar</button>
         </div>
 
         <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
@@ -380,8 +392,6 @@
         </div>
       </div>
 
-      <!-- Gráficos salvos -->
-      <div id="savedChartsContainer"></div>
     </section>
 
     <!-- ═══ SEÇÃO: Inspetor ═══ -->

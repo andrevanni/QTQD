@@ -463,6 +463,7 @@
 
         renderSavedCharts();
         setFeedback(`Gráfico "${name}" salvo com sucesso.`);
+        if (typeof closeCbNew === 'function') closeCbNew();
       });
     }
 
