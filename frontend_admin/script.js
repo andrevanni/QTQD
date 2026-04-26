@@ -943,14 +943,17 @@ $('resetFieldConfigButton').addEventListener('click', () => {
 /* ═══════════════════════════════════════════════════════
    IDENTIDADE VISUAL (BRANDING)
    ═══════════════════════════════════════════════════════ */
+let currentLogoUrl = '';
+
 async function loadBranding() {
   const tenantId = $('brandingClient')?.value;
   if (!tenantId) return;
   try {
     const data = await window.QTQD_API_CLIENT.getBranding(getToken(), tenantId);
+    currentLogoUrl = data?.logo_cliente_url || '';
     if (data) {
       $('brandingClientName').value = data.nome_portal || '';
-      updateBrandingPreview(data.nome_portal || '', data.logo_cliente_url || '');
+      updateBrandingPreview(data.nome_portal || '', currentLogoUrl);
     }
   } catch (e) { fb('Erro ao carregar branding: ' + e.message, 'error'); }
 }
@@ -973,24 +976,50 @@ function updateBrandingPreview(name, logoUrl) {
   }
 }
 
+// Preview local do arquivo selecionado antes de salvar
+$('brandingClientLogo')?.addEventListener('change', e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => updateBrandingPreview($('brandingClientName').value, ev.target.result);
+  reader.readAsDataURL(file);
+});
+
 $('brandingForm').addEventListener('submit', async e => {
   e.preventDefault(); fbClear();
   const tenantId = $('brandingClient')?.value;
   if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
+
+  let logoUrl = currentLogoUrl;
+  const fileInput = $('brandingClientLogo');
+  if (fileInput?.files?.length) {
+    try {
+      fb('Enviando logo...', 'info');
+      const res = await window.QTQD_API_CLIENT.uploadLogo(getToken(), tenantId, fileInput.files[0]);
+      logoUrl = res.url;
+    } catch (err) {
+      fb('Erro ao enviar logo: ' + err.message, 'error');
+      return;
+    }
+  }
+
   const payload = {
     nome_portal:      $('brandingClientName').value.trim() || null,
-    logo_cliente_url: null,
+    logo_cliente_url: logoUrl || null,
     powered_by_label: 'Powered by Service Farma',
   };
   try {
     await window.QTQD_API_CLIENT.saveBranding(getToken(), tenantId, payload);
+    currentLogoUrl = logoUrl || '';
+    if (fileInput) fileInput.value = '';
     fb('Identidade visual salva com sucesso.', 'success');
-    updateBrandingPreview(payload.nome_portal || '', '');
+    updateBrandingPreview(payload.nome_portal || '', currentLogoUrl);
   } catch (err) { fb('Erro ao salvar branding: ' + err.message, 'error'); }
 });
 
 $('resetBrandingButton')?.addEventListener('click', () => {
   $('brandingForm').reset();
+  currentLogoUrl = '';
   updateBrandingPreview('Cliente', '');
 });
 

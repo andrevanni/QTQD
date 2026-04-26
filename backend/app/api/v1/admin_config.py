@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from backend.app.core.admin_auth import require_admin_token
 from backend.app.db.client import get_supabase
@@ -75,6 +75,25 @@ def criar_licenca(payload: LicencaAdminCreateRequest) -> LicencaAdminResponse:
 def obter_branding(tenant_id: UUID) -> BrandingAdminResponse | None:
     result = get_supabase().table("tenant_branding").select("*").eq("tenant_id", str(tenant_id)).limit(1).execute()
     return BrandingAdminResponse(**result.data[0]) if result.data else None
+
+
+@router.post("/branding/{tenant_id}/logo")
+async def upload_logo_cliente(tenant_id: UUID, arquivo: UploadFile = File(...)) -> dict:
+    if arquivo.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=400, detail="Use JPG, PNG ou WebP.")
+    content = await arquivo.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande. Máximo 2 MB.")
+    ext = (arquivo.filename or "logo.jpg").rsplit(".", 1)[-1].lower()
+    path = f"{tenant_id}/logo.{ext}"
+    sb = get_supabase()
+    try:
+        sb.storage.from_("logos").remove([path])
+    except Exception:
+        pass
+    sb.storage.from_("logos").upload(path, content, {"content-type": arquivo.content_type})
+    url = sb.storage.from_("logos").get_public_url(path)
+    return {"url": url}
 
 
 @router.put("/branding/{tenant_id}", response_model=BrandingAdminResponse)

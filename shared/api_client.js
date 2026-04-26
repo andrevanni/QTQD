@@ -178,6 +178,15 @@
         body: JSON.stringify(payload),
       });
     },
+    uploadLogo(adminToken, tenantId, file) {
+      const form = new FormData();
+      form.append('arquivo', file);
+      return request(base(`/admin/branding/${tenantId}/logo`), {
+        method: 'POST',
+        headers: { 'x-admin-token': adminToken },
+        body: form,
+      });
+    },
 
     /* ── Admin — componentes config ──────────────────── */
     getComponentesConfig(adminToken, tenantId) {
