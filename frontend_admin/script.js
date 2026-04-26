@@ -976,19 +976,19 @@ function updateBrandingPreview(name, logoUrl) {
   }
 }
 
-// Preview local do arquivo selecionado antes de salvar
-$('brandingClientLogo')?.addEventListener('change', e => {
-  const file = e.target.files?.[0];
+// Preview local do arquivo selecionado antes de salvar (chamado via onchange no HTML)
+window.previewLogoFile = function(input) {
+  const file = input.files?.[0];
   if (!file) return;
-  const previewLogo = $('brandingPreviewLogo');
-  const previewFb   = $('brandingPreviewFallback');
+  const previewLogo = document.getElementById('brandingPreviewLogo');
+  const previewFb   = document.getElementById('brandingPreviewFallback');
   if (previewLogo) {
     previewLogo.src = URL.createObjectURL(file);
     previewLogo.classList.add('visible');
     previewLogo.style.display = 'block';
   }
   if (previewFb) previewFb.style.display = 'none';
-});
+};
 
 $('brandingForm').addEventListener('submit', async e => {
   e.preventDefault(); fbClear();

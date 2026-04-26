@@ -351,7 +351,7 @@
               <form id="brandingForm" class="stack-form">
                 <label class="field"><span>Cliente</span><select id="brandingClient"><option value="">Selecione um cliente</option></select></label>
                 <label class="field"><span>Nome exibido no portal</span><input id="brandingClientName" type="text" placeholder="Nome da farmácia"></label>
-                <label class="field"><span>Logo do cliente</span><input id="brandingClientLogo" type="file" accept=".jpg,.jpeg,.png,.webp"></label>
+                <label class="field"><span>Logo do cliente</span><input id="brandingClientLogo" type="file" accept=".jpg,.jpeg,.png,.webp" onchange="previewLogoFile(this)"></label>
                 <div class="hero-actions">
                   <button class="primary-button" type="submit">Salvar identidade</button>
                   <button id="resetBrandingButton" class="secondary-button" type="button">Limpar</button>
