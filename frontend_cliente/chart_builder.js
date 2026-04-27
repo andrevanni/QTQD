@@ -30,9 +30,10 @@
   function fmtVal(v, mode, field) {
     if (mode === 'percent') return fmtNum(v) + '%';
     if (!field) return fmtNum(v);
+    if (field.format === 'percent') return fmtPercent(v);
     if (field.format === 'days')    return fmtDays(v);
     if (field.format === 'number')  return fmtNum(v);
-    return fmtMoney(v);
+    return fmtMoneyShort(v);
   }
 
   function loadSaved() {
@@ -159,9 +160,16 @@
           ticks: {
             color: muted,
             font:  { size: 11, family: 'Manrope, sans-serif' },
-            callback: v => config.mode === 'percent'
-              ? fmtNum(v) + '%'
-              : fmtNum(v),
+            callback: v => {
+              if (config.mode === 'percent') return fmtNum(v) + '%';
+              const allPercent  = fields.every(f => f.format === 'percent');
+              const allCurrency = fields.every(f => !f.format || f.format === 'currency');
+              const allDays     = fields.every(f => f.format === 'days');
+              if (allPercent)  return fmtPercent(v);
+              if (allCurrency) return fmtMoneyShort(v);
+              if (allDays)     return fmtDays(v);
+              return fmtNum(v);
+            },
           },
           grid: { color: border, lineWidth: 0.8 },
         },
