@@ -131,35 +131,9 @@ function openCbNew(){$("cbNewCard")?.classList.remove("hidden");$("cbToggleNew")
 function closeCbNew(){$("cbNewCard")?.classList.add("hidden");$("cbToggleNew")?.classList.remove("hidden")}
 $("cbToggleNew")?.addEventListener("click",openCbNew);
 $("cbCollapseNew")?.addEventListener("click",closeCbNew);
-async function initializeClient(){applyTheme();applyBranding();openSection("inspetor");try{await loadRecordsFromSource();if(isApiMode()&&window.QTQD_API_CLIENT){try{const b=await window.QTQD_API_CLIENT.getMyBranding();if(b){const mapped={clientName:b.nome_portal||defaultBranding.clientName,clientLogoUrl:b.logo_cliente_url||''};localStorage.setItem(BRANDING_KEY,JSON.stringify(mapped));applyBranding()}}catch{}}}catch(error){loadRecordsFromLocal();setFeedback(`Modo API configurado, mas foi mantido fallback local: ${error.message}`)}if(!records.length){records=seedRecords();saveRecords()}renderAll();const latest=getLatestRecord();if(latest){fillForm(latest);renderCalculatedPreview(latest)}else renderCalculatedPreview();renderInspector();generateInspectorCharts()}
+async function initializeClient(){applyTheme();applyBranding();openSection("inspetor");try{await loadRecordsFromSource();if(isApiMode()&&window.QTQD_API_CLIENT){try{const [b,cfg]=await Promise.all([window.QTQD_API_CLIENT.getMyBranding().catch(()=>null),window.QTQD_API_CLIENT.getMyComponentesConfig().catch(()=>null)]);if(b){const mapped={clientName:b.nome_portal||defaultBranding.clientName,clientLogoUrl:b.logo_cliente_url||''};localStorage.setItem(BRANDING_KEY,JSON.stringify(mapped));applyBranding()}if(Array.isArray(cfg)&&cfg.length){const merged={...defaultFieldConfig};cfg.forEach(c=>{const key=c.codigo_componente;if(!key)return;if(key.startsWith('custom_')){if(!chartFieldCatalog.find(f=>f.key===key))chartFieldCatalog.push({key,label:c.label_customizado||key,format:'currency'});merged[key]={label:c.label_customizado||key,visible:c.visivel!==false}}else{merged[key]={label:c.label_customizado||defaultFieldConfig[key]?.label||key,visible:c.visivel!==false}}});localStorage.setItem(FIELD_CONFIG_KEY,JSON.stringify(merged))}}catch{}}}catch(error){loadRecordsFromLocal();setFeedback(`Modo API configurado, mas foi mantido fallback local: ${error.message}`)}if(!records.length){records=seedRecords();saveRecords()}renderAll();const latest=getLatestRecord();if(latest){fillForm(latest);renderCalculatedPreview(latest)}else renderCalculatedPreview();renderInspector();generateInspectorCharts()}
 (function(){const p=new URLSearchParams(location.search);const token=p.get("token");const tenantId=p.get("tenant_id");if(token&&tenantId&&window.QTQD_API_CLIENT){window.QTQD_API_CLIENT.setJwt(token);window.QTQD_API_CLIENT.setTenantId(tenantId);history.replaceState(null,"",location.pathname)}})();
 initializeClient();
-
-// Carrega config de campos do admin (visibilidade + labels) e injeta campos custom
-(async function() {
-  if (!isApiMode() || !window.QTQD_API_CLIENT) return;
-  try {
-    const cfg = await window.QTQD_API_CLIENT.getMyComponentesConfig();
-    if (!Array.isArray(cfg) || !cfg.length) return;
-    const merged = {...defaultFieldConfig};
-    cfg.forEach(c => {
-      const key = c.codigo_componente;
-      if (key.startsWith('custom_')) {
-        if (!chartFieldCatalog.find(f => f.key === key))
-          chartFieldCatalog.push({key, label: c.label_customizado || key, format: 'currency'});
-        merged[key] = {label: c.label_customizado || key, visible: c.visivel !== false};
-      } else {
-        merged[key] = {
-          label: c.label_customizado || defaultFieldConfig[key]?.label || key,
-          visible: c.visivel !== false
-        };
-      }
-    });
-    localStorage.setItem(FIELD_CONFIG_KEY, JSON.stringify(merged));
-    renderAll();
-    if(typeof window.renderChartsPanel==='function')window.renderChartsPanel();
-  } catch {}
-})();
 
 ;(function(){
   var k='qtqd_mini', btn=document.getElementById('sidebarMiniToggle');

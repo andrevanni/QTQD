@@ -257,7 +257,8 @@
 
     if (!savedCharts.length) { container.innerHTML = ''; return; }
 
-    container.innerHTML = savedCharts.map(ch => {
+    const total = savedCharts.length;
+    container.innerHTML = savedCharts.map((ch, idx) => {
       const rangeLabel = { weeks: 'Semanas', months: 'Meses', years: 'Anos' }[ch.range] || ch.range;
       const typeLabel  = ch.type === 'line' ? 'Linha' : 'Barra';
       return `
@@ -265,7 +266,7 @@
         <div class="card-header">
           <div>
             <p class="eyebrow">Gráfico salvo</p>
-            <h2 class="card-title">${ch.name}</h2>
+            <h2 class="card-title" id="ctitle-${ch.id}">${ch.name}</h2>
             <p class="txt-muted txt-xs">${ch.fields.length} indicador(es) · ${rangeLabel} · ${typeLabel} · ${ch.count} períodos</p>
           </div>
           <div class="card-actions" style="flex-wrap:wrap; gap:6px">
@@ -275,7 +276,17 @@
               <button class="chip"        data-view="table" data-cid="${ch.id}" type="button">Tabela</button>
             </div>
             <button class="chip${ch.showLabels ? ' active' : ''}" data-labels="${ch.id}" type="button">Rótulos</button>
+            <button class="btn btn-ghost" data-edit="${ch.id}" type="button">✏️ Editar</button>
             <button class="btn btn-ghost" data-del="${ch.id}" type="button">Remover</button>
+          </div>
+        </div>
+        <div id="cedit-${ch.id}" class="chart-edit-panel hidden">
+          <input type="text" class="chart-edit-name" value="${ch.name.replace(/"/g,'&quot;')}" placeholder="Nome do gráfico">
+          <div class="chart-edit-btns">
+            ${idx > 0 ? `<button class="chip" data-move-up="${ch.id}" type="button">↑ Acima</button>` : ''}
+            ${idx < total - 1 ? `<button class="chip" data-move-down="${ch.id}" type="button">↓ Abaixo</button>` : ''}
+            <button class="btn" data-save-edit="${ch.id}" type="button">Salvar</button>
+            <button class="btn btn-ghost" data-cancel-edit="${ch.id}" type="button">Cancelar</button>
           </div>
         </div>
         <div id="cw-${ch.id}" class="chart-canvas-outer">
@@ -529,6 +540,54 @@
           persistSaved();
           const card = savedContainer.querySelector(`[data-chart-id="${cid}"]`);
           if (card) card.remove();
+          return;
+        }
+
+        /* Editar — abrir/fechar painel de edição */
+        const editBtn = e.target.closest('[data-edit]');
+        if (editBtn) {
+          document.getElementById(`cedit-${editBtn.dataset.edit}`)?.classList.toggle('hidden');
+          return;
+        }
+
+        /* Cancelar edição */
+        const cancelEditBtn = e.target.closest('[data-cancel-edit]');
+        if (cancelEditBtn) {
+          document.getElementById(`cedit-${cancelEditBtn.dataset.cancelEdit}`)?.classList.add('hidden');
+          return;
+        }
+
+        /* Salvar edição de nome */
+        const saveEditBtn = e.target.closest('[data-save-edit]');
+        if (saveEditBtn) {
+          const cid = saveEditBtn.dataset.saveEdit;
+          const ch  = savedCharts.find(c => c.id === cid);
+          if (!ch) return;
+          const nameInput = document.querySelector(`#cedit-${cid} .chart-edit-name`);
+          const newName   = nameInput?.value.trim();
+          if (!newName) { if (nameInput) { nameInput.focus(); nameInput.style.borderColor = 'var(--danger,#ef4444)'; setTimeout(() => nameInput.style.borderColor = '', 2000); } return; }
+          ch.name = newName;
+          persistSaved();
+          renderSavedCharts();
+          return;
+        }
+
+        /* Mover para cima */
+        const upBtn = e.target.closest('[data-move-up]');
+        if (upBtn) {
+          const cid = upBtn.dataset.moveUp;
+          const idx = savedCharts.findIndex(c => c.id === cid);
+          if (idx > 0) { [savedCharts[idx - 1], savedCharts[idx]] = [savedCharts[idx], savedCharts[idx - 1]]; persistSaved(); renderSavedCharts(); }
+          return;
+        }
+
+        /* Mover para baixo */
+        const downBtn = e.target.closest('[data-move-down]');
+        if (downBtn) {
+          const cid = downBtn.dataset.moveDown;
+          const idx = savedCharts.findIndex(c => c.id === cid);
+          if (idx >= 0 && idx < savedCharts.length - 1) { [savedCharts[idx], savedCharts[idx + 1]] = [savedCharts[idx + 1], savedCharts[idx]]; persistSaved(); renderSavedCharts(); }
+          return;
         }
       });
     }

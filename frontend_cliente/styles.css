@@ -1516,6 +1516,37 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
   height: 100% !important;
 }
 
+/* Painel de edição inline do gráfico salvo */
+.chart-edit-panel {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.chart-edit-panel.hidden { display: none; }
+
+.chart-edit-name {
+  width: 100%;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.chart-edit-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 /* Card de gráfico salvo */
 .saved-chart-card {
   display: flex;
