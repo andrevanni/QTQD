@@ -23,6 +23,21 @@
 </head>
 <body>
 
+<!-- Cabeçalho exclusivo para impressão -->
+<div id="printHeader" class="print-only">
+  <div class="ph-left">
+    <img id="printClientLogo" class="ph-logo" alt="" style="display:none">
+    <div>
+      <div id="printClientName" class="ph-name">—</div>
+      <div class="ph-sub">Saúde Financeira Semanal · QTQD</div>
+    </div>
+  </div>
+  <div class="ph-right">
+    <span class="ph-qtqd"><span class="sb-qt">QT</span><span class="sb-qd">QD</span></span>
+    <div id="printDate" class="ph-date">—</div>
+  </div>
+</div>
+
 <div class="layout">
 
   <!-- ═══ SIDEBAR ═══ -->
@@ -30,8 +45,7 @@
 
     <div class="sb-header">
       <div class="sb-brand">
-        <img id="sidebarLogo" src="assets/logo_alta.jpg" alt="Service Farma" class="sb-logo">
-        <span class="sb-title">QTQD</span>
+        <span class="sb-title"><span class="sb-qt">QT</span><span class="sb-qd">QD</span></span>
       </div>
       <button id="sidebarMiniToggle" class="sb-toggle" type="button" aria-label="Recolher menu">
         <svg class="icon-collapse" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
@@ -555,8 +569,11 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/simple-statistics@7.8.8/dist/simple-statistics.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<!-- Rodapé exclusivo para impressão -->
+<div id="printFooter" class="print-only print-footer">
+  <img src="assets/logo_alta.jpg" alt="Service Farma" class="pf-logo">
+  <span>Service Farma · Grupo A3 · Direitos Reservados</span>
+</div>
 <script src="script.js"></script>
 <script src="chart_builder.js"></script>
 <script>

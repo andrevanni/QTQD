@@ -111,23 +111,17 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
 }
 
-.sb-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  object-fit: contain;
-  background: rgba(255,255,255,.12);
-  flex-shrink: 0;
-}
-
 .sb-title {
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
-  font-size: 15px;
-  color: #fff;
+  font-size: 20px;
+  letter-spacing: -0.03em;
   white-space: nowrap;
   overflow: hidden;
+  line-height: 1;
 }
+.sb-qt { color: #60a5fa; }
+.sb-qd { color: #f1f5f9; }
 
 .sb-toggle {
   background: transparent;
@@ -1508,3 +1502,102 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
 }
 
 .chart-data-table .latest-row td { background: var(--accent-soft); }
+
+/* ═══════════════════════════════════════════════════════
+   IMPRESSÃO / PDF
+   ═══════════════════════════════════════════════════════ */
+
+/* Elementos exclusivos de impressão — ocultos na tela */
+.print-only { display: none !important; }
+
+/* Cabeçalho de impressão */
+#printHeader {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 12px;
+  border-bottom: 2px solid #2563eb;
+  background: #fff;
+}
+.ph-left { display: flex; align-items: center; gap: 12px; }
+.ph-logo { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; }
+.ph-name { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 16px; color: #0f172a; }
+.ph-sub  { font-size: 11px; color: #64748b; margin-top: 2px; }
+.ph-right { text-align: right; }
+.ph-qtqd { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.03em; }
+.ph-date { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+/* Rodapé de impressão */
+.print-footer {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 24px;
+}
+.pf-logo { width: 28px; height: 28px; object-fit: contain; filter: grayscale(1); opacity: .6; }
+.print-footer span { font-size: 11px; color: #94a3b8; }
+
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  /* Mostrar cabeçalho e rodapé exclusivos */
+  .print-only { display: flex !important; }
+
+  /* Ocultar tudo que não é conteúdo do inspetor */
+  .sidebar,
+  .topbar,
+  #sidebarRevealButton,
+  .card-actions,
+  #inspectorInitial,
+  .section-view:not(#inspetor),
+  #cbToggleNew { display: none !important; }
+
+  /* Reset de layout */
+  body { background: #fff !important; margin: 0; }
+  .layout { display: block !important; }
+  .content { padding: 0 !important; margin: 0; }
+  .card { box-shadow: none !important; border: none !important; border-radius: 0 !important; padding: 0 !important; }
+
+  /* Forçar exibição do inspetor e seu conteúdo */
+  #inspetor,
+  #inspetor.hidden { display: block !important; }
+  #inspectorContent,
+  #inspectorContent.hidden { display: block !important; }
+
+  /* Cores para impressão */
+  .card-inner { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; }
+  .inspector-card { border: 1px solid #e2e8f0 !important; background: #fff !important; }
+  .inspector-card.good { border-left: 4px solid #16a34a !important; }
+  .inspector-card.bad  { border-left: 4px solid #dc2626 !important; }
+  .inspector-card.blue { border-left: 4px solid #2563eb !important; }
+  .inspector-card.warn { border-left: 4px solid #d97706 !important; }
+  .semaphore-item { border: 1px solid #e2e8f0 !important; }
+
+  /* Títulos e texto legíveis em branco */
+  .eyebrow    { color: #2563eb !important; }
+  .metric-title, h2, h3 { color: #0f172a !important; }
+  p, span, td, th { color: #374151 !important; }
+  .txt-muted  { color: #64748b !important; }
+  .txt-good   { color: #16a34a !important; }
+  .txt-bad    { color: #dc2626 !important; }
+  strong      { color: #0f172a !important; }
+
+  /* Tabelas */
+  table { border-collapse: collapse !important; width: 100% !important; }
+  th, td { border: 1px solid #e2e8f0 !important; padding: 6px 10px !important; font-size: 11px !important; }
+  thead th { background: #1e3a8a !important; color: #fff !important; }
+
+  /* Gráficos */
+  canvas { max-width: 100% !important; height: auto !important; }
+
+  /* Quebras de página */
+  .grid-2    { page-break-inside: avoid; break-inside: avoid; }
+  .card-inner { page-break-inside: avoid; break-inside: avoid; }
+  .chart-card-inner { page-break-before: auto; }
+
+  /* Grid 2 colunas em impressão */
+  .grid-2 { display: grid !important; grid-template-columns: 1fr 1fr; gap: 12px; }
+}
