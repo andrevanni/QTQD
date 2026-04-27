@@ -37,32 +37,42 @@ def _color_indice(v: float | None) -> str:
     return "#dc2626"
 
 
+SF_LOGO_URL = "https://qtqd-vt2a.vercel.app/cliente/assets/logo_alta.jpg"
+
+
 def build_relatorio_html(
     tenant_nome: str,
     portal_url: str,
     periodos: list[dict],  # lista de {data, indicadores: list[IndicadorCalculado]}
     incluir_inspetor: bool = False,
     incluir_graficos: bool = False,
+    logo_cliente_url: str | None = None,
 ) -> str:
     now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
     n = len(periodos)
+
+    # Bloco da logo do cliente no cabeçalho
+    if logo_cliente_url:
+        logo_block = f'<img src="{logo_cliente_url}" alt="{tenant_nome}" style="width:52px;height:52px;border-radius:10px;object-fit:contain;background:#fff;padding:4px;margin-bottom:12px;display:block;">'
+    else:
+        initials = "".join(w[0].upper() for w in tenant_nome.split()[:2])
+        logo_block = f'<div style="width:52px;height:52px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;margin-bottom:12px;">{initials}</div>'
 
     # Cabeçalho das colunas (datas)
     header_cells = "".join(
         f'<th style="{_th_style()}">{p["data"]}</th>' for p in periodos
     )
 
-    # Monta as linhas de indicadores que queremos mostrar
     INDICADORES_SHOW = [
-        ("qt_total",    "QT Total",           _fmt_brl,   None),
-        ("qd_total",    "QD Total",            _fmt_brl,   None),
-        ("saldo_qt_qd", "Saldo QT/QD",         _fmt_brl,   _color_saldo),
-        ("indice_qt_qd","Índice QT/QD",        _fmt_ratio, _color_indice),
-        ("saldo_sem_dividas", "Saldo s/ dívidas", _fmt_brl, _color_saldo),
-        ("pme",         "PME",                 _fmt_days,  None),
-        ("prazo_venda", "Prazo de Venda",      _fmt_days,  None),
-        ("prazo_medio_compra","Prazo Médio Compra",_fmt_days,None),
-        ("ciclo_financiamento","Ciclo Financeiro",_fmt_days,None),
+        ("qt_total",             "QT Total",           _fmt_brl,   None),
+        ("qd_total",             "QD Total",            _fmt_brl,   None),
+        ("saldo_qt_qd",          "Saldo QT/QD",         _fmt_brl,   _color_saldo),
+        ("indice_qt_qd",         "Índice QT/QD",        _fmt_ratio, _color_indice),
+        ("saldo_sem_dividas",    "Saldo s/ dívidas",    _fmt_brl,   _color_saldo),
+        ("pme",                  "PME",                 _fmt_days,  None),
+        ("prazo_venda",          "Prazo de Venda",      _fmt_days,  None),
+        ("prazo_medio_compra",   "Prazo Médio Compra",  _fmt_days,  None),
+        ("ciclo_financiamento",  "Ciclo Financeiro",    _fmt_days,  None),
     ]
 
     def get_ind(indicadores: list, codigo: str) -> float | None:
@@ -78,8 +88,16 @@ def build_relatorio_html(
         for p in periodos:
             v = get_ind(p["indicadores"], cod)
             color = color_fn(v) if color_fn else "#374151"
-            cells += f'<td style="padding:9px 14px;font-size:13px;color:{color};font-weight:{"700" if color_fn else "400"};border-bottom:1px solid #f1f5f9;text-align:right;white-space:nowrap;">{fmt_fn(v)}</td>'
-        rows_html += f'<tr style="background:{bg};"><td style="padding:9px 14px;font-size:12px;font-weight:600;color:#475569;border-bottom:1px solid #f1f5f9;white-space:nowrap;">{nome}</td>{cells}</tr>'
+            cells += (
+                f'<td style="padding:9px 14px;font-size:13px;color:{color};'
+                f'font-weight:{"700" if color_fn else "400"};border-bottom:1px solid #f1f5f9;'
+                f'text-align:right;white-space:nowrap;">{fmt_fn(v)}</td>'
+            )
+        rows_html += (
+            f'<tr style="background:{bg};">'
+            f'<td style="padding:9px 14px;font-size:12px;font-weight:600;color:#475569;'
+            f'border-bottom:1px solid #f1f5f9;white-space:nowrap;">{nome}</td>{cells}</tr>'
+        )
 
     graficos_block = ""
     if incluir_graficos:
@@ -110,16 +128,17 @@ def build_relatorio_html(
 <body style="margin:0;padding:20px;background:#f0f4f8;font-family:Arial,Helvetica,sans-serif;">
 <div style="max-width:900px;margin:0 auto;">
 
-  <!-- Header -->
+  <!-- Cabeçalho -->
   <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#2563eb 100%);border-radius:12px 12px 0 0;padding:28px 32px;">
+    {logo_block}
     <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#93c5fd;">
-      QTQD — Saúde Financeira
+      QTQD — Saúde Financeira Semanal
     </p>
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;">{tenant_nome}</h1>
     <p style="margin:0;font-size:14px;color:#bfdbfe;">Relatório de {n} período{"s" if n != 1 else ""} · Gerado em {now_str}</p>
   </div>
 
-  <!-- Meta bar -->
+  <!-- Barra de meta -->
   <div style="background:#1e3a8a;padding:10px 32px;display:flex;justify-content:space-between;align-items:center;">
     <span style="font-size:12px;color:#bfdbfe;">📅 {n} retrato{"s" if n != 1 else ""} incluído{"s" if n != 1 else ""}</span>
     <a href="{portal_url}" style="font-size:12px;color:#93c5fd;text-decoration:none;">Acessar portal →</a>
@@ -142,11 +161,12 @@ def build_relatorio_html(
   {inspetor_block}
 
   <!-- Rodapé -->
-  <div style="margin-top:20px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:#94a3b8;">
-      Enviado automaticamente pelo <strong>QTQD</strong> · Service Farma.<br>
-      Não responda a esta mensagem. Dúvidas: entre em contato com sua consultora.
-    </p>
+  <div style="margin-top:28px;padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;gap:12px;">
+    <img src="{SF_LOGO_URL}" alt="Service Farma" style="width:32px;height:32px;object-fit:contain;opacity:0.7;border-radius:6px;">
+    <div style="text-align:center;">
+      <p style="margin:0;font-size:12px;font-weight:700;color:#475569;">Service Farma · Grupo A3 · Direitos Reservados</p>
+      <p style="margin:4px 0 0;font-size:11px;color:#94a3b8;">Enviado automaticamente pelo sistema QTQD. Não responda a esta mensagem.</p>
+    </div>
   </div>
 
 </div>

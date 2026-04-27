@@ -204,8 +204,10 @@ def enviar_relatorio(tenant_id: UUID) -> dict:
     if not destinatarios:
         raise HTTPException(status_code=400, detail="Nenhum usuario ativo com e-mail encontrado para este tenant.")
 
-    # Busca branding para URL do portal
-    brand_res = sb.table("tenant_branding").select("nome_portal").eq("tenant_id", str(tenant_id)).limit(1).execute()
+    # Busca branding (nome do portal + logo)
+    brand_res = sb.table("tenant_branding").select("nome_portal,logo_cliente_url").eq("tenant_id", str(tenant_id)).limit(1).execute()
+    brand = brand_res.data[0] if brand_res.data else {}
+    logo_cliente_url = brand.get("logo_cliente_url") or None
     portal_url = "https://qtqd-vt2a.vercel.app/cliente"
 
     html = build_relatorio_html(
@@ -214,6 +216,7 @@ def enviar_relatorio(tenant_id: UUID) -> dict:
         periodos=periodos,
         incluir_inspetor=incluir_inspetor,
         incluir_graficos=incluir_graficos,
+        logo_cliente_url=logo_cliente_url,
     )
 
     from datetime import date
