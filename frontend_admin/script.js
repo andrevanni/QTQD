@@ -56,10 +56,9 @@ const CALCULATED_CATALOG = [
   { key: 'saldo',            label: 'Saldo (QT − QD)',             formula: 'QT Total − QD Total' },
   { key: 'indice_cobertura', label: 'Índice de Cobertura (%)',      formula: 'QT Total ÷ QD Total × 100' },
   { key: 'pme',              label: 'PME — Prazo Médio de Estoque', formula: 'Estoque ÷ CMV × 30' },
-  { key: 'pmr',              label: 'PMR — Prazo Médio de Receb.',  formula: 'Contas a receber ÷ (Faturamento ÷ 30)' },
-  { key: 'pmp',              label: 'PMP — Prazo Médio de Pgto.',   formula: 'Fornecedores ÷ (Compras ÷ 30)' },
-  { key: 'ciclo_operacional',label: 'Ciclo Operacional (dias)',     formula: 'PMR + PME' },
-  { key: 'ciclo_financeiro', label: 'Ciclo Financeiro (dias)',      formula: 'Ciclo Operacional − PMP' },
+  { key: 'prazo_venda',      label: 'Prazo de Venda (dias)',        formula: 'Contas a receber ÷ (Venda cupom ÷ 30)' },
+  { key: 'prazo_compra',     label: 'Prazo Médio de Compra (dias)', formula: 'Contas a pagar ÷ (Compras ÷ 30)' },
+  { key: 'ciclo_financeiro', label: 'Ciclo de Financiamento (dias)',formula: 'PMP − PMV − PME  (positivo = fornecedores financiam; negativo = farmácia precisa financiar)' },
 ];
 
 /* Compat: defaultFields mantido para template download */
