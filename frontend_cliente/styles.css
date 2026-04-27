@@ -1540,64 +1540,110 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
 .pf-logo { width: 28px; height: 28px; object-fit: contain; filter: grayscale(1); opacity: .6; }
 .print-footer span { font-size: 11px; color: #94a3b8; }
 
-@media print {
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+@page {
+  size: A4;
+  margin: 12mm 14mm 18mm;
+  @bottom-right { content: "Pág. " counter(page) " / " counter(pages); font-size: 9pt; color: #94a3b8; }
+}
 
-  /* Mostrar cabeçalho e rodapé exclusivos */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box !important; }
+
+  /* ── Reset crítico: remover overflow e height fixos que cortam conteúdo ── */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .layout {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .content {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    background: #fff !important;
+    display: block !important;
+  }
+
+  /* ── Elementos visíveis apenas na impressão ── */
   .print-only { display: flex !important; }
 
-  /* Ocultar tudo que não é conteúdo do inspetor */
+  /* ── Ocultar tudo que não faz parte do relatório ── */
   .sidebar,
   .topbar,
+  .page-hero,
   #sidebarRevealButton,
+  #feedbackBox,
   .card-actions,
   #inspectorInitial,
   .section-view:not(#inspetor),
   #cbToggleNew { display: none !important; }
 
-  /* Reset de layout */
-  body { background: #fff !important; margin: 0; }
-  .layout { display: block !important; }
-  .content { padding: 0 !important; margin: 0; }
-  .card { box-shadow: none !important; border: none !important; border-radius: 0 !important; padding: 0 !important; }
-
-  /* Forçar exibição do inspetor e seu conteúdo */
+  /* ── Forçar inspetor visível ── */
   #inspetor,
-  #inspetor.hidden { display: block !important; }
+  #inspetor.hidden          { display: block !important; }
   #inspectorContent,
-  #inspectorContent.hidden { display: block !important; }
+  #inspectorContent.hidden  { display: block !important; }
 
-  /* Cores para impressão */
-  .card-inner { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; }
-  .inspector-card { border: 1px solid #e2e8f0 !important; background: #fff !important; }
+  /* ── Card e containers ── */
+  .card {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .card-inner {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* ── KPI cards ── */
+  .inspector-hero-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; margin-bottom: 10px !important; }
+  .inspector-card { border: 1px solid #e2e8f0 !important; background: #fff !important; border-radius: 6px !important; padding: 12px !important; }
   .inspector-card.good { border-left: 4px solid #16a34a !important; }
   .inspector-card.bad  { border-left: 4px solid #dc2626 !important; }
   .inspector-card.blue { border-left: 4px solid #2563eb !important; }
   .inspector-card.warn { border-left: 4px solid #d97706 !important; }
-  .semaphore-item { border: 1px solid #e2e8f0 !important; }
 
-  /* Títulos e texto legíveis em branco */
-  .eyebrow    { color: #2563eb !important; }
+  /* ── Semáforo ── */
+  .semaphore-grid { display: grid !important; grid-template-columns: repeat(6,1fr) !important; gap: 8px !important; }
+  .semaphore-item { border: 1px solid #e2e8f0 !important; border-radius: 6px !important; padding: 8px !important; }
+
+  /* ── Grid 2 colunas ── */
+  .grid-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+
+  /* ── Cores tipográficas ── */
+  .eyebrow        { color: #2563eb !important; font-size: 10px !important; }
   .metric-title, h2, h3 { color: #0f172a !important; }
-  p, span, td, th { color: #374151 !important; }
-  .txt-muted  { color: #64748b !important; }
-  .txt-good   { color: #16a34a !important; }
-  .txt-bad    { color: #dc2626 !important; }
-  strong      { color: #0f172a !important; }
+  p, li           { color: #374151 !important; }
+  span            { color: inherit !important; }
+  .txt-muted      { color: #64748b !important; }
+  .txt-good, .insp-kpi-sub { color: #16a34a !important; }
+  .txt-bad        { color: #dc2626 !important; }
+  strong          { color: #0f172a !important; }
 
-  /* Tabelas */
-  table { border-collapse: collapse !important; width: 100% !important; }
-  th, td { border: 1px solid #e2e8f0 !important; padding: 6px 10px !important; font-size: 11px !important; }
-  thead th { background: #1e3a8a !important; color: #fff !important; }
+  /* ── Tabelas ── */
+  table { border-collapse: collapse !important; width: 100% !important; font-size: 10px !important; }
+  th, td { border: 1px solid #e2e8f0 !important; padding: 5px 8px !important; }
+  thead th { background: #1e3a8a !important; color: #fff !important; font-size: 10px !important; }
 
-  /* Gráficos */
-  canvas { max-width: 100% !important; height: auto !important; }
+  /* ── Gráfico: mantém altura proporcional ── */
+  .chart-card-inner canvas { width: 100% !important; max-height: 220px !important; }
 
-  /* Quebras de página */
-  .grid-2    { page-break-inside: avoid; break-inside: avoid; }
-  .card-inner { page-break-inside: avoid; break-inside: avoid; }
-  .chart-card-inner { page-break-before: auto; }
-
-  /* Grid 2 colunas em impressão */
-  .grid-2 { display: grid !important; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* ── Quebras de página ── */
+  #printHeader       { page-break-after: avoid; break-after: avoid; }
+  .inspector-hero-grid,
+  .card-inner        { page-break-inside: avoid; break-inside: avoid; }
+  .chart-card-inner  { page-break-before: auto; }
+  #printFooter       { page-break-before: avoid; break-before: avoid; margin-top: 16px !important; }
 }
