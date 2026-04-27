@@ -26,7 +26,7 @@ const fmtPercent=v=>v===null||v===undefined||Number.isNaN(v)?"-":`${new Intl.Num
 const fmtDate=v=>new Intl.DateTimeFormat("pt-BR",{dateStyle:"short"}).format(new Date(`${v}T00:00:00`));
 const avg=arr=>arr.length?arr.reduce((s,v)=>s+Number(v||0),0)/arr.length:0;
 const initials=name=>String(name||"CL").split(" ").filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join("")||"CL";
-function renderConnectionMode(){const r=getRuntimeConfig();connectionModeLabel.textContent=r.mode==="api"&&r.tenantId?`Modo conectado: API real (${r.tenantId})`:"Modo atual: simulação local"}
+function renderConnectionMode(){const r=getRuntimeConfig();connectionModeLabel.textContent=r.mode==="api"&&r.tenantId?`Modo conectado: API real (${r.tenantId})`:"Modo atual: simulação local";const seedBtn=$("seedDemoButton");if(seedBtn)seedBtn.style.display=isApiMode()?"none":""}
 function getBranding(){try{return {...defaultBranding,...JSON.parse(localStorage.getItem(BRANDING_KEY)||"{}")}}catch{return {...defaultBranding}}}
 function getTheme(){return localStorage.getItem(THEME_KEY)||"dark"}
 function applyTheme(theme=getTheme()){document.body.dataset.theme=theme;document.querySelectorAll("[data-theme-choice]").forEach(b=>b.classList.toggle("active",b.dataset.themeChoice===theme))}
@@ -157,6 +157,7 @@ initializeClient();
     });
     localStorage.setItem(FIELD_CONFIG_KEY, JSON.stringify(merged));
     renderAll();
+    if(typeof window.renderChartsPanel==='function')window.renderChartsPanel();
   } catch {}
 })();
 

@@ -54,7 +54,7 @@
       .filter(Boolean);
 
     const datasets = fields.map((field, i) => {
-      const raw  = points.map(p => Number(p.record[field.key] || 0));
+      const raw  = points.map(p => Number((typeof matrixVal==='function'?matrixVal(p.record,field.key):p.record[field.key])||0));
       const data = config.mode === 'percent' ? toPctSeries(raw) : raw;
       const color = PALETTE[i % PALETTE.length];
 
