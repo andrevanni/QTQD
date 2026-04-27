@@ -43,6 +43,8 @@ Compara **QT (Quanto Tenho)** com **QD (Quanto Devo)** e gera indicadores de sa�
 | `/cliente/(.*)` | `frontend_cliente/$1` |
 | `/admin` | `frontend_admin/index.html` |
 | `/admin/(.*)` | `frontend_admin/$1` |
+| `/instalar` | `frontend_instalar/index.html` |
+| `/instalar/(.*)` | `frontend_instalar/$1` |
 | `/shared/(.*)` | `shared/$1` |
 | `/api/(.*)` | `api/index.py` |
 | `/health` | `api/index.py` |
@@ -59,16 +61,21 @@ QTQD/
     styles.css
     script.js
     chart_builder.js      Gerador de gráficos customizados
+    manifest.json         PWA manifest (ícone, start_url, display standalone)
     sw.js                 Service Worker (cache qtqd-v3)
     assets/logo_alta.jpg
+    assets/icon-512.png
     data/qtqd_seed.js
   frontend_admin/         Painel administrativo
     index.html
     styles.css
     script.js
+  frontend_instalar/      Página de primeiro acesso do cliente (criação de senha + guia PWA)
+    index.html            Standalone — sem sidebar, sem nav
+    QTQD.url              Atalho Windows para área de trabalho (download)
   shared/                 Recursos compartilhados
     app_config.js         Configuração da API (mode: simulation/api, tenantId)
-    api_client.js         Cliente HTTP — inclui setJwt, setTenantId, abrirPortal, uploadLogo
+    api_client.js         Cliente HTTP — inclui setJwt, setTenantId, abrirPortal, uploadLogo, login
   backend/app/
     core/
       config.py           Settings (inclui portal_admin_email, portal_admin_password)
@@ -76,11 +83,13 @@ QTQD/
       admin_auth.py       Validação do X-Admin-Token
     db/client.py
     api/v1/
+      auth.py             POST /auth/login, POST /auth/definir-senha
       avaliacoes.py
       cliente_config.py
       admin_clientes.py
       admin_config.py     POST /admin/abrir-portal/{tenant_id}
                           POST /admin/branding/{tenant_id}/logo  (upload para Supabase Storage)
+                          POST /admin/usuarios/{id}/enviar-convite (gera link Supabase Auth + envia e-mail)
     schemas/avaliacoes.py
     services/
       calculos_qtqd.py    Indicadores calculados
@@ -207,9 +216,12 @@ Todos os campos financeiros ficam no JSONB `avaliacoes_semanais.valores`.
 
 ### Endpoints relevantes
 
+- `POST /api/v1/auth/login` — e-mail + senha → JWT + tenant_id (login independente do cliente)
+- `POST /api/v1/auth/definir-senha` — access_token Supabase + nova_senha → atualiza senha + retorna JWT + tenant_id
 - `POST /api/v1/admin/abrir-portal/{tenant_id}` — gera JWT para acesso ao portal cliente
 - `POST /api/v1/admin/branding/{tenant_id}/logo` — upload de logo (JPG/PNG/WebP ≤2MB) para Supabase Storage bucket `logos`
 - `GET/POST /api/v1/admin/usuarios` — gestão de `tenant_usuarios`
+- `POST /api/v1/admin/usuarios/{id}/enviar-convite` — gera link Supabase Auth via `generate_link(type="invite")` e envia e-mail com botão de criação de senha
 
 ### Supabase SDK — padrões
 
@@ -265,8 +277,11 @@ Todos os inputs numéricos usam `type="text" inputmode="decimal"`. O `fillForm()
 
 ## Frontend Cliente — Configuração de campos (admin → cliente)
 
-O admin configura visibilidade e labels em **Campos** (painel admin). O cliente carrega via `getMyComponentesConfig()` no startup. A lógica em `script.js` (bloco async ao final):
-1. Chama `getMyComponentesConfig()` da API
+O admin configura visibilidade e labels em **Campos** (painel admin). O cliente carrega via `getMyComponentesConfig()` no startup dentro de `initializeClient()`.
+
+**Ordem crítica (timing):** a config de campos é carregada em `Promise.all([getMyBranding(), getMyComponentesConfig()])` ANTES do primeiro `renderAll()`. Isso garante que campos ocultos não reapareçam ao abrir o portal.
+
+1. Carrega branding + config de campos em paralelo
 2. Aplica visibilidade e labels de **todos** os campos (não só `custom_`)
 3. Salva em `localStorage` (`qtqd_field_config_v1`)
 4. Chama `renderAll()` — propaga para formulário, painel e gerador de gráficos
@@ -322,6 +337,9 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 - Respeita `isFieldVisible()` — campos desativados no admin não aparecem
 - Configurador oculto por padrão, abre via botão "Criar novo gráfico" (`#cbToggleNew`)
 - Após salvar gráfico, configurador fecha automaticamente
+- **Botão Editar** em cada gráfico salvo: abre painel inline com campo de nome e botões ↑/↓ para reordenar
+- **Formatação correta por tipo de campo:** `fmtVal` trata `percent` (→ `fmtPercent`), `days` (→ `fmtDays`), `number` (→ `fmtNum`) e `currency` (→ `fmtMoneyShort` abreviado). Eixo Y também respeita o formato do campo.
+- **`matrixVal()` nos gráficos:** campos como `dividas`, `contas_receber`, `contas_pagar` usam `matrixVal()` para calcular totais corretos (evita valor zero quando campo direto é 0)
 
 ---
 
@@ -364,6 +382,32 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 - **Ativação por URL:** `?token=JWT&tenant_id=UUID` — portal lê, armazena e limpa a URL
 - **X-Tenant-Id:** `api_client.js` envia em todos os requests autenticados
 
+## Autenticação do cliente — fluxo completo
+
+### Primeiro acesso (via convite)
+1. Admin cria usuário em **Usuários** no painel admin (nome, e-mail, permissão)
+2. Admin clica **"Enviar convite + instalar app"** → backend gera link via `generate_link(type="invite")` + envia e-mail
+3. Cliente clica no botão do e-mail → abre `https://qtqd-vt2a.vercel.app/instalar#access_token=...`
+4. Página `/instalar` lê o `access_token` do hash, exibe formulário de senha
+5. Cliente digita senha → POST `/api/v1/auth/definir-senha` → backend atualiza senha + faz login + retorna JWT + tenant_id
+6. Frontend armazena JWT + tenant_id → redireciona para o portal já autenticado
+7. Cliente instala como PWA (botão na página) → ícone na área de trabalho
+
+### Acessos seguintes (login normal)
+- Portal detecta `qtqd_tenant_id_v1` sem `qtqd_jwt_v1` → exibe tela de login (`#loginOverlay`)
+- Cliente digita e-mail + senha → POST `/api/v1/auth/login` → JWT + tenant_id armazenados → portal carrega
+- JWT válido por 1 hora; ao expirar, próximo acesso exibe tela de login novamente
+
+### Detecção de JWT expirado
+- `initializeClient()` verifica: se `tenant_id` existe mas `jwt` não → exibe login imediatamente
+- Se `loadRecordsFromSource()` lança erro 401 → limpa JWT expirado → exibe login
+
+### Funções de login em `script.js`
+- `showLoginScreen()` / `hideLoginScreen()` — controla visibilidade do overlay `#loginOverlay`
+- `doLogin(email, password)` — chama `api_client.login()`, armazena credenciais
+- `handleLogin()` — handler do botão, chama `doLogin` e depois `initializeClient()`
+- `isExpiredOrUnauthorized(msg)` — detecta erros 401/unauthorized/expired
+
 ---
 
 ## Histórico de problemas resolvidos
@@ -388,6 +432,11 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 18. **Config de campos do admin não propagava:** o loader de `getMyComponentesConfig()` só processava campos `custom_`. Fix: aplicar visibilidade/labels de todos os campos e salvar no localStorage.
 19. **Inputs com formato inglês:** `type="number"` exibe ponto decimal. Fix: mudar para `type="text" inputmode="decimal"` + `parseMoney()` aceita pt-BR + `fillForm()` formata em pt-BR.
 20. **Preview de logo no admin não abria:** `addEventListener('change')` com timing. Fix: usar `onchange="previewLogoFile(this)"` inline no HTML + `URL.createObjectURL()`.
+21. **Campos ocultos reapareciam ao abrir portal:** `getMyComponentesConfig()` era chamado após `renderAll()` em IIFE separada. Fix: mover para dentro de `initializeClient()` com `Promise.all([branding, cfg])` antes do `renderAll()`.
+22. **Gráfico Dívidas zerado:** `chart_builder.js` usava `p.record[field.key]` diretamente, bypassando `matrixVal()`. Fix: usar `matrixVal(p.record, field.key)` nos gráficos salvos.
+23. **Percentual exibido como R$ nos gráficos:** `fmtVal` não tratava `field.format === 'percent'`. Fix: adicionar case e usar `fmtPercent(v)`. Eixo Y também atualizado para respeitar formato do campo.
+24. **Rótulos monetários muito longos nos gráficos:** `fmtVal` usava `fmtMoney` completo. Fix: usar `fmtMoneyShort` (abreviado: R$ 1,9M, R$ 234K).
+25. **Cliente perdia acesso ao expirar o JWT:** sem tela de login, portal caía em modo simulação silenciosamente. Fix: `#loginOverlay` detecta `tenant_id` sem `jwt` e exibe formulário de e-mail + senha.
 
 ---
 
