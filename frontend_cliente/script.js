@@ -14,7 +14,9 @@ let records=[],liquidityChartInstance=null,efficiencyChartInstance=null,financia
 const $=id=>document.getElementById(id);
 const getRuntimeConfig=()=>{const cfg=window.QTQD_APP_CONFIG||{mode:"simulation",tenantId:""};const storedTenant=localStorage.getItem("qtqd_tenant_id_v1");const hasJwt=!!localStorage.getItem("qtqd_jwt_v1");if(hasJwt&&storedTenant)return{...cfg,mode:"api",tenantId:storedTenant};return cfg};
 const isApiMode=()=>{const r=getRuntimeConfig();return r.mode==="api"&&!!r.tenantId&&!!window.QTQD_API_CLIENT};
-const parseMoney=v=>Number.isFinite(Number(v))?Number(v):0;
+const parseMoney=v=>{if(typeof v==="number")return Number.isFinite(v)?v:0;const s=String(v??'').trim();if(!s)return 0;const neg=s.startsWith('-');const abs=neg?s.slice(1):s;const cleaned=abs.includes(',')?abs.replace(/\./g,'').replace(',','.'):abs;const n=Number(cleaned);return Number.isFinite(n)?(neg?-n:n):0};
+const fmtNumInput=(v,dec=2)=>{const n=Number(v);return(Number.isFinite(n)&&n!==0)?n.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:Math.max(dec,3)}):''};
+
 const safeDivide=(a,b)=>b?a/b:null;
 const fmtMoney=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v||0));
 const fmtMoneyShort=v=>{const n=Number(v||0),a=Math.abs(n),s=n<0?'-':'';if(a>=1e6)return`${s}R$ ${new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2}).format(a/1e6)}M`;if(a>=1e3)return`${s}R$ ${new Intl.NumberFormat("pt-BR",{maximumFractionDigits:1}).format(a/1e3)}K`;return fmtMoney(v)};
@@ -43,7 +45,7 @@ const localRecordToApi=record=>({tenant_id:getRuntimeConfig().tenantId,semana_re
 async function loadRecordsFromSource(){if(isApiMode()){records=(await window.QTQD_API_CLIENT.listAvaliacoes(getRuntimeConfig().tenantId)).map(apiRecordToLocal);saveRecords();return}loadRecordsFromLocal()}
 function setFeedback(msg){feedbackBox.textContent=msg;feedbackBox.classList.remove("hidden")}
 function clearFeedback(){feedbackBox.textContent="";feedbackBox.classList.add("hidden")}
-function fillForm(record){recordIdInput.value=record.id;formModeBadge.textContent=`Editando ${fmtDate(record.weekDate)}`;$("weekDate").value=record.weekDate;$("recordStatus").value=record.status;componentLabels.forEach(([k])=>$(k).value=record[k]??"")}
+function fillForm(record){recordIdInput.value=record.id;formModeBadge.textContent=`Editando ${fmtDate(record.weekDate)}`;$("weekDate").value=record.weekDate;$("recordStatus").value=record.status;componentLabels.forEach(([k])=>{const el=$(k);if(!el)return;const v=record[k];el.value=(v||v===0)?fmtNumInput(v,2):'';})}
 function resetForm(){form.reset();recordIdInput.value="";formModeBadge.textContent="Nova semana";renderCalculatedPreview()}
 function collectFormData(){const payload={id:recordIdInput.value||crypto.randomUUID(),weekDate:$("weekDate").value,status:$("recordStatus").value};componentLabels.forEach(([k])=>payload[k]=parseMoney($(k).value));return createRecordFromValues(payload)}
 const getLatestRecord=()=>[...records].sort((a,b)=>b.weekDate.localeCompare(a.weekDate))[0]||null;
