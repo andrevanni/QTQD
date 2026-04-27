@@ -39,8 +39,10 @@ def calcular_indicadores(valores: AvaliacaoValores) -> list[IndicadorCalculado]:
     pme = _safe_divide(valores.estoque_custo * 30, valores.venda_custo_mes)
     prazo_medio_compra = _safe_divide(valores.contas_pagar * 30, valores.compras_mes)
     prazo_venda = _safe_divide(valores.contas_receber * 30, valores.venda_cupom_mes)
-    # Ciclo usa PMP e PMV como inputs do ERP quando fornecidos
-    ciclo_financiamento = (pme or 0) + valores.pmv - valores.pmp if (valores.pmp > 0 or valores.pmv > 0) else None
+    # Ciclo = PMP - PMV - PME  (positivo = fornecedores financiam, negativo = farmácia financia)
+    # Usa pme_excel quando disponível (mais preciso que o calculado)
+    pme_para_ciclo = valores.pme_excel if valores.pme_excel > 0 else (pme or 0)
+    ciclo_financiamento = valores.pmp - valores.pmv - pme_para_ciclo if (valores.pmp > 0 or valores.pmv > 0) else None
     indice_compra_venda = _safe_divide(valores.compras_mes, valores.venda_custo_mes)
     margem_bruta = _safe_divide(valores.venda_cupom_mes - valores.venda_custo_mes, valores.venda_cupom_mes)
     excesso_total = valores.excesso_curva_a + valores.excesso_curva_b + valores.excesso_curva_c + valores.excesso_curva_d
