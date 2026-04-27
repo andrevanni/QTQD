@@ -53,10 +53,20 @@ def build_relatorio_html(
 
     # Bloco da logo do cliente no cabeçalho
     if logo_cliente_url:
-        logo_block = f'<img src="{logo_cliente_url}" alt="{tenant_nome}" style="width:52px;height:52px;border-radius:10px;object-fit:contain;background:#fff;padding:4px;margin-bottom:12px;display:block;">'
+        logo_block = (
+            f'<img src="{logo_cliente_url}" alt="{tenant_nome}" style="'
+            f'width:64px;height:64px;border-radius:14px;object-fit:contain;'
+            f'background:#ffffff;padding:6px;margin-bottom:14px;display:block;'
+            f'box-shadow:0 2px 8px rgba(0,0,0,.18);">'
+        )
     else:
         initials = "".join(w[0].upper() for w in tenant_nome.split()[:2])
-        logo_block = f'<div style="width:52px;height:52px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;margin-bottom:12px;">{initials}</div>'
+        logo_block = (
+            f'<div style="width:64px;height:64px;border-radius:14px;'
+            f'background:rgba(255,255,255,.18);display:inline-flex;align-items:center;'
+            f'justify-content:center;font-size:22px;font-weight:700;color:#fff;'
+            f'margin-bottom:14px;">{initials}</div>'
+        )
 
     # Cabeçalho das colunas (datas)
     header_cells = "".join(
@@ -162,7 +172,7 @@ def build_relatorio_html(
 
   <!-- Rodapé -->
   <div style="margin-top:28px;padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;gap:12px;">
-    <img src="{SF_LOGO_URL}" alt="Service Farma" style="width:32px;height:32px;object-fit:contain;opacity:0.7;border-radius:6px;">
+    <img src="{SF_LOGO_URL}" alt="Service Farma" style="width:44px;height:44px;object-fit:contain;border-radius:12px;background:#fff;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.12);">
     <div style="text-align:center;">
       <p style="margin:0;font-size:12px;font-weight:700;color:#475569;">Service Farma · Grupo A3 · Direitos Reservados</p>
       <p style="margin:4px 0 0;font-size:11px;color:#94a3b8;">Enviado automaticamente pelo sistema QTQD. Não responda a esta mensagem.</p>

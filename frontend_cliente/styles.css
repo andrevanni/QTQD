@@ -175,22 +175,25 @@ a { color: inherit; text-decoration: none; }
 
 /* Logo do cliente */
 .client-logo-shell {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.08);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
+  padding: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
 }
 
 .client-logo-shell.sm {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  padding: 2px;
 }
 
 .client-logo {
@@ -198,6 +201,7 @@ a { color: inherit; text-decoration: none; }
   height: 100%;
   object-fit: contain;
   display: none;
+  border-radius: 9px;
 }
 
 .client-logo.visible { display: block; }
@@ -205,8 +209,9 @@ a { color: inherit; text-decoration: none; }
 .client-fallback {
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
-  font-size: 11px;
-  color: var(--sidebar-muted);
+  font-size: 12px;
+  color: #64748b;
+  border-radius: 9px;
 }
 
 /* Navegação */
@@ -289,18 +294,24 @@ a { color: inherit; text-decoration: none; }
 }
 
 .sb-footer-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   overflow: hidden;
-  background: rgba(255,255,255,.08);
+  background: #fff;
   flex-shrink: 0;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
 }
 
 .sb-footer-logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  border-radius: 9px;
 }
 
 .sb-footer-info {
@@ -1520,7 +1531,16 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
   background: #fff;
 }
 .ph-left { display: flex; align-items: center; gap: 12px; }
-.ph-logo { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; }
+.ph-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #fff;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
+}
 .ph-name { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 16px; color: #0f172a; }
 .ph-sub  { font-size: 11px; color: #64748b; margin-top: 2px; }
 .ph-right { text-align: right; }
@@ -1537,7 +1557,15 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
   border-top: 1px solid #e2e8f0;
   margin-top: 24px;
 }
-.pf-logo { width: 28px; height: 28px; object-fit: contain; filter: grayscale(1); opacity: .6; }
+.pf-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+  padding: 3px;
+  border: 1px solid #e2e8f0;
+}
 .print-footer span { font-size: 11px; color: #94a3b8; }
 
 @page {
