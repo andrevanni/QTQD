@@ -1653,12 +1653,21 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
   /* ── Cores tipográficas ── */
   .eyebrow        { color: #2563eb !important; font-size: 10px !important; }
   .metric-title, h2, h3 { color: #0f172a !important; }
-  p, li           { color: #374151 !important; }
-  span            { color: inherit !important; }
+  p, li, div      { color: #374151 !important; }
   .txt-muted      { color: #64748b !important; }
-  .txt-good, .insp-kpi-sub { color: #16a34a !important; }
+  .txt-good       { color: #16a34a !important; }
   .txt-bad        { color: #dc2626 !important; }
   strong          { color: #0f172a !important; }
+
+  /* ── Diagnóstico IA — streaming text ── */
+  .insp-ai-body,
+  .stream-line,
+  .stream-bullet  { color: #374151 !important; }
+  .stream-section { color: #2563eb !important; font-weight: 700 !important; }
+  .stream-bullet  { border-left-color: #cbd5e1 !important; }
+  .insp-cursor,
+  #inspectorAnalysisStatus { display: none !important; }
+  .insp-ai-icon   { font-size: 18px !important; }
 
   /* ── Tabelas ── */
   table { border-collapse: collapse !important; width: 100% !important; font-size: 10px !important; }
