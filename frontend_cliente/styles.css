@@ -804,11 +804,35 @@ body.sidebar-mini .icon-expand       { display: block; }
 /* Ícone no cabeçalho do grupo */
 .matrix-icon { margin-right: 6px; font-size: 14px; }
 
-/* Sub-itens: indent e fonte menor */
+/* Linha pai (contas_receber, dividas, pmv etc.) */
+.matrix-table td.row-subheader {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  padding-left: 14px !important;
+}
+.matrix-table td.matrix-sticky.row-subheader {
+  background: var(--surface-2) !important;
+  padding-left: 14px !important;
+}
+
+/* Sub-itens diretos (nível 2) */
 .matrix-sticky.matrix-subitem {
   padding-left: 22px !important;
   font-weight: 500 !important;
   font-size: 12px !important;
+  color: var(--muted) !important;
+}
+
+/* Sub-itens profundos (nível 3 — filhos de row-subheader) */
+.matrix-sticky.matrix-subitem-deep {
+  padding-left: 32px !important;
+  font-weight: 400 !important;
+  font-size: 11px !important;
+  color: var(--muted) !important;
+}
+.matrix-table td.matrix-subitem-deep {
+  font-size: 11px !important;
   color: var(--muted) !important;
 }
 
