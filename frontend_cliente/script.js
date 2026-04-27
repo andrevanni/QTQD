@@ -133,21 +133,28 @@ async function initializeClient(){applyTheme();applyBranding();openSection("insp
 (function(){const p=new URLSearchParams(location.search);const token=p.get("token");const tenantId=p.get("tenant_id");if(token&&tenantId&&window.QTQD_API_CLIENT){window.QTQD_API_CLIENT.setJwt(token);window.QTQD_API_CLIENT.setTenantId(tenantId);history.replaceState(null,"",location.pathname)}})();
 initializeClient();
 
-// Injeta campos personalizados do admin no catálogo de gráficos
+// Carrega config de campos do admin (visibilidade + labels) e injeta campos custom
 (async function() {
   if (!isApiMode() || !window.QTQD_API_CLIENT) return;
   try {
     const cfg = await window.QTQD_API_CLIENT.getMyComponentesConfig();
-    if (!Array.isArray(cfg)) return;
+    if (!Array.isArray(cfg) || !cfg.length) return;
+    const merged = {...defaultFieldConfig};
     cfg.forEach(c => {
-      if (!c.codigo_componente.startsWith('custom_')) return;
-      if (!chartFieldCatalog.find(f => f.key === c.codigo_componente)) {
-        chartFieldCatalog.push({ key: c.codigo_componente, label: c.label_customizado || c.codigo_componente, format: 'currency' });
-      }
-      if (!defaultFieldConfig[c.codigo_componente]) {
-        defaultFieldConfig[c.codigo_componente] = { label: c.label_customizado || c.codigo_componente, visible: c.visivel !== false };
+      const key = c.codigo_componente;
+      if (key.startsWith('custom_')) {
+        if (!chartFieldCatalog.find(f => f.key === key))
+          chartFieldCatalog.push({key, label: c.label_customizado || key, format: 'currency'});
+        merged[key] = {label: c.label_customizado || key, visible: c.visivel !== false};
+      } else {
+        merged[key] = {
+          label: c.label_customizado || defaultFieldConfig[key]?.label || key,
+          visible: c.visivel !== false
+        };
       }
     });
+    localStorage.setItem(FIELD_CONFIG_KEY, JSON.stringify(merged));
+    renderAll();
   } catch {}
 })();
 
