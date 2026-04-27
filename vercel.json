@@ -14,6 +14,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "frontend_instalar/**",
+      "use": "@vercel/static"
+    },
+    {
       "src": "shared/**",
       "use": "@vercel/static"
     },
@@ -70,6 +74,14 @@
     {
       "src": "/admin/(.*)",
       "dest": "/frontend_admin/$1"
+    },
+    {
+      "src": "/instalar",
+      "dest": "/frontend_instalar/index.html"
+    },
+    {
+      "src": "/instalar/(.*)",
+      "dest": "/frontend_instalar/$1"
     },
     {
       "src": "/shared/(.*)",

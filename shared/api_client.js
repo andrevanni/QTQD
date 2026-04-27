@@ -81,6 +81,15 @@
       });
     },
 
+    /* Auth do cliente (sem JWT) */
+    login(email, password) {
+      return request(base('/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+    },
+
     /* Health */
     health() {
       return request(config.healthUrl || base('/../../health'), { method: 'GET' });

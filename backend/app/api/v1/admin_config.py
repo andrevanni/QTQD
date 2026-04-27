@@ -242,9 +242,25 @@ def listar_usuarios(tenant_id: UUID | None = None) -> list[UsuarioAdminResponse]
 
 @router.post("/usuarios", response_model=UsuarioAdminResponse, status_code=201)
 def criar_usuario(payload: UsuarioAdminCreateRequest) -> UsuarioAdminResponse:
+    sb = get_supabase()
     data = payload.model_dump()
     data["tenant_id"] = str(data["tenant_id"])
-    result = get_supabase().table("tenant_usuarios").insert(data).execute()
+
+    # Cria (ou convida) o usuário no Supabase Auth e obtém o user_id
+    instalar_url = "https://qtqd-vt2a.vercel.app/instalar"
+    try:
+        link_resp = sb.auth.admin.generate_link({
+            "type": "invite",
+            "email": payload.email,
+            "options": {"redirect_to": instalar_url},
+        })
+        auth_user = getattr(link_resp, "user", None)
+        if auth_user and getattr(auth_user, "id", None):
+            data["user_id"] = str(auth_user.id)
+    except Exception:
+        pass  # usuário pode já existir no Auth; continua sem user_id
+
+    result = sb.table("tenant_usuarios").insert(data).execute()
     if not result.data:
         raise HTTPException(status_code=500, detail="Falha ao criar usuario.")
     return UsuarioAdminResponse(**result.data[0])
@@ -268,21 +284,35 @@ def enviar_convite_usuario(usuario_id: UUID) -> dict:
 
     sb = get_supabase()
 
-    # Busca usuário
     u_res = sb.table("tenant_usuarios").select("*").eq("id", str(usuario_id)).limit(1).execute()
     if not u_res.data:
         raise HTTPException(status_code=404, detail="Usuario nao encontrado.")
     u = u_res.data[0]
 
-    # Busca nome do tenant
     t_res = sb.table("tenants").select("nome").eq("id", str(u["tenant_id"])).limit(1).execute()
     tenant_nome = t_res.data[0]["nome"] if t_res.data else "Service Farma"
-
-    # Busca branding para personalizar
     b_res = sb.table("tenant_branding").select("nome_portal").eq("tenant_id", str(u["tenant_id"])).limit(1).execute()
     portal_nome = (b_res.data[0].get("nome_portal") or tenant_nome) if b_res.data else tenant_nome
 
-    portal_url = "https://qtqd-vt2a.vercel.app/cliente"
+    # Gera link de convite via Supabase Auth (cria o usuário Auth se não existir)
+    instalar_url = "https://qtqd-vt2a.vercel.app/instalar"
+    setup_link = instalar_url  # fallback se generate_link falhar
+    try:
+        link_resp = sb.auth.admin.generate_link({
+            "type": "invite",
+            "email": u["email"],
+            "options": {"redirect_to": instalar_url},
+        })
+        props = getattr(link_resp, "properties", None)
+        if props:
+            setup_link = getattr(props, "action_link", instalar_url)
+        # Armazena user_id se ainda não estiver salvo
+        auth_user = getattr(link_resp, "user", None)
+        if auth_user and getattr(auth_user, "id", None) and not u.get("user_id"):
+            sb.table("tenant_usuarios").update({"user_id": str(auth_user.id)}).eq("id", str(usuario_id)).execute()
+    except Exception:
+        pass
+
     perm_label = {"edita": "Edição", "visualiza": "Somente leitura", "relatorio": "Somente relatórios"}.get(u.get("permissao", ""), "Acesso")
 
     html = f"""<!DOCTYPE html>
@@ -300,29 +330,24 @@ def enviar_convite_usuario(usuario_id: UUID) -> dict:
   <div style="background:#ffffff;padding:28px 32px;border-radius:0 0 12px 12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);">
     <p style="margin:0 0 16px;font-size:15px;color:#374151;">Olá, <strong>{u['nome']}</strong>!</p>
 
-    <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
+    <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.6;">
       Você foi cadastrado no sistema <strong>QTQD — Quanto Tenho, Quanto Devo</strong>
       da <strong>{tenant_nome}</strong> pela equipe <strong>Service Farma</strong>.
+      Clique no botão abaixo para criar sua senha e instalar o aplicativo.
     </p>
+
+    <div style="text-align:center;margin:0 0 28px;">
+      <a href="{setup_link}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:16px 36px;border-radius:10px;font-size:16px;font-weight:700;letter-spacing:0.01em;">
+        🔑 Criar minha senha e instalar o app →
+      </a>
+      <p style="margin:10px 0 0;font-size:12px;color:#94a3b8;">Este link expira em 24 horas.</p>
+    </div>
 
     <div style="background:#f8fafc;border-radius:8px;padding:16px 20px;margin:0 0 24px;border:1px solid #e2e8f0;">
       <p style="margin:0 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Seus dados de acesso</p>
       <p style="margin:0 0 4px;font-size:14px;color:#374151;">📧 <strong>E-mail:</strong> {u['email']}</p>
       <p style="margin:0 0 4px;font-size:14px;color:#374151;">🔑 <strong>Permissão:</strong> {perm_label}</p>
       {f'<p style="margin:0;font-size:14px;color:#374151;">💼 <strong>Função:</strong> {u["funcao"]}</p>' if u.get("funcao") else ''}
-    </div>
-
-    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#374151;">📱 Como instalar o aplicativo:</p>
-    <ol style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#374151;line-height:1.8;">
-      <li>Acesse: <a href="{portal_url}" style="color:#2563eb;">{portal_url}</a></li>
-      <li>No navegador, clique em <strong>"Instalar"</strong> ou <strong>"Adicionar à tela inicial"</strong></li>
-      <li>O ícone <strong>QT/QD</strong> aparecerá na sua área de trabalho</li>
-    </ol>
-
-    <div style="text-align:center;margin:24px 0;">
-      <a href="{portal_url}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;">
-        Acessar o Portal QTQD →
-      </a>
     </div>
 
     <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:16px;">
@@ -336,11 +361,7 @@ def enviar_convite_usuario(usuario_id: UUID) -> dict:
 </html>"""
 
     try:
-        send_html(
-            to=[u["email"]],
-            subject=f"Convite QTQD — {portal_nome}",
-            html=html,
-        )
+        send_html(to=[u["email"]], subject=f"Convite QTQD — {portal_nome}", html=html)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao enviar e-mail: {e}")
 
