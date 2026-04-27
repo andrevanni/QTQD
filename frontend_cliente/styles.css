@@ -1577,110 +1577,65 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box !important; }
 
-  /* ── Reset crítico: remover overflow e height fixos que cortam conteúdo ── */
-  html, body {
-    height: auto !important;
-    overflow: visible !important;
-    background: #fff !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  .layout {
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-  .content {
-    height: auto !important;
-    overflow: visible !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    gap: 0 !important;
-    background: #fff !important;
-    display: block !important;
+  /* ── PASSO 1: Resetar variáveis CSS para tema claro — resolve todos os var() escuros ── */
+  body, :root {
+    --bg:          #f1f5f9 !important;
+    --surface:     #ffffff !important;
+    --surface-2:   #f8fafc !important;
+    --border:      #e2e8f0 !important;
+    --border-strong: #cbd5e1 !important;
+    --ink:         #0f172a !important;
+    --muted:       #64748b !important;
+    --accent:      #2563eb !important;
+    --accent-soft: rgba(37,99,235,.10) !important;
+    --good:        #16a34a !important;
+    --good-soft:   rgba(22,163,74,.10) !important;
+    --bad:         #dc2626 !important;
+    --bad-soft:    rgba(220,38,38,.10) !important;
+    --warn:        #d97706 !important;
+    --warn-soft:   rgba(217,119,6,.10) !important;
   }
 
-  /* ── Elementos visíveis apenas na impressão ── */
-  .print-only { display: flex !important; }
+  /* ── PASSO 2: Reset de layout — overflow e height que cortam o conteúdo ── */
+  html, body    { height: auto !important; overflow: visible !important; background: #fff !important; margin: 0 !important; padding: 0 !important; }
+  .layout       { display: block !important; height: auto !important; overflow: visible !important; }
+  .content      { height: auto !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; gap: 0 !important; display: block !important; background: #fff !important; }
 
-  /* ── Ocultar tudo que não faz parte do relatório ── */
-  .sidebar,
-  .topbar,
-  .page-hero,
-  #sidebarRevealButton,
-  #feedbackBox,
-  .card-actions,
-  #inspectorInitial,
+  /* ── PASSO 3: Ocultar o que não pertence ao relatório ── */
+  .sidebar, .topbar, .page-hero,
+  #sidebarRevealButton, #feedbackBox,
+  .card-actions, #inspectorInitial,
   .section-view:not(#inspetor),
-  #cbToggleNew { display: none !important; }
-
-  /* ── Forçar inspetor visível ── */
-  #inspetor,
-  #inspetor.hidden          { display: block !important; }
-  #inspectorContent,
-  #inspectorContent.hidden  { display: block !important; }
-
-  /* ── Card e containers ── */
-  .card {
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-  }
-  .card-inner {
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    margin-bottom: 10px !important;
-  }
-
-  /* ── KPI cards ── */
-  .inspector-hero-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; margin-bottom: 10px !important; }
-  .inspector-card { border: 1px solid #e2e8f0 !important; background: #fff !important; border-radius: 6px !important; padding: 12px !important; }
-  .inspector-card.good { border-left: 4px solid #16a34a !important; }
-  .inspector-card.bad  { border-left: 4px solid #dc2626 !important; }
-  .inspector-card.blue { border-left: 4px solid #2563eb !important; }
-  .inspector-card.warn { border-left: 4px solid #d97706 !important; }
-
-  /* ── Semáforo ── */
-  .semaphore-grid { display: grid !important; grid-template-columns: repeat(6,1fr) !important; gap: 8px !important; }
-  .semaphore-item { border: 1px solid #e2e8f0 !important; border-radius: 6px !important; padding: 8px !important; }
-
-  /* ── Grid 2 colunas ── */
-  .grid-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
-
-  /* ── Cores tipográficas ── */
-  .eyebrow        { color: #2563eb !important; font-size: 10px !important; }
-  .metric-title, h2, h3 { color: #0f172a !important; }
-  p, li, div      { color: #374151 !important; }
-  .txt-muted      { color: #64748b !important; }
-  .txt-good       { color: #16a34a !important; }
-  .txt-bad        { color: #dc2626 !important; }
-  strong          { color: #0f172a !important; }
-
-  /* ── Diagnóstico IA — streaming text ── */
-  .insp-ai-body,
-  .stream-line,
-  .stream-bullet  { color: #374151 !important; }
-  .stream-section { color: #2563eb !important; font-weight: 700 !important; }
-  .stream-bullet  { border-left-color: #cbd5e1 !important; }
+  #cbToggleNew,
   .insp-cursor,
   #inspectorAnalysisStatus { display: none !important; }
-  .insp-ai-icon   { font-size: 18px !important; }
+
+  /* ── PASSO 4: Elementos exclusivos de impressão ── */
+  .print-only { display: flex !important; }
+
+  /* ── PASSO 5: Forçar inspetor visível ── */
+  #inspetor, #inspetor.hidden                   { display: block !important; }
+  #inspectorContent, #inspectorContent.hidden   { display: block !important; }
+
+  /* ── Card wrapper ── */
+  .card { box-shadow: none !important; border: none !important; border-radius: 0 !important; padding: 0 !important; background: #fff !important; }
+  .card-inner { margin-bottom: 10px !important; page-break-inside: avoid; break-inside: avoid; }
+
+  /* ── Grid ── */
+  .inspector-hero-grid { grid-template-columns: 1fr 1fr !important; }
+  .semaphore-grid      { grid-template-columns: repeat(6,1fr) !important; }
+  .grid-2              { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
 
   /* ── Tabelas ── */
-  table { border-collapse: collapse !important; width: 100% !important; font-size: 10px !important; }
-  th, td { border: 1px solid #e2e8f0 !important; padding: 5px 8px !important; }
-  thead th { background: #1e3a8a !important; color: #fff !important; font-size: 10px !important; }
+  table    { border-collapse: collapse !important; width: 100% !important; }
+  th, td   { font-size: 10px !important; padding: 5px 8px !important; }
+  thead th { background: #1e3a8a !important; color: #fff !important; }
 
-  /* ── Gráfico: mantém altura proporcional ── */
+  /* ── Gráfico ── */
   .chart-card-inner canvas { width: 100% !important; max-height: 220px !important; }
 
   /* ── Quebras de página ── */
-  #printHeader       { page-break-after: avoid; break-after: avoid; }
-  .inspector-hero-grid,
-  .card-inner        { page-break-inside: avoid; break-inside: avoid; }
-  .chart-card-inner  { page-break-before: auto; }
-  #printFooter       { page-break-before: avoid; break-before: avoid; margin-top: 16px !important; }
+  #printHeader      { page-break-after: avoid; break-after: avoid; }
+  .inspector-hero-grid, .card-inner { page-break-inside: avoid; break-inside: avoid; }
+  #printFooter      { margin-top: 16px !important; }
 }
