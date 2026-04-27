@@ -1601,65 +1601,97 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box !important; }
 
-  /* ── PASSO 1: Resetar variáveis CSS para tema claro — resolve todos os var() escuros ── */
-  body, :root {
-    --bg:          #f1f5f9 !important;
-    --surface:     #ffffff !important;
-    --surface-2:   #f8fafc !important;
-    --border:      #e2e8f0 !important;
-    --border-strong: #cbd5e1 !important;
-    --ink:         #0f172a !important;
-    --muted:       #64748b !important;
-    --accent:      #2563eb !important;
-    --accent-soft: rgba(37,99,235,.10) !important;
-    --good:        #16a34a !important;
-    --good-soft:   rgba(22,163,74,.10) !important;
-    --bad:         #dc2626 !important;
-    --bad-soft:    rgba(220,38,38,.10) !important;
-    --warn:        #d97706 !important;
-    --warn-soft:   rgba(217,119,6,.10) !important;
+  /* ── CSS variables: override dark theme (body[data-theme=dark] tem spec maior que :root) ── */
+  body[data-theme], body[data-theme="dark"], body[data-theme="light"], body, :root {
+    --bg:#f1f5f9 !important; --surface:#fff !important; --surface-2:#f8fafc !important;
+    --border:#e2e8f0 !important; --border-strong:#cbd5e1 !important;
+    --ink:#0f172a !important; --muted:#64748b !important;
+    --accent:#2563eb !important; --accent-soft:rgba(37,99,235,.10) !important;
+    --good:#16a34a !important; --good-soft:rgba(22,163,74,.10) !important;
+    --bad:#dc2626 !important; --bad-soft:rgba(220,38,38,.10) !important;
+    --warn:#d97706 !important; --warn-soft:rgba(217,119,6,.10) !important;
   }
 
-  /* ── PASSO 2: Reset de layout — overflow e height que cortam o conteúdo ── */
-  html, body    { height: auto !important; overflow: visible !important; background: #fff !important; margin: 0 !important; padding: 0 !important; }
-  .layout       { display: block !important; height: auto !important; overflow: visible !important; }
-  .content      { height: auto !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; gap: 0 !important; display: block !important; background: #fff !important; }
+  /* ── Layout: remover overflow/height que cortam ── */
+  html, body    { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; }
+  .layout       { display:block !important; height:auto !important; overflow:visible !important; }
+  .content      { height:auto !important; overflow:visible !important; padding:0 !important; margin:0 !important; gap:0 !important; display:block !important; background:#fff !important; }
 
-  /* ── PASSO 3: Ocultar o que não pertence ao relatório ── */
-  .sidebar, .topbar, .page-hero,
-  #sidebarRevealButton, #feedbackBox,
-  .card-actions, #inspectorInitial,
-  .section-view:not(#inspetor),
-  #cbToggleNew,
-  .insp-cursor,
-  #inspectorAnalysisStatus { display: none !important; }
+  /* ── Ocultar UI ── */
+  .sidebar, .topbar, .page-hero, #sidebarRevealButton, #feedbackBox,
+  .card-actions, #inspectorInitial, .section-view:not(#inspetor),
+  #cbToggleNew, .insp-cursor, #inspectorAnalysisStatus { display:none !important; }
 
-  /* ── PASSO 4: Elementos exclusivos de impressão ── */
-  .print-only { display: flex !important; }
+  /* ── Print-only ── */
+  .print-only { display:flex !important; }
 
-  /* ── PASSO 5: Forçar inspetor visível ── */
-  #inspetor, #inspetor.hidden                   { display: block !important; }
-  #inspectorContent, #inspectorContent.hidden   { display: block !important; }
+  /* ── Forçar inspetor e conteúdo ── */
+  #inspetor, #inspetor.hidden                 { display:block !important; }
+  #inspectorContent, #inspectorContent.hidden { display:block !important; }
 
-  /* ── Card wrapper ── */
-  .card { box-shadow: none !important; border: none !important; border-radius: 0 !important; padding: 0 !important; background: #fff !important; }
-  .card-inner { margin-bottom: 10px !important; page-break-inside: avoid; break-inside: avoid; }
+  /* ── Card ── */
+  .card { box-shadow:none !important; border:none !important; border-radius:0 !important; padding:0 !important; background:#fff !important; }
+  .card-inner { margin-bottom:10px !important; background:#f8fafc !important; border:1px solid #e2e8f0 !important; border-radius:6px !important; }
 
-  /* ── Grid ── */
-  .inspector-hero-grid { grid-template-columns: 1fr 1fr !important; }
-  .semaphore-grid      { grid-template-columns: repeat(6,1fr) !important; }
-  .grid-2              { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+  /* ── KPIs: explicit display:grid + cards ── */
+  .inspector-hero-grid { display:grid !important; grid-template-columns:1fr 1fr !important; gap:10px !important; margin-bottom:10px !important; }
+  .inspector-card { display:flex !important; flex-direction:column !important; background:#fff !important; border:1px solid #e2e8f0 !important; border-radius:6px !important; padding:12px !important; gap:4px !important; }
+  .inspector-card.good { border-left:4px solid #16a34a !important; }
+  .inspector-card.bad  { border-left:4px solid #dc2626 !important; }
+  .inspector-card.blue { border-left:4px solid #2563eb !important; }
+  .inspector-card.warn { border-left:4px solid #d97706 !important; }
+  .inspector-card > span { color:#64748b !important; font-size:10px !important; font-weight:700 !important; text-transform:uppercase !important; }
+  .inspector-metric > strong { color:#0f172a !important; font-size:18px !important; }
+  .inspector-metric.bad  > strong { color:#dc2626 !important; }
+  .inspector-metric.good > strong { color:#16a34a !important; }
+  .insp-kpi-sub { color:#64748b !important; font-size:10px !important; }
+
+  /* ── Semáforo: explicit display:grid ── */
+  .semaphore-grid { display:grid !important; grid-template-columns:repeat(6,1fr) !important; gap:8px !important; }
+  .semaphore-item { display:flex !important; flex-direction:column !important; gap:4px !important; background:#f8fafc !important; border:1px solid #e2e8f0 !important; border-radius:6px !important; padding:8px !important; }
+  .semaphore-item.good    { border-color:#16a34a !important; background:rgba(22,163,74,.08) !important; }
+  .semaphore-item.bad     { border-color:#dc2626 !important; background:rgba(220,38,38,.08) !important; }
+  .semaphore-item.warning { border-color:#d97706 !important; background:rgba(217,119,6,.08) !important; }
+  .semaphore-item > span    { color:#64748b !important; font-size:9px !important; font-weight:700 !important; text-transform:uppercase !important; }
+  .semaphore-item > strong  { color:#0f172a !important; font-size:13px !important; }
+  .semaphore-item.good    > strong { color:#16a34a !important; }
+  .semaphore-item.bad     > strong { color:#dc2626 !important; }
+  .semaphore-item.warning > strong { color:#d97706 !important; }
+
+  /* ── Composição barras ── */
+  .comp-bars { display:flex !important; flex-direction:column !important; gap:6px !important; }
+  .comp-bar-item { display:flex !important; flex-direction:column !important; gap:2px !important; }
+  .comp-bar-meta { display:flex !important; justify-content:space-between !important; font-size:10px !important; color:#374151 !important; }
+  .comp-bar-track { height:5px !important; background:#e2e8f0 !important; border-radius:3px !important; overflow:hidden !important; }
+  .comp-bar-fill { height:5px !important; border-radius:3px !important; }
+
+  /* ── Grid 2 colunas ── */
+  .grid-2 { display:grid !important; grid-template-columns:1fr 1fr !important; gap:12px !important; }
+
+  /* ── Diagnóstico IA ── */
+  .insp-ai-body, .stream-line, .stream-bullet { color:#374151 !important; }
+  .stream-section { color:#2563eb !important; font-weight:700 !important; }
+  .stream-bullet { border-left-color:#cbd5e1 !important; }
+
+  /* ── Tipografia geral ── */
+  .eyebrow { color:#2563eb !important; font-size:10px !important; font-weight:700 !important; letter-spacing:.06em !important; text-transform:uppercase !important; }
+  .metric-title, h2, h3 { color:#0f172a !important; }
+  p, li { color:#374151 !important; }
+  strong { color:#0f172a !important; }
+  .txt-good { color:#16a34a !important; }
+  .txt-bad  { color:#dc2626 !important; }
+  .txt-muted { color:#64748b !important; }
 
   /* ── Tabelas ── */
-  table    { border-collapse: collapse !important; width: 100% !important; }
-  th, td   { font-size: 10px !important; padding: 5px 8px !important; }
-  thead th { background: #1e3a8a !important; color: #fff !important; }
+  table { border-collapse:collapse !important; width:100% !important; }
+  th, td { font-size:10px !important; padding:5px 8px !important; border:1px solid #e2e8f0 !important; color:#374151 !important; }
+  thead th { background:#1e3a8a !important; color:#fff !important; }
 
   /* ── Gráfico ── */
-  .chart-card-inner canvas { width: 100% !important; max-height: 220px !important; }
+  .chart-card-inner canvas { width:100% !important; max-height:220px !important; }
 
   /* ── Quebras de página ── */
-  #printHeader      { page-break-after: avoid; break-after: avoid; }
-  .inspector-hero-grid, .card-inner { page-break-inside: avoid; break-inside: avoid; }
-  #printFooter      { margin-top: 16px !important; }
+  #printHeader { page-break-after:avoid; break-after:avoid; }
+  .inspector-hero-grid, .card-inner { page-break-inside:avoid; break-inside:avoid; }
+  #printFooter { margin-top:16px !important; }
 }
