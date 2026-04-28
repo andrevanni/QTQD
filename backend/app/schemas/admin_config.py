@@ -91,6 +91,7 @@ class UsuarioAdminCreateRequest(BaseModel):
     funcao: str | None = None
     email: str
     permissao: str = "visualiza"  # edita | visualiza | relatorio
+    ativo: bool = True
 
 
 class UsuarioAdminUpdateRequest(BaseModel):

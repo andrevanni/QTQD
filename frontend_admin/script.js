@@ -574,7 +574,7 @@ function renderUsuarios() {
   if (!usuarios.length) { list.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhum usuário cadastrado.</p>'; return; }
   list.innerHTML = '';
   /* Auto-seleciona quando só há um usuário na lista */
-  if (usuarios.length === 1 && !selectedUsuario) selectUsuario(usuarios[0]);
+  if (usuarios.length === 1 && !selectedUsuario) { selectUsuario(usuarios[0]); return; }
   usuarios.forEach(u => {
     const client = clients.find(c => c.id === String(u.tenant_id));
     const card = el('article', 'entity-card' + (selectedUsuario?.id === u.id ? ' selected' : ''));

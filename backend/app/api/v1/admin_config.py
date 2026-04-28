@@ -270,14 +270,17 @@ def criar_usuario(payload: UsuarioAdminCreateRequest) -> UsuarioAdminResponse:
 
 @router.patch("/usuarios/{usuario_id}", response_model=UsuarioAdminResponse)
 def atualizar_usuario(usuario_id: UUID, payload: UsuarioAdminUpdateRequest) -> UsuarioAdminResponse:
+    sb = get_supabase()
+    check = sb.table("tenant_usuarios").select("id").eq("id", str(usuario_id)).limit(1).execute()
+    if not check.data:
+        raise HTTPException(status_code=404, detail="Usuario nao encontrado.")
     values = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not values:
         raise HTTPException(status_code=400, detail="Nenhum campo enviado.")
     values["updated_at"] = datetime.now(timezone.utc).isoformat()
-    result = get_supabase().table("tenant_usuarios").update(values).eq("id", str(usuario_id)).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Usuario nao encontrado.")
-    return UsuarioAdminResponse(**result.data[0])
+    sb.table("tenant_usuarios").update(values).eq("id", str(usuario_id)).execute()
+    final = sb.table("tenant_usuarios").select("*").eq("id", str(usuario_id)).limit(1).execute()
+    return UsuarioAdminResponse(**final.data[0])
 
 
 @router.post("/usuarios/{usuario_id}/enviar-convite", status_code=200)
