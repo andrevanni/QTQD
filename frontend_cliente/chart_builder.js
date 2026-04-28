@@ -38,6 +38,34 @@
     return fmtMoneyShort(v);
   }
 
+  function fmtAxisTick(v, fmt, mode) {
+    if (mode === 'percent') return fmtNum(v) + '%';
+    if (fmt === 'percent')  return fmtPercent(v);
+    if (fmt === 'days')     return fmtDays(v);
+    if (fmt === 'currency') return fmtMoneyShort(v);
+    return fmtNum(v);
+  }
+
+  /* Detecta quando datasets têm escalas incompatíveis (ex: dias + moeda) */
+  function getDualAxisInfo(config) {
+    if (config.mode === 'percent') return { needsDual: false };
+    const fields = config.fields
+      .map(k => chartFieldCatalog.find(f => f.key === k))
+      .filter(Boolean);
+    if (fields.length <= 1) return { needsDual: false };
+    const fmts = fields.map(f => f.format || 'currency');
+    const uniq = [...new Set(fmts)];
+    if (uniq.length <= 1) return { needsDual: false };
+    const prim = fmts[0];
+    const sec  = uniq.find(f => f !== prim);
+    return {
+      needsDual: true,
+      primaryFormat: prim,
+      secondaryFormat: sec,
+      axisId: field => (field.format || 'currency') === prim ? 'y' : 'y2',
+    };
+  }
+
   function loadSaved() {
     try { savedCharts = JSON.parse(localStorage.getItem(getStorageKey()) || '[]'); }
     catch { savedCharts = []; }
@@ -56,10 +84,13 @@
       .map(k => chartFieldCatalog.find(f => f.key === k))
       .filter(Boolean);
 
+    const axisInfo = getDualAxisInfo(config);
+
     const datasets = fields.map((field, i) => {
       const raw  = points.map(p => Number((typeof matrixVal==='function'?matrixVal(p.record,field.key):p.record[field.key])||0));
       const data = config.mode === 'percent' ? toPctSeries(raw) : raw;
       const color = PALETTE[i % PALETTE.length];
+      const yAxisID = axisInfo.needsDual ? axisInfo.axisId(field) : 'y';
 
       if (config.type === 'bar') {
         return {
@@ -70,6 +101,7 @@
           borderWidth:     2,
           borderRadius:    5,
           borderSkipped:   false,
+          yAxisID,
         };
       }
 
@@ -84,6 +116,7 @@
         pointHoverRadius: 6,
         pointBackgroundColor: color,
         borderWidth:     2,
+        yAxisID,
       };
     });
 
@@ -135,9 +168,17 @@
         datalabels: showLabels ? {
           display:  'auto',
           color:    muted,
-          anchor:   config.type === 'bar' ? 'end' : 'top',
-          align:    config.type === 'bar' ? 'top'  : 'top',
-          offset:   4,
+          anchor:   config.type === 'bar' ? 'end' : 'center',
+          align:    config.type === 'bar' ? 'top' : function(ctx) {
+            const data = ctx.dataset.data;
+            const i    = ctx.dataIndex;
+            if (i === 0) return 'right';
+            const curr = data[i];
+            const prev = data[i - 1];
+            const next = i < data.length - 1 ? data[i + 1] : curr;
+            return (curr >= prev && curr >= next) ? 'top' : 'bottom';
+          },
+          offset:   6,
           clamp:    true,
           font: { size: 10, family: 'Manrope, sans-serif', weight: '700' },
           formatter: (v, ctx) => {
@@ -147,35 +188,56 @@
           },
         } : { display: false },
       },
-      scales: {
-        x: {
-          ticks: {
-            color: muted,
-            font:  { size: 11, family: 'Manrope, sans-serif' },
-            maxRotation: 40,
-            maxTicksLimit: 20,
-          },
-          grid: { color: border, lineWidth: 0.8 },
-        },
-        y: {
-          beginAtZero: false,
-          ticks: {
-            color: muted,
-            font:  { size: 11, family: 'Manrope, sans-serif' },
-            callback: v => {
-              if (config.mode === 'percent') return fmtNum(v) + '%';
-              const allPercent  = fields.every(f => f.format === 'percent');
-              const allCurrency = fields.every(f => !f.format || f.format === 'currency');
-              const allDays     = fields.every(f => f.format === 'days');
-              if (allPercent)  return fmtPercent(v);
-              if (allCurrency) return fmtMoneyShort(v);
-              if (allDays)     return fmtDays(v);
-              return fmtNum(v);
+      scales: (() => {
+        const axisInfo = getDualAxisInfo(config);
+
+        /* Formato dominante do eixo Y esquerdo */
+        const primaryFmt = (() => {
+          if (config.mode === 'percent') return 'percent';
+          if (axisInfo.needsDual) return axisInfo.primaryFormat;
+          if (fields.every(f => f.format === 'percent'))  return 'percent';
+          if (fields.every(f => f.format === 'days'))     return 'days';
+          if (fields.every(f => !f.format || f.format === 'currency')) return 'currency';
+          return 'number';
+        })();
+
+        const scalesObj = {
+          x: {
+            ticks: {
+              color: muted,
+              font:  { size: 11, family: 'Manrope, sans-serif' },
+              maxRotation: 40,
+              maxTicksLimit: 20,
             },
+            grid: { color: border, lineWidth: 0.8 },
           },
-          grid: { color: border, lineWidth: 0.8 },
-        },
-      },
+          y: {
+            position:     'left',
+            beginAtZero:  false,
+            ticks: {
+              color: muted,
+              font:  { size: 11, family: 'Manrope, sans-serif' },
+              callback: v => fmtAxisTick(v, primaryFmt, config.mode),
+            },
+            grid: { color: border, lineWidth: 0.8 },
+          },
+        };
+
+        if (axisInfo.needsDual) {
+          scalesObj.y2 = {
+            position:    'right',
+            beginAtZero: false,
+            grid: { drawOnChartArea: false },
+            ticks: {
+              color: PALETTE[1] || muted,
+              font:  { size: 11, family: 'Manrope, sans-serif' },
+              callback: v => fmtAxisTick(v, axisInfo.secondaryFormat, config.mode),
+            },
+          };
+        }
+
+        return scalesObj;
+      })(),
     };
   }
 
@@ -301,6 +363,9 @@
             </select>
             <input type="number" class="chart-edit-count" value="${ch.count}" min="1" max="120" placeholder="Qtd">
           </div>
+          <label class="chart-edit-pdf-label">
+            <input type="checkbox" class="chart-edit-pdf"${ch.includePdf ? ' checked' : ''}> Incluir no relatório PDF
+          </label>
           <div class="chart-edit-btns">
             ${idx > 0 ? `<button class="chip" data-move-up="${ch.id}" type="button">↑ Acima</button>` : ''}
             ${idx < total - 1 ? `<button class="chip" data-move-down="${ch.id}" type="button">↓ Abaixo</button>` : ''}
@@ -590,6 +655,8 @@
           ch.name  = newName;
           if (rangeInput) ch.range = rangeInput.value;
           if (countInput) ch.count = Math.max(1, parseInt(countInput.value) || ch.count);
+          const pdfInput = document.querySelector(`#cedit-${cid} .chart-edit-pdf`);
+          if (pdfInput) ch.includePdf = pdfInput.checked;
           persistSaved();
           renderSavedCharts();
           return;

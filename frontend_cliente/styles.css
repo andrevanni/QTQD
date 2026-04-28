@@ -1640,6 +1640,23 @@ body.focus-painel #backFromPanelButton { display: inline-flex !important; }
   text-align: center;
 }
 
+.chart-edit-pdf-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.chart-edit-pdf-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .chart-edit-btns {
   display: flex;
   gap: 8px;

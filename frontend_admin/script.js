@@ -80,8 +80,8 @@ const CALCULATED_CATALOG_DEFAULT = [
   { key: 'saldo_sem_dividas_sem_estoque',label: 'Saldo sem Dívidas e sem Estoque',    formula: 'Saldo sem Dívidas − Estoque' },
   { key: 'pme',                          label: 'PME Calculado',                      formula: 'Estoque × 30 ÷ CMV (mensal)' },
   { key: 'ciclo_financiamento',          label: 'Ciclo de Financiamento (dias)',       formula: 'PMP − PMV − PME  (positivo = fornecedores financiam; negativo = farmácia financia)' },
-  { key: 'indice_compra_venda',          label: 'Índice de Compra/Venda (custo)',      formula: 'Compras no mês ÷ CMV no mês' },
-  { key: 'indice_entrada_venda',         label: 'Índice de Entrada/Venda (custo)',     formula: 'Entrada no mês ÷ CMV no mês' },
+  { key: 'indice_compra_venda',          label: 'Índice de Compra/Venda % (custo)',   formula: 'Compras no mês ÷ CMV no mês  (resultado em %)  — ex: 80% = comprou 80% do que vendeu a custo' },
+  { key: 'indice_entrada_venda',         label: 'Índice de Entrada/Venda % (custo)',  formula: 'Entrada no mês ÷ CMV no mês  (resultado em %)  — ex: 90% = recebeu mercadoria equivalente a 90% do CMV' },
   { key: 'margem_bruta',                 label: 'Margem Bruta no mês %',              formula: '(Venda cupom − CMV) ÷ Venda cupom' },
   { key: 'excesso_total',                label: 'Excesso Crítico Total',              formula: 'Excesso A + Excesso B + Excesso C + Excesso D' },
 ];

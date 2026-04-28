@@ -60,8 +60,8 @@ def calcular_indicadores(valores: AvaliacaoValores) -> list[IndicadorCalculado]:
         ("prazo_medio_compra", "Prazo medio de compra", prazo_medio_compra, "days"),
         ("prazo_venda", "Prazo de venda", prazo_venda, "days"),
         ("ciclo_financiamento", "Ciclo de financiamento", ciclo_financiamento, "days"),
-        ("indice_compra_venda", "Indice de compra/venda (custo)", indice_compra_venda, "number"),
-        ("indice_entrada_venda", "Indice de entrada/venda (custo)", indice_entrada_venda, "number"),
+        ("indice_compra_venda", "Indice de compra/venda (custo)", indice_compra_venda, "percent"),
+        ("indice_entrada_venda", "Indice de entrada/venda (custo)", indice_entrada_venda, "percent"),
         ("margem_bruta", "Margem bruta no mes", margem_bruta, "percent"),
         ("excesso_total", "Excesso critico total", excesso_total, "currency"),
     ]
