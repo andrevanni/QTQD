@@ -161,9 +161,8 @@ chartFieldsGrid.addEventListener("change",e=>{const input=e.target.closest("inpu
     if(modalBtn)modalBtn.style.display='block';
   });
 
-  // Mostra modal na primeira visita (não standalone, não dispensado, não acesso admin)
-  const isAdminAccess=new URLSearchParams(window.location.search).has('token');
-  if(!isStandalone&&!isAdminAccess&&!localStorage.getItem(KEY)){
+  // Mostra modal na primeira visita (não standalone, não dispensado)
+  if(!isStandalone&&!localStorage.getItem(KEY)){
     setTimeout(()=>{
       const modal=document.getElementById('pwaModal');
       if(modal)modal.style.display='flex';
