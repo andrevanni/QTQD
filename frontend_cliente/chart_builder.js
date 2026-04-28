@@ -71,6 +71,14 @@
       try {
         const r = await window.QTQD_API_CLIENT.getChartsConfig();
         savedCharts = r.charts_config || [];
+        if (!savedCharts.length) {
+          const local = JSON.parse(localStorage.getItem(getStorageKey()) || '[]');
+          if (local.length) {
+            savedCharts = local;
+            await window.QTQD_API_CLIENT.putChartsConfig(savedCharts).catch(() => {});
+            localStorage.removeItem(getStorageKey());
+          }
+        }
       } catch { savedCharts = []; }
     } else {
       try { savedCharts = JSON.parse(localStorage.getItem(getStorageKey()) || '[]'); }
