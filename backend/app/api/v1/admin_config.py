@@ -180,8 +180,9 @@ def criar_usuario(payload: UsuarioAdminCreateRequest) -> UsuarioAdminResponse:
     data["email"] = data["email"].lower().strip()
 
     # Cria (ou convida) o usuário no Supabase Auth e obtém o user_id
+    # Tenta recovery primeiro (usuário já existe); depois invite (usuário novo)
     instalar_url = "https://qtqd-vt2a.vercel.app/instalar"
-    for link_type in ("invite", "recovery"):
+    for link_type in ("recovery", "invite"):
         try:
             link_resp = sb.auth.admin.generate_link({
                 "type": link_type,
@@ -233,12 +234,12 @@ def enviar_convite_usuario(usuario_id: UUID) -> dict:
     portal_nome = (b_res.data[0].get("nome_portal") or tenant_nome) if b_res.data else tenant_nome
 
     # Gera link de acesso via Supabase Auth
-    # Tenta "invite" (para novos usuários); se falhar (usuário já confirmado), usa "recovery"
+    # "recovery" primeiro (preserva UUID existente); "invite" só para e-mails novos
     instalar_url = "https://qtqd-vt2a.vercel.app/instalar"
     setup_link = None
     last_error = None
 
-    for link_type in ("invite", "recovery"):
+    for link_type in ("recovery", "invite"):
         try:
             link_resp = sb.auth.admin.generate_link({
                 "type": link_type,
