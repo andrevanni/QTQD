@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from backend.app.db.client import get_supabase
+from backend.app.core.config import settings
+from supabase import create_client
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -59,9 +61,10 @@ def _tenant_para_usuario(sb, email: str, user_id: str | None = None) -> dict:
 
 @router.post("/login")
 def login(payload: LoginRequest) -> dict:
-    sb = get_supabase()
+    sb_auth = get_supabase()
+    sb_db = create_client(settings.supabase_url, settings.supabase_service_role_key)
     try:
-        resp = sb.auth.sign_in_with_password(
+        resp = sb_auth.auth.sign_in_with_password(
             {"email": payload.email, "password": payload.password}
         )
     except Exception:
@@ -70,7 +73,7 @@ def login(payload: LoginRequest) -> dict:
     if not resp.session:
         raise HTTPException(status_code=401, detail="Falha na autenticação.")
 
-    tu = _tenant_para_usuario(sb, resp.user.email, str(resp.user.id))
+    tu = _tenant_para_usuario(sb_db, resp.user.email, str(resp.user.id))
     return {
         "access_token": resp.session.access_token,
         "tenant_id": str(tu["tenant_id"]),
@@ -81,10 +84,13 @@ def login(payload: LoginRequest) -> dict:
 
 @router.post("/definir-senha")
 def definir_senha(payload: DefinirSenhaRequest) -> dict:
-    sb = get_supabase()
+    # sb_auth: usado só para operações de auth (get_user, update_user, sign_in)
+    # sb_db:  cliente fresco com service role para queries no banco (evita contaminação de RLS)
+    sb_auth = get_supabase()
+    sb_db = create_client(settings.supabase_url, settings.supabase_service_role_key)
 
     try:
-        user_resp = sb.auth.get_user(payload.access_token)
+        user_resp = sb_auth.auth.get_user(payload.access_token)
         user = user_resp.user
     except Exception:
         raise HTTPException(
@@ -96,12 +102,12 @@ def definir_senha(payload: DefinirSenhaRequest) -> dict:
         raise HTTPException(status_code=400, detail="A senha deve ter ao menos 6 caracteres.")
 
     try:
-        sb.auth.admin.update_user_by_id(str(user.id), {"password": payload.nova_senha})
+        sb_auth.auth.admin.update_user_by_id(str(user.id), {"password": payload.nova_senha})
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao definir senha: {e}")
 
     try:
-        sign_resp = sb.auth.sign_in_with_password(
+        sign_resp = sb_auth.auth.sign_in_with_password(
             {"email": user.email, "password": payload.nova_senha}
         )
     except Exception:
@@ -110,21 +116,17 @@ def definir_senha(payload: DefinirSenhaRequest) -> dict:
             detail="Senha definida com sucesso. Acesse o portal com seu e-mail e senha.",
         )
 
-    # DEBUG TEMPORÁRIO — remover após diagnosticar
-    import json
+    # Tenta lookup pelo app_metadata (gravado no envio do convite)
     app_meta = getattr(user, "app_metadata", None) or {}
-    todos = sb.table("tenant_usuarios").select("id,email,ativo,user_id").limit(20).execute()
-    por_uid = sb.table("tenant_usuarios").select("id,email,ativo").eq("user_id", str(user.id)).limit(5).execute()
-    por_email = sb.table("tenant_usuarios").select("id,email,ativo").eq("email", user.email.lower()).limit(5).execute()
-    raise HTTPException(status_code=403, detail=json.dumps({
-        "auth_email": user.email,
-        "auth_id": str(user.id),
-        "app_meta": app_meta,
-        "total_rows": len(todos.data),
-        "todos": todos.data,
-        "por_uid": por_uid.data,
-        "por_email": por_email.data,
-    }, default=str, ensure_ascii=False))
+    qtqd_usuario_id = app_meta.get("qtqd_usuario_id")
+    if qtqd_usuario_id:
+        res = sb_db.table("tenant_usuarios").select("tenant_id,permissao,nome,ativo").eq("id", qtqd_usuario_id).limit(1).execute()
+        if res.data and res.data[0].get("ativo"):
+            tu = res.data[0]
+        else:
+            tu = _tenant_para_usuario(sb_db, user.email, str(user.id))
+    else:
+        tu = _tenant_para_usuario(sb_db, user.email, str(user.id))
     return {
         "access_token": sign_resp.session.access_token,
         "tenant_id": str(tu["tenant_id"]),
