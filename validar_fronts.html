@@ -8,6 +8,9 @@
       /* Se Supabase Auth redirecionar para a raiz com token no hash, encaminha para /instalar */
       if (window.location.hash && window.location.hash.includes('access_token=')) {
         window.location.replace('/instalar' + window.location.hash);
+      } else {
+        /* Raiz sem token: vai direto para o portal do cliente */
+        window.location.replace('/cliente');
       }
     </script>
     <style>
