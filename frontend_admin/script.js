@@ -615,6 +615,7 @@ function selectUsuario(u) {
 
 function resetUsuarioForm() {
   selectedUsuario = null;
+  usuarios = [];  // evita auto-select com dados obsoletos antes do próximo loadUsuarios()
   $('usuarioId').value = '';
   $('usuarioForm').reset();
   $('usuarioModeBadge').textContent = 'Novo';

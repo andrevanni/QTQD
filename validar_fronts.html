@@ -4,6 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>QTQD - Validacao dos Fronts</title>
+    <script>
+      /* Se Supabase Auth redirecionar para a raiz com token no hash, encaminha para /instalar */
+      if (window.location.hash && window.location.hash.includes('access_token=')) {
+        window.location.replace('/instalar' + window.location.hash);
+      }
+    </script>
     <style>
       :root {
         --bg: #f3f1ec;

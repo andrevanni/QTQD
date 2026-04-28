@@ -77,10 +77,17 @@ ${ciclo!=null?`Ciclo de financiamento: **${fmtDays(ciclo)}**${ciclo>=0?' (favor�
 
 **5. Pontos de Atenção**
 ${idx<1?'- **Índice QT/QD abaixo de 1,0** — os passivos superam os ativos disponíveis.':''}
+${idx>=1&&idx<1.1?'- **Índice QT/QD próximo do limite** — margem estreita entre ativos e passivos, qualquer variação pode romper o equilíbrio.':''}
 ${(l.financiamentos||0)>l.qd_total*0.4?'- **Financiamentos representam mais de 40% do QD** — peso relevante de dívidas de longo prazo.':''}
 ${(l.saldo_bancario||0)<0?'- **Saldo bancário negativo** — há saldo devedor em caixa/conta corrente.':''}
-${pme>90?'- **PME elevado** — estoque com giro lento, capital imobilizado.':''}
-${pmv>0&&pmp>0&&pmv>pmp?'- **PMV maior que PMP** — a farmácia paga antes de receber, aumentando necessidade de capital.':''}
+${pme>90?'- **PME elevado** — estoque com giro lento, capital imobilizado acima de 90 dias.':''}
+${pme>0&&pme<20?'- **PME muito baixo** — cobertura de estoque abaixo de 20 dias, risco de ruptura.':''}
+${pmv>0&&pmp>0&&pmv>pmp?'- **PMV maior que PMP** — a farmácia paga antes de receber, aumentando a necessidade de capital de giro.':''}
+${ciclo!=null&&ciclo<-15?`- **Ciclo de financiamento negativo em ${fmtDays(Math.abs(ciclo))}** — a farmácia financia o capital de giro com recursos próprios.`:''}
+${(l.excesso_total||0)>0?`- **Excesso crítico de estoque de ${fmtMoney(l.excesso_total)}** — produtos imobilizados com mais de 90 dias sem giro.`:''}
+${(l.indice_faltas||0)>0.05?`- **Índice de faltas em ${fmtPercent(l.indice_faltas)}** — nível de ruptura acima de 5% impacta faturamento.`:''}
+${(l.estoque_custo||0)>l.qt_total*0.6?'- **Estoque representa mais de 60% do QT** — elevada concentração de ativos em mercadoria.':''}
+${[idx<1,idx>=1&&idx<1.1,(l.financiamentos||0)>l.qd_total*0.4,(l.saldo_bancario||0)<0,pme>90,pme>0&&pme<20,pmv>0&&pmp>0&&pmv>pmp,ciclo!=null&&ciclo<-15,(l.excesso_total||0)>0,(l.indice_faltas||0)>0.05,(l.estoque_custo||0)>l.qt_total*0.6].every(c=>!c)?'- Indicadores dentro dos parâmetros nesta semana. Continue monitorando regularmente para detectar variações precoces.':''}
 
 **6. Recomendações Prioritárias**
 - Manter monitoramento semanal do **Índice QT/QD** e do saldo.
