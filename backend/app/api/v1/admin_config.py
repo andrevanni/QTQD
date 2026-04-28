@@ -378,6 +378,29 @@ def abrir_portal(tenant_id: UUID) -> dict:
     except urlreq.error.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"Falha ao autenticar: {e.read().decode()}")
 
+    # Garante que o admin está em tenant_usuarios para este tenant
+    admin_uid = (session.get("user") or {}).get("id")
+    if admin_uid:
+        sb = get_supabase()
+        existing = (
+            sb.table("tenant_usuarios")
+            .select("id")
+            .eq("user_id", admin_uid)
+            .eq("tenant_id", str(tenant_id))
+            .limit(1)
+            .execute()
+        )
+        if not existing.data:
+            from datetime import datetime, timezone
+            sb.table("tenant_usuarios").insert({
+                "user_id": admin_uid,
+                "tenant_id": str(tenant_id),
+                "nome": "Admin",
+                "permissao": "edita",
+                "ativo": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }).execute()
+
     return {
         "access_token": session.get("access_token"),
         "tenant_id": str(tenant_id),
