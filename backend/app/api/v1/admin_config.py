@@ -250,7 +250,7 @@ def enviar_convite_usuario(usuario_id: UUID) -> dict:
             if action:
                 setup_link = action
                 auth_user = getattr(link_resp, "user", None)
-                if auth_user and getattr(auth_user, "id", None) and not u.get("user_id"):
+                if auth_user and getattr(auth_user, "id", None):
                     sb.table("tenant_usuarios").update({"user_id": str(auth_user.id)}).eq("id", str(usuario_id)).execute()
                 break
         except Exception as e:

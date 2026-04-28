@@ -18,22 +18,43 @@ class DefinirSenhaRequest(BaseModel):
     nova_senha: str
 
 
-def _tenant_para_usuario(sb, email: str) -> dict:
+def _tenant_para_usuario(sb, email: str, user_id: str | None = None) -> dict:
+    """Busca o tenant_usuario por user_id (UUID) ou email. Retorna o registro ou lança 403."""
+
+    # 1. Por user_id do Supabase Auth (mais confiável)
+    if user_id:
+        res = (
+            sb.table("tenant_usuarios")
+            .select("tenant_id,permissao,nome,ativo")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        if res.data:
+            row = res.data[0]
+            if not row.get("ativo"):
+                raise HTTPException(status_code=403, detail="Usuário inativo. Reative o acesso no painel admin.")
+            return row
+
+    # 2. Por e-mail em lowercase (fallback)
     email_lower = email.lower().strip()
     res = (
         sb.table("tenant_usuarios")
-        .select("tenant_id,permissao,nome")
-        .ilike("email", email_lower)
-        .eq("ativo", True)
+        .select("tenant_id,permissao,nome,ativo")
+        .eq("email", email_lower)
         .limit(1)
         .execute()
     )
-    if not res.data:
-        raise HTTPException(
-            status_code=403,
-            detail=f"Usuário '{email_lower}' sem acesso configurado. Verifique o cadastro no painel admin.",
-        )
-    return res.data[0]
+    if res.data:
+        row = res.data[0]
+        if not row.get("ativo"):
+            raise HTTPException(status_code=403, detail=f"Usuário '{email_lower}' está inativo. Reative no painel admin.")
+        return row
+
+    raise HTTPException(
+        status_code=403,
+        detail=f"Usuário '{email_lower}' não encontrado. Cadastre-o no painel admin antes de enviar o convite.",
+    )
 
 
 @router.post("/login")
@@ -49,7 +70,7 @@ def login(payload: LoginRequest) -> dict:
     if not resp.session:
         raise HTTPException(status_code=401, detail="Falha na autenticação.")
 
-    tu = _tenant_para_usuario(sb, resp.user.email)
+    tu = _tenant_para_usuario(sb, resp.user.email, str(resp.user.id))
     return {
         "access_token": resp.session.access_token,
         "tenant_id": str(tu["tenant_id"]),
@@ -89,7 +110,7 @@ def definir_senha(payload: DefinirSenhaRequest) -> dict:
             detail="Senha definida com sucesso. Acesse o portal com seu e-mail e senha.",
         )
 
-    tu = _tenant_para_usuario(sb, user.email)
+    tu = _tenant_para_usuario(sb, user.email, str(user.id))
     return {
         "access_token": sign_resp.session.access_token,
         "tenant_id": str(tu["tenant_id"]),
