@@ -573,6 +573,8 @@ function renderUsuarios() {
   if (!list) return;
   if (!usuarios.length) { list.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhum usuário cadastrado.</p>'; return; }
   list.innerHTML = '';
+  /* Auto-seleciona quando só há um usuário na lista */
+  if (usuarios.length === 1 && !selectedUsuario) selectUsuario(usuarios[0]);
   usuarios.forEach(u => {
     const client = clients.find(c => c.id === String(u.tenant_id));
     const card = el('article', 'entity-card' + (selectedUsuario?.id === u.id ? ' selected' : ''));
@@ -674,12 +676,12 @@ $('btnInativar')?.addEventListener('click', async () => {
 });
 
 $('btnResetSenha')?.addEventListener('click', () => {
-  if (!selectedUsuario) return;
+  if (!selectedUsuario) { fb('Selecione um usuário na lista primeiro.', 'error'); return; }
   alert(`Para resetar a senha de "${selectedUsuario.nome}", acesse o Supabase Dashboard > Authentication > Users, localize o e-mail "${selectedUsuario.email}" e clique em "Send password reset".\n\nEm breve essa ação será automática pelo painel.`);
 });
 
 $('btnConviteApp')?.addEventListener('click', async () => {
-  if (!selectedUsuario) return;
+  if (!selectedUsuario) { fb('Selecione um usuário na lista antes de enviar o convite.', 'error'); return; }
   if (!confirm(`Enviar convite de instalação para "${selectedUsuario.nome}" (${selectedUsuario.email})?`)) return;
   fb('Enviando convite...', 'info');
   try {
