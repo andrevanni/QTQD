@@ -214,7 +214,7 @@
     <div class="success-block" id="successBlock">
       <div class="success-icon">✅</div>
       <h2>Senha criada com sucesso!</h2>
-      <p class="sub">Seu acesso ao QTQD está pronto. Agora instale o aplicativo na sua área de trabalho.</p>
+      <p class="sub">Senha criada! Você será redirecionado para o portal. No Chrome/Edge, clique no ícone <strong>⊕</strong> ou <strong>💻</strong> na barra de endereço para instalar o aplicativo.</p>
 
       <button id="pwaInstallBtn">📱 Instalar aplicativo agora</button>
 
@@ -355,6 +355,18 @@
         ? `https://qtqd-vt2a.vercel.app/cliente?token=${encodeURIComponent(data.access_token)}&tenant_id=${encodeURIComponent(data.tenant_id)}`
         : 'https://qtqd-vt2a.vercel.app/cliente';
       document.getElementById('acessarPortalBtn').href = portalUrl;
+
+      // Redireciona automaticamente após 3s — instalação PWA disponível no portal
+      let secs = 3;
+      const countEl = document.createElement('p');
+      countEl.style.cssText = 'margin-top:12px;font-size:13px;color:#94a3b8;text-align:center';
+      countEl.textContent = `Abrindo o portal em ${secs}s...`;
+      document.getElementById('successBlock').appendChild(countEl);
+      const iv = setInterval(() => {
+        secs--;
+        if (secs <= 0) { clearInterval(iv); window.location.href = portalUrl; }
+        else countEl.textContent = `Abrindo o portal em ${secs}s...`;
+      }, 1000);
 
     } catch (err) {
       showError('Falha de conexão. Verifique sua internet e tente novamente.');
