@@ -19,10 +19,11 @@ class DefinirSenhaRequest(BaseModel):
 
 
 def _tenant_para_usuario(sb, email: str) -> dict:
+    email_lower = email.lower().strip()
     res = (
         sb.table("tenant_usuarios")
         .select("tenant_id,permissao,nome")
-        .eq("email", email)
+        .ilike("email", email_lower)
         .eq("ativo", True)
         .limit(1)
         .execute()
@@ -30,7 +31,7 @@ def _tenant_para_usuario(sb, email: str) -> dict:
     if not res.data:
         raise HTTPException(
             status_code=403,
-            detail="Usuário sem acesso configurado. Contate o administrador.",
+            detail=f"Usuário '{email_lower}' sem acesso configurado. Verifique o cadastro no painel admin.",
         )
     return res.data[0]
 

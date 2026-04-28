@@ -177,6 +177,7 @@ def criar_usuario(payload: UsuarioAdminCreateRequest) -> UsuarioAdminResponse:
     sb = get_supabase()
     data = payload.model_dump()
     data["tenant_id"] = str(data["tenant_id"])
+    data["email"] = data["email"].lower().strip()
 
     # Cria (ou convida) o usuário no Supabase Auth e obtém o user_id
     instalar_url = "https://qtqd-vt2a.vercel.app/instalar"
