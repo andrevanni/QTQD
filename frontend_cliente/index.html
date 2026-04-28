@@ -23,6 +23,17 @@
 </head>
 <body>
 
+<!-- Banner de instalação PWA -->
+<div id="pwaBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1e293b;border-top:1px solid #2563eb;padding:14px 20px;display:none;align-items:center;gap:14px;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
+  <img src="assets/icon-512.png" alt="QTQD" style="width:44px;height:44px;border-radius:10px;flex-shrink:0">
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:700;font-size:14px;color:#f1f5f9">Instalar QTQD na área de trabalho</div>
+    <div style="font-size:12px;color:#94a3b8">Acesso rápido como aplicativo, sem precisar do navegador</div>
+  </div>
+  <button id="pwaBannerInstall" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0">Instalar</button>
+  <button id="pwaBannerDismiss" style="background:transparent;color:#64748b;border:1px solid #334155;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;flex-shrink:0">Agora não</button>
+</div>
+
 <!-- Cabeçalho exclusivo para impressão -->
 <div id="printHeader" class="print-only">
   <div class="ph-left">
@@ -204,7 +215,7 @@
           <div class="field-row">
             <label class="field">
               <span class="field-label">Data da semana</span>
-              <input id="weekDate" type="date" required>
+              <input id="weekDate" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off" required>
             </label>
             <label class="field">
               <span class="field-label">Status</span>

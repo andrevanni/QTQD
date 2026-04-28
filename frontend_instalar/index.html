@@ -248,19 +248,7 @@
   let deferredPrompt = null;
 
   // Captura evento de instalação PWA
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-    document.getElementById('pwaInstallBtn').style.display = 'block';
-  });
-
-  document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const result = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    document.getElementById('pwaInstallBtn').style.display = 'none';
-  });
+  // PWA install removido desta página — instalação disponível no portal /cliente
 
   // Parse hash fragment do Supabase Auth
   function parseHash() {

@@ -128,6 +128,37 @@ document.querySelectorAll("[data-chart-range]").forEach(b=>b.addEventListener("c
 document.querySelectorAll("[data-chart-mode]").forEach(b=>b.addEventListener("click",()=>{chartState.mode=b.dataset.chartMode;document.querySelectorAll("[data-chart-mode]").forEach(x=>x.classList.toggle("active",x.dataset.chartMode===chartState.mode));renderChartsPanel()}));
 chartRangeCountInput.addEventListener("input",()=>{chartState.count=Math.max(1,Number(chartRangeCountInput.value)||chartDefaults[chartState.range]);renderChartsPanel()});
 chartFieldsGrid.addEventListener("change",e=>{const input=e.target.closest("input[type='checkbox']");if(!input)return;const selected=Array.from(chartFieldsGrid.querySelectorAll("input[type='checkbox']:checked")).map(i=>i.value);chartState.fields=selected.length?selected:["indice_qt_qd"];renderChartsPanel()});
+// ── Banner de instalação PWA ───────────────────────────
+(function(){
+  const PWA_DISMISSED_KEY='qtqd_pwa_dismissed';
+  let deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();
+    deferredPrompt=e;
+    if(localStorage.getItem(PWA_DISMISSED_KEY))return;
+    const banner=document.getElementById('pwaBanner');
+    if(banner)banner.style.display='flex';
+  });
+  document.getElementById('pwaBannerInstall')?.addEventListener('click',async()=>{
+    if(!deferredPrompt)return;
+    deferredPrompt.prompt();
+    const{outcome}=await deferredPrompt.userChoice;
+    deferredPrompt=null;
+    const banner=document.getElementById('pwaBanner');
+    if(banner)banner.style.display='none';
+    if(outcome==='accepted')localStorage.setItem(PWA_DISMISSED_KEY,'1');
+  });
+  document.getElementById('pwaBannerDismiss')?.addEventListener('click',()=>{
+    localStorage.setItem(PWA_DISMISSED_KEY,'1');
+    const banner=document.getElementById('pwaBanner');
+    if(banner)banner.style.display='none';
+  });
+  window.addEventListener('appinstalled',()=>{
+    localStorage.setItem(PWA_DISMISSED_KEY,'1');
+    const banner=document.getElementById('pwaBanner');
+    if(banner)banner.style.display='none';
+  });
+})();
 const sidebarRevealButton=$("sidebarRevealButton");
 function openSidebarPreview(){if(window.innerWidth>1180&&document.body.classList.contains("sidebar-collapsed"))document.body.classList.add("sidebar-open")}
 function closeSidebarPreview(){document.body.classList.remove("sidebar-open")}
