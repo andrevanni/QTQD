@@ -71,8 +71,9 @@ QTQD/
     styles.css
     script.js
   frontend_instalar/      Página de primeiro acesso do cliente (criação de senha + guia PWA)
-    index.html            Standalone — sem sidebar, sem nav
-    QTQD.url              Atalho Windows para área de trabalho (download)
+    index.html            Standalone — sem sidebar, sem nav. Tem <base href="/instalar/">.
+                          Após criar senha: redireciona para /cliente em 3s.
+    QTQD.url              Atalho Windows (não é mais oferecido para download — bloqueado por browsers)
   shared/                 Recursos compartilhados
     app_config.js         Configuração da API (mode: simulation/api, tenantId)
     api_client.js         Cliente HTTP — inclui setJwt, setTenantId, abrirPortal, uploadLogo, login
@@ -221,7 +222,10 @@ Todos os campos financeiros ficam no JSONB `avaliacoes_semanais.valores`.
 - `POST /api/v1/admin/abrir-portal/{tenant_id}` — gera JWT para acesso ao portal cliente
 - `POST /api/v1/admin/branding/{tenant_id}/logo` — upload de logo (JPG/PNG/WebP ≤2MB) para Supabase Storage bucket `logos`
 - `GET/POST /api/v1/admin/usuarios` — gestão de `tenant_usuarios`
-- `POST /api/v1/admin/usuarios/{id}/enviar-convite` — gera link Supabase Auth via `generate_link(type="invite")` e envia e-mail com botão de criação de senha
+- `POST /api/v1/admin/usuarios/{id}/enviar-convite` — gera link Supabase Auth (tenta `recovery` primeiro, depois `invite`) + salva `qtqd_usuario_id`/`qtqd_tenant_id` no `app_metadata` do Auth + envia e-mail
+- `POST /api/v1/avaliacoes/{id}/fechar` — muda status para `fechada`
+- `POST /api/v1/avaliacoes/{id}/finalizar` — muda para `finalizado` + envia e-mail de relatório
+- `POST /api/v1/avaliacoes/{id}/reenviar-relatorio` — reenvia e-mail do relatório sem alterar status
 
 ### Supabase SDK — padrões
 
@@ -233,6 +237,8 @@ rows = result.data
 ```
 
 **Regras:** UUIDs e datas como `str()`. JSONB vem como `dict`. `updated_at` manual em todo UPDATE.
+
+> **CRÍTICO — sem singleton:** `get_supabase()` cria um cliente **novo a cada chamada** (sem cache). Isso evita que `sb.auth.get_user(jwt)` contamine o cliente com o JWT do usuário, quebrando as queries de banco por RLS nas requisições seguintes. **Nunca reverter para singleton.**
 
 ---
 
@@ -259,6 +265,9 @@ O painel usa `matrixRows` (definido em `script.js`) com **3 níveis de hierarqui
 - `parseMoney(v)` — aceita formato pt-BR (`1.234,56`) e EN (`1234.56`), incluindo negativos
 - `fmtPercent(v)` — formata como percentual
 - `populateYearFilter()` — popula o `<select id="matrixYearFilter">`
+- `isoToBr(d)` — converte `YYYY-MM-DD` → `dd/mm/yyyy` (usado em `fillForm` para exibir data no input)
+- `brToIso(d)` — converte `dd/mm/yyyy` → `YYYY-MM-DD` (usado em `collectFormData` ao salvar)
+- `publishedRecords()` — retorna `records.filter(r => r.status !== 'rascunho')` — usado em TODOS os renders analíticos (painel, inspetor, gráficos). `renderHistory()` usa `records` completo.
 
 ---
 
@@ -374,6 +383,30 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 
 ---
 
+## Status das avaliações (lançamentos)
+
+| Status | Significado | Efeito técnico |
+|--------|-------------|----------------|
+| `rascunho` | Lançamento incompleto/em edição | **Excluído** de `publishedRecords()` → não aparece em painel, inspetor IA, gráficos, `getLatestRecord()`. Aparece no histórico com botão **"Fechar"** (azul). |
+| `fechada` | Lançamento encerrado normalmente | **Incluído** em todas as análises. Status padrão após clicar "Fechar". |
+| `finalizado` | Encerrado com envio de relatório | **Incluído** nas análises. Gerado pelo botão "Finalizar" (envia e-mail automático via `relatorio_service`). |
+
+> Botão **"Fechar"** no histórico: aparece só para linhas com `status === 'rascunho'`. Chama `POST /avaliacoes/{id}/fechar` e re-renderiza tudo via `renderAll()`.
+> Botão **"Reenviar PDF"**: aparece em todas as linhas no modo API. Chama `POST /avaliacoes/{id}/reenviar-relatorio`.
+
+## Status dos clientes (tenants no Admin)
+
+| Status | Badge | Significado |
+|--------|-------|-------------|
+| `implantacao` | laranja | Cliente em processo de implantação |
+| `ativo` | verde | Cliente com acesso ativo |
+| `inativo` | cinza | Cliente desativado |
+| `cancelado` | vermelho | Contrato encerrado |
+
+> **Atenção:** O status do tenant é **apenas informativo** — não bloqueia login, acesso ao portal ou nenhuma funcionalidade técnica. É exibido no card do cliente no admin e usado para filtros visuais. Para bloquear acesso de um usuário específico, use `ativo = false` no registro de `tenant_usuarios`.
+
+---
+
 ## Multi-tenant e modos de operação
 
 - **Modo simulação:** `mode: "simulation"` — dados no localStorage
@@ -386,12 +419,14 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 
 ### Primeiro acesso (via convite)
 1. Admin cria usuário em **Usuários** no painel admin (nome, e-mail, permissão)
-2. Admin clica **"Enviar convite + instalar app"** → backend gera link via `generate_link(type="invite")` + envia e-mail
+2. Admin clica **"Enviar convite + instalar app"** → backend tenta `recovery` primeiro (preserva UUID existente), depois `invite` (usuário novo) → salva `qtqd_usuario_id` e `qtqd_tenant_id` no `app_metadata` do Supabase Auth → envia e-mail
 3. Cliente clica no botão do e-mail → abre `https://qtqd-vt2a.vercel.app/instalar#access_token=...`
 4. Página `/instalar` lê o `access_token` do hash, exibe formulário de senha
-5. Cliente digita senha → POST `/api/v1/auth/definir-senha` → backend atualiza senha + faz login + retorna JWT + tenant_id
-6. Frontend armazena JWT + tenant_id → redireciona para o portal já autenticado
-7. Cliente instala como PWA (botão na página) → ícone na área de trabalho
+5. Cliente digita senha → POST `/api/v1/auth/definir-senha` → backend lê `app_metadata.qtqd_usuario_id` (lookup por ID primário, mais confiável) + atualiza senha + faz login + retorna JWT + tenant_id
+6. Frontend armazena JWT + tenant_id → redireciona automaticamente para `/cliente` após 3 segundos
+7. Modal de instalação PWA aparece 2s após abrir o portal → cliente clica **"Instalar agora"** → ícone na área de trabalho
+
+> **Fluxo do convite — ordem recovery/invite é crítica.** Usar `invite` para e-mail já existente no Supabase Auth recria o UUID do usuário, o que pode acionar CASCADE DELETE na `tenant_usuarios` se houver FK oculta. Sempre tentar `recovery` primeiro.
 
 ### Acessos seguintes (login normal)
 - Portal detecta `qtqd_tenant_id_v1` sem `qtqd_jwt_v1` → exibe tela de login (`#loginOverlay`)
@@ -437,6 +472,13 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 23. **Percentual exibido como R$ nos gráficos:** `fmtVal` não tratava `field.format === 'percent'`. Fix: adicionar case e usar `fmtPercent(v)`. Eixo Y também atualizado para respeitar formato do campo.
 24. **Rótulos monetários muito longos nos gráficos:** `fmtVal` usava `fmtMoney` completo. Fix: usar `fmtMoneyShort` (abreviado: R$ 1,9M, R$ 234K).
 25. **Cliente perdia acesso ao expirar o JWT:** sem tela de login, portal caía em modo simulação silenciosamente. Fix: `#loginOverlay` detecta `tenant_id` sem `jwt` e exibe formulário de e-mail + senha.
+26. **Data do lançamento exibida em ISO no formulário:** `fillForm()` usava `record.weekDate` diretamente (YYYY-MM-DD). Fix: `isoToBr()` para exibição + `brToIso()` em `collectFormData` para salvar.
+27. **Rascunhos alimentando gráficos/inspetor:** `records` sem filtro incluía rascunhos. Fix: `publishedRecords()` filtra `status !== 'rascunho'` em todos os renders analíticos.
+28. **Singleton do Supabase contaminado por auth.get_user():** `sb.auth.get_user(jwt)` atualiza a sessão interna do cliente singleton, fazendo queries seguintes usarem o JWT do usuário em vez da service role key. RLS bloqueava todas as queries. Fix: `get_supabase()` cria cliente fresco a cada chamada (sem singleton).
+29. **Convite apagava registro da tenant_usuarios:** `generate_link(type="invite")` para e-mail já existente no Supabase Auth pode recriar o UUID (trigger CASCADE DELETE se houver FK oculta). Fix: tentar `recovery` primeiro, `invite` só para novos.
+30. **definir-senha não encontrava usuário:** lookup por email falhava por RLS (causa #28). Fix: após auth.get_user(), usar `app_metadata.qtqd_usuario_id` (gravado no envio do convite) para lookup direto por ID primário.
+31. **Botão "Criar senha" na /instalar não respondia:** referência a `#pwaInstallBtn` (removido do HTML) causava TypeError ao registrar event listener, impedindo todos os handlers da página. Fix: remover o código JS do elemento inexistente.
+32. **Admin token inválido após request de definir-senha:** causa era o singleton contaminado (#28) que quebrava `listClients`. Fix: singleton removido (ver #28).
 
 ---
 
