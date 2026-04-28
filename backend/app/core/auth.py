@@ -64,7 +64,7 @@ def get_current_tenant(
 
     if x_tenant_id:
         result = (
-            sb.table("tenant_users")
+            sb.table("tenant_usuarios")
             .select("tenant_id")
             .eq("user_id", user_id)
             .eq("tenant_id", x_tenant_id)
@@ -76,7 +76,7 @@ def get_current_tenant(
             return UUID(x_tenant_id)
 
     result = (
-        sb.table("tenant_users")
+        sb.table("tenant_usuarios")
         .select("tenant_id")
         .eq("user_id", user_id)
         .eq("ativo", True)
