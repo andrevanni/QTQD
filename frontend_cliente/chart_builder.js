@@ -6,7 +6,9 @@
   'use strict';
 
   /* ── Constantes ─────────────────────────────────────── */
-  const STORAGE_KEY = 'qtqd_saved_charts_v2_' + (localStorage.getItem('qtqd_tenant_id_v1') || 'local');
+  function getStorageKey() {
+    return 'qtqd_saved_charts_v2_' + (localStorage.getItem('qtqd_tenant_id_v1') || 'local');
+  }
 
   const PALETTE = [
     '#2563eb', '#16a34a', '#dc2626', '#d97706',
@@ -37,12 +39,12 @@
   }
 
   function loadSaved() {
-    try { savedCharts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    try { savedCharts = JSON.parse(localStorage.getItem(getStorageKey()) || '[]'); }
     catch { savedCharts = []; }
   }
 
   function persistSaved() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedCharts));
+    localStorage.setItem(getStorageKey(), JSON.stringify(savedCharts));
   }
 
   /* ── Construção dos dados do gráfico ────────────────── */
