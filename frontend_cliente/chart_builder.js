@@ -66,13 +66,24 @@
     };
   }
 
-  function loadSaved() {
-    try { savedCharts = JSON.parse(localStorage.getItem(getStorageKey()) || '[]'); }
-    catch { savedCharts = []; }
+  async function loadSaved() {
+    if (typeof getRuntimeConfig === 'function' && getRuntimeConfig().mode === 'api' && window.QTQD_API_CLIENT) {
+      try {
+        const r = await window.QTQD_API_CLIENT.getChartsConfig();
+        savedCharts = r.charts_config || [];
+      } catch { savedCharts = []; }
+    } else {
+      try { savedCharts = JSON.parse(localStorage.getItem(getStorageKey()) || '[]'); }
+      catch { savedCharts = []; }
+    }
   }
 
-  function persistSaved() {
-    localStorage.setItem(getStorageKey(), JSON.stringify(savedCharts));
+  async function persistSaved() {
+    if (typeof getRuntimeConfig === 'function' && getRuntimeConfig().mode === 'api' && window.QTQD_API_CLIENT) {
+      window.QTQD_API_CLIENT.putChartsConfig(savedCharts).catch(() => {});
+    } else {
+      localStorage.setItem(getStorageKey(), JSON.stringify(savedCharts));
+    }
   }
 
   /* ── Construção dos dados do gráfico ────────────────── */
@@ -348,8 +359,9 @@
               <button class="chip"        data-view="table" data-cid="${ch.id}" type="button">Tabela</button>
             </div>
             <button class="chip${ch.showLabels ? ' active' : ''}" data-labels="${ch.id}" type="button">Rótulos</button>
+            ${(typeof canEdit === 'function' ? canEdit() : true) ? `
             <button class="btn btn-ghost" data-edit="${ch.id}" type="button">✏️ Editar</button>
-            <button class="btn btn-ghost" data-del="${ch.id}" type="button">Remover</button>
+            <button class="btn btn-ghost" data-del="${ch.id}" type="button">Remover</button>` : ''}
           </div>
         </div>
         <div id="cedit-${ch.id}" class="chart-edit-panel hidden">
@@ -428,10 +440,12 @@
   }
 
   /* ── Inicialização do builder ───────────────────────── */
-  function initBuilder() {
-    loadSaved();
+  async function initBuilder() {
+    await loadSaved();
     renderFieldButtons();
     renderSelected();
+    const toggleNew = document.getElementById('cbToggleNew');
+    if (toggleNew) toggleNew.style.display = (typeof canEdit === 'function' && !canEdit()) ? 'none' : '';
     renderSavedCharts();
   }
 
@@ -684,7 +698,7 @@
   }
 
   /* ── Override de renderChartsPanel ─────────────────── */
-  window.renderChartsPanel = function () { initBuilder(); };
+  window.renderChartsPanel = async function () { await initBuilder(); };
 
   /* ── Bootstrap ──────────────────────────────────────── */
   function bootstrap() {

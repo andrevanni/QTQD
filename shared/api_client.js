@@ -130,6 +130,16 @@
     getMyComponentesConfig() {
       return request(base('/me/componentes-config'), { method: 'GET', headers: authHeaders() });
     },
+    getChartsConfig() {
+      return request(base('/me/charts-config'), { method: 'GET', headers: authHeaders() });
+    },
+    putChartsConfig(cfg) {
+      return request(base('/me/charts-config'), {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ charts_config: cfg }),
+      });
+    },
 
     /* ── Admin — clientes (exige X-Admin-Token) ──────── */
     listClients(adminToken) {

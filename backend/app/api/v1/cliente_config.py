@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends
 
 from backend.app.core.auth import get_current_tenant
 from backend.app.db.client import get_supabase
@@ -27,3 +28,20 @@ def obter_componentes_config(tenant_id: UUID = Depends(get_current_tenant)) -> l
         .execute()
     )
     return [ComponenteConfigResponse(**row) for row in result.data]
+
+
+@router.get("/charts-config")
+def get_charts_config(tenant_id: UUID = Depends(get_current_tenant)) -> dict:
+    row = get_supabase().table("tenants").select("charts_config").eq("id", str(tenant_id)).limit(1).execute()
+    cfg = row.data[0].get("charts_config") if row.data else []
+    return {"charts_config": cfg or []}
+
+
+@router.put("/charts-config")
+def put_charts_config(
+    charts_config: list = Body(default=[], embed=True),
+    tenant_id: UUID = Depends(get_current_tenant),
+) -> dict:
+    now = datetime.now(timezone.utc).isoformat()
+    get_supabase().table("tenants").update({"charts_config": charts_config, "updated_at": now}).eq("id", str(tenant_id)).execute()
+    return {"ok": True}
