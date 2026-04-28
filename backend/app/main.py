@@ -30,6 +30,7 @@ def health() -> dict:
         "status": "ok",
         "env": settings.app_env,
         "token_is_default": settings.admin_token == "trocar-este-token",
+        "token_hint": f"{settings.admin_token[:4]}...{settings.admin_token[-4:]}({len(settings.admin_token)})",
         "supabase_ok": sb_ok,
         "supabase_err": sb_err,
     }
