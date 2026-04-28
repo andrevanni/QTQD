@@ -141,7 +141,18 @@ chartFieldsGrid.addEventListener("change",e=>{const input=e.target.closest("inpu
     deferredPrompt.prompt();
     const{outcome}=await deferredPrompt.userChoice;
     deferredPrompt=null;
-    if(outcome==='accepted')dismiss();
+    if(outcome==='accepted'){
+      // Mostra confirmação com localização do atalho
+      const modal=document.getElementById('pwaModal');
+      if(modal){
+        modal.innerHTML=`<div style="background:#1e293b;border:1px solid #16a34a;border-radius:16px;max-width:440px;width:100%;padding:32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+          <div style="font-size:48px;margin-bottom:12px">✅</div>
+          <h2 style="font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:8px">App instalado!</h2>
+          <p style="font-size:15px;color:#94a3b8;margin-bottom:20px;line-height:1.6">O ícone <strong style="color:#f1f5f9">QT/QD</strong> foi criado na sua área de trabalho.<br>Feche esta janela e clique no ícone para abrir o app.</p>
+          <button onclick="document.getElementById('pwaModal').style.display='none';localStorage.setItem('qtqd_pwa_dismissed','1')" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">Entendi!</button>
+        </div>`;
+      }
+    }
   }
 
   // Botões do modal
@@ -161,8 +172,26 @@ chartFieldsGrid.addEventListener("change",e=>{const input=e.target.closest("inpu
     if(modalBtn)modalBtn.style.display='block';
   });
 
-  // Mostra modal na primeira visita (não standalone, não dispensado)
-  if(!isStandalone&&!localStorage.getItem(KEY)){
+  if(isStandalone){
+    // App já instalado — mostra dica de localização só na primeira vez em standalone
+    const STANDALONE_KEY='qtqd_standalone_hint';
+    if(!localStorage.getItem(STANDALONE_KEY)){
+      localStorage.setItem(STANDALONE_KEY,'1');
+      setTimeout(()=>{
+        const modal=document.getElementById('pwaModal');
+        if(modal){
+          modal.innerHTML=`<div style="background:#1e293b;border:1px solid #2563eb;border-radius:16px;max-width:440px;width:100%;padding:32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+            <img src="assets/icon-512.png" alt="QTQD" style="width:64px;height:64px;border-radius:14px;margin-bottom:14px">
+            <h2 style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">App instalado com sucesso!</h2>
+            <p style="font-size:14px;color:#94a3b8;margin-bottom:20px;line-height:1.6">Para abrir novamente: procure o ícone <strong style="color:#f1f5f9">QT/QD</strong> na sua área de trabalho ou no <strong style="color:#f1f5f9">Menu Iniciar</strong> do Windows.</p>
+            <button onclick="document.getElementById('pwaModal').style.display='none'" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">Entendi, obrigado!</button>
+          </div>`;
+          modal.style.display='flex';
+        }
+      },1500);
+    }
+  } else if(!localStorage.getItem(KEY)){
+    // Não instalado ainda — mostra modal de instalação
     setTimeout(()=>{
       const modal=document.getElementById('pwaModal');
       if(modal)modal.style.display='flex';
