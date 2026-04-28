@@ -24,19 +24,24 @@
 <body>
 
 <!-- Modal de instalação PWA (primeira visita) -->
-<div id="pwaModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:20px">
-  <div style="background:#1e293b;border:1px solid #2563eb;border-radius:16px;max-width:440px;width:100%;padding:32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)">
-    <img src="assets/icon-512.png" alt="QTQD" style="width:72px;height:72px;border-radius:16px;margin-bottom:16px">
-    <h2 style="font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:8px">Instale o QTQD</h2>
-    <p style="font-size:14px;color:#94a3b8;margin-bottom:24px;line-height:1.6">Adicione o QTQD à sua área de trabalho para abrir direto, sem precisar do navegador.</p>
-    <button id="pwaModalInstall" style="display:none;width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">📲 Instalar agora</button>
-    <div id="pwaModalManual" style="background:#0f172a;border-radius:10px;padding:16px;margin-bottom:16px;text-align:left">
-      <p style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Como instalar no Chrome / Edge</p>
-      <p style="font-size:13px;color:#cbd5e1;margin-bottom:8px">1. Procure o ícone <strong style="color:#f1f5f9">⊕</strong> ou <strong style="color:#f1f5f9">💻</strong> na barra de endereços</p>
-      <p style="font-size:13px;color:#cbd5e1;margin-bottom:8px">2. Clique e depois em <strong style="color:#f1f5f9">"Instalar"</strong></p>
-      <p style="font-size:13px;color:#cbd5e1">3. O ícone QTQD aparece na área de trabalho ✓</p>
+<div id="pwaModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.8);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#1e293b;border:1px solid #2563eb;border-radius:16px;max-width:420px;width:100%;padding:28px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.7)">
+    <img src="assets/icon-512.png" alt="QTQD" style="width:72px;height:72px;border-radius:16px;margin-bottom:14px">
+    <h2 style="font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:6px">Instale o QTQD</h2>
+    <p style="font-size:13px;color:#94a3b8;margin-bottom:20px">Crie um atalho para abrir direto, sem o navegador.</p>
+
+    <!-- Botão 1-clique (aparece quando o browser suporta) -->
+    <button id="pwaModalInstall" style="display:none;width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:14px">📲 Instalar com 1 clique</button>
+
+    <!-- Instruções que SEMPRE funcionam -->
+    <div style="background:#0f172a;border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:left">
+      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Como instalar (Edge / Chrome)</p>
+      <p style="font-size:13px;color:#e2e8f0;margin-bottom:6px">1. Clique nos <strong style="color:#fff">três pontos ⋮</strong> no canto do navegador</p>
+      <p style="font-size:13px;color:#e2e8f0;margin-bottom:6px">2. Escolha <strong style="color:#fff">"Aplicativos"</strong> → <strong style="color:#fff">"Instalar este site"</strong></p>
+      <p style="font-size:13px;color:#60a5fa">✓ O ícone QT/QD aparece na área de trabalho</p>
     </div>
-    <button id="pwaModalDismiss" style="width:100%;background:transparent;color:#64748b;border:1px solid #334155;border-radius:8px;padding:11px;font-size:14px;cursor:pointer">Já instalei / Continuar sem instalar</button>
+
+    <button id="pwaModalDismiss" style="width:100%;background:transparent;color:#64748b;border:1px solid #334155;border-radius:8px;padding:11px;font-size:13px;cursor:pointer">Já instalei — Continuar</button>
   </div>
 </div>
 
