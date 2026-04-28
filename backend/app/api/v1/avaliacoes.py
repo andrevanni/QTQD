@@ -121,6 +121,52 @@ def fechar(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) ->
     return _serialize(result.data[0])
 
 
+@router.post("/{avaliacao_id}/finalizar")
+def finalizar(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) -> dict:
+    """Marca a semana como finalizada e dispara o e-mail automático para todos os usuários."""
+    from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
+
+    sb = get_supabase()
+    check = sb.table("avaliacoes_semanais").select("id,status").eq("id", str(avaliacao_id)).eq("tenant_id", str(tenant_id)).limit(1).execute()
+    if not check.data:
+        raise HTTPException(status_code=404, detail="Avaliacao nao encontrada.")
+
+    sb.table("avaliacoes_semanais").update(
+        {"status": "finalizado", "updated_at": datetime.now(timezone.utc).isoformat()}
+    ).eq("id", str(avaliacao_id)).eq("tenant_id", str(tenant_id)).execute()
+
+    final = sb.table("avaliacoes_semanais").select(_COLS).eq("id", str(avaliacao_id)).limit(1).execute()
+    avaliacao = _serialize(final.data[0])
+
+    try:
+        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb)
+    except Exception:
+        destinatarios = []
+
+    return {
+        "avaliacao": avaliacao.model_dump(),
+        "enviado_para": destinatarios,
+        "n_destinatarios": len(destinatarios),
+    }
+
+
+@router.post("/{avaliacao_id}/reenviar-relatorio")
+def reenviar_relatorio(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) -> dict:
+    """Reenvia o e-mail de relatório sem alterar o status da avaliação."""
+    from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
+
+    sb = get_supabase()
+    if not sb.table("avaliacoes_semanais").select("id").eq("id", str(avaliacao_id)).eq("tenant_id", str(tenant_id)).limit(1).execute().data:
+        raise HTTPException(status_code=404, detail="Avaliacao nao encontrada.")
+
+    try:
+        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Falha ao enviar relatorio: {e}")
+
+    return {"enviado_para": destinatarios, "n_destinatarios": len(destinatarios)}
+
+
 @router.delete("/{avaliacao_id}", status_code=204)
 def excluir(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) -> None:
     result = (

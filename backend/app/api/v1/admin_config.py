@@ -152,83 +152,15 @@ def salvar_pdf_config(tenant_id: UUID, payload: PdfConfigRequest) -> PdfConfigRe
 
 @router.post("/enviar-relatorio/{tenant_id}", status_code=200)
 def enviar_relatorio(tenant_id: UUID) -> dict:
-    from backend.app.schemas.avaliacoes import AvaliacaoValores
-    from backend.app.services.calculos_qtqd import calcular_indicadores
-    from backend.app.services.relatorio_html import build_relatorio_html
-    from backend.app.services.email_service import send_html
-
+    from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
     sb = get_supabase()
-
-    # Busca config PDF
-    cfg_res = sb.table("tenant_pdf_config").select("*").eq("tenant_id", str(tenant_id)).limit(1).execute()
-    cfg = cfg_res.data[0] if cfg_res.data else {}
-    n_retratos       = int(cfg.get("n_retratos", 8))
-    incluir_inspetor = bool(cfg.get("incluir_inspetor", False))
-    incluir_graficos  = bool(cfg.get("incluir_graficos", False))
-
-    # Busca nome do tenant
-    tenant_res = sb.table("tenants").select("nome").eq("id", str(tenant_id)).limit(1).execute()
-    tenant_nome = tenant_res.data[0]["nome"] if tenant_res.data else "Cliente"
-
-    # Busca últimas N avaliações
-    avals = sb.table("avaliacoes_semanais")\
-        .select("semana_referencia,valores")\
-        .eq("tenant_id", str(tenant_id))\
-        .order("semana_referencia", desc=True)\
-        .limit(n_retratos)\
-        .execute().data
-
-    if not avals:
-        raise HTTPException(status_code=404, detail="Nenhuma avaliacao encontrada para este tenant.")
-
-    avals_sorted = sorted(avals, key=lambda x: x["semana_referencia"])
-    periodos = []
-    for av in avals_sorted:
-        from datetime import date
-        try:
-            d = date.fromisoformat(av["semana_referencia"])
-            data_fmt = d.strftime("%d/%m/%Y")
-        except Exception:
-            data_fmt = av["semana_referencia"]
-        valores = AvaliacaoValores(**(av.get("valores") or {}))
-        periodos.append({"data": data_fmt, "indicadores": calcular_indicadores(valores)})
-
-    # Busca destinatários
-    usuarios_res = sb.table("tenant_usuarios")\
-        .select("email,nome")\
-        .eq("tenant_id", str(tenant_id))\
-        .eq("ativo", True)\
-        .execute()
-    destinatarios = [u["email"] for u in (usuarios_res.data or []) if u.get("email")]
-
-    if not destinatarios:
-        raise HTTPException(status_code=400, detail="Nenhum usuario ativo com e-mail encontrado para este tenant.")
-
-    # Busca branding (nome do portal + logo)
-    brand_res = sb.table("tenant_branding").select("nome_portal,logo_cliente_url").eq("tenant_id", str(tenant_id)).limit(1).execute()
-    brand = brand_res.data[0] if brand_res.data else {}
-    logo_cliente_url = brand.get("logo_cliente_url") or None
-    portal_url = "https://qtqd-vt2a.vercel.app/cliente"
-
-    html = build_relatorio_html(
-        tenant_nome=tenant_nome,
-        portal_url=portal_url,
-        periodos=periodos,
-        incluir_inspetor=incluir_inspetor,
-        incluir_graficos=incluir_graficos,
-        logo_cliente_url=logo_cliente_url,
-    )
-
-    from datetime import date
-    today = date.today().strftime("%d/%m/%Y")
-    subject = f"Relatório QTQD — {tenant_nome} — {today}"
-
     try:
-        send_html(destinatarios, subject, html)
+        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao enviar e-mail: {e}")
-
-    return {"ok": True, "enviado_para": destinatarios, "n_periodos": len(periodos)}
+        raise HTTPException(status_code=500, detail=f"Erro ao enviar relatorio: {e}")
+    if not destinatarios:
+        raise HTTPException(status_code=400, detail="Nenhum usuario ativo com e-mail ou nenhuma avaliacao encontrada.")
+    return {"ok": True, "enviado_para": destinatarios}
 
 
 @router.get("/usuarios", response_model=list[UsuarioAdminResponse])
@@ -253,7 +185,7 @@ def criar_usuario(payload: UsuarioAdminCreateRequest) -> UsuarioAdminResponse:
             link_resp = sb.auth.admin.generate_link({
                 "type": link_type,
                 "email": payload.email,
-                "options": {"redirect_to": instalar_url},
+                "redirect_to": instalar_url,
             })
             auth_user = getattr(link_resp, "user", None)
             if auth_user and getattr(auth_user, "id", None):
@@ -310,7 +242,7 @@ def enviar_convite_usuario(usuario_id: UUID) -> dict:
             link_resp = sb.auth.admin.generate_link({
                 "type": link_type,
                 "email": u["email"],
-                "options": {"redirect_to": instalar_url},
+                "redirect_to": instalar_url,
             })
             props = getattr(link_resp, "properties", None)
             action = getattr(props, "action_link", None) if props else None

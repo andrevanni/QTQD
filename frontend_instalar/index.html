@@ -281,7 +281,15 @@
 
   if (!accessToken) {
     document.getElementById('senhaBlock').style.display = 'none';
-    document.getElementById('invalidBlock').style.display = 'block';
+    const invalidBlock = document.getElementById('invalidBlock');
+    invalidBlock.style.display = 'block';
+    const errDesc = hashParams['error_description'] || hashParams['error'] || '';
+    if (errDesc) {
+      const p = document.createElement('p');
+      p.style.cssText = 'font-size:12px;color:#64748b;margin-top:12px';
+      p.textContent = 'Detalhe: ' + decodeURIComponent(errDesc.replace(/\+/g,' '));
+      invalidBlock.appendChild(p);
+    }
   }
 
   function setStep(n) {
