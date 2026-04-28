@@ -251,7 +251,19 @@ def enviar_convite_usuario(usuario_id: UUID) -> dict:
                 setup_link = action
                 auth_user = getattr(link_resp, "user", None)
                 if auth_user and getattr(auth_user, "id", None):
-                    sb.table("tenant_usuarios").update({"user_id": str(auth_user.id)}).eq("id", str(usuario_id)).execute()
+                    auth_uid = str(auth_user.id)
+                    # Sincroniza user_id na tabela
+                    sb.table("tenant_usuarios").update({"user_id": auth_uid}).eq("id", str(usuario_id)).execute()
+                    # Grava referência no app_metadata do Auth — usado pelo definir-senha
+                    try:
+                        sb.auth.admin.update_user_by_id(auth_uid, {
+                            "app_metadata": {
+                                "qtqd_usuario_id": str(usuario_id),
+                                "qtqd_tenant_id": str(u["tenant_id"]),
+                            }
+                        })
+                    except Exception:
+                        pass
                 break
         except Exception as e:
             last_error = str(e)

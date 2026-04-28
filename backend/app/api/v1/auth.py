@@ -110,7 +110,17 @@ def definir_senha(payload: DefinirSenhaRequest) -> dict:
             detail="Senha definida com sucesso. Acesse o portal com seu e-mail e senha.",
         )
 
-    tu = _tenant_para_usuario(sb, user.email, str(user.id))
+    # Tenta lookup pelo app_metadata gravado no envio do convite (mais confiável)
+    app_meta = getattr(user, "app_metadata", None) or {}
+    qtqd_usuario_id = app_meta.get("qtqd_usuario_id")
+    if qtqd_usuario_id:
+        res = sb.table("tenant_usuarios").select("tenant_id,permissao,nome,ativo").eq("id", qtqd_usuario_id).limit(1).execute()
+        if res.data and res.data[0].get("ativo"):
+            tu = res.data[0]
+        else:
+            tu = _tenant_para_usuario(sb, user.email, str(user.id))
+    else:
+        tu = _tenant_para_usuario(sb, user.email, str(user.id))
     return {
         "access_token": sign_resp.session.access_token,
         "tenant_id": str(tu["tenant_id"]),
