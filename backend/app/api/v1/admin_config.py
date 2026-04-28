@@ -248,17 +248,19 @@ def criar_usuario(payload: UsuarioAdminCreateRequest) -> UsuarioAdminResponse:
 
     # Cria (ou convida) o usuário no Supabase Auth e obtém o user_id
     instalar_url = "https://qtqd-vt2a.vercel.app/instalar"
-    try:
-        link_resp = sb.auth.admin.generate_link({
-            "type": "invite",
-            "email": payload.email,
-            "options": {"redirect_to": instalar_url},
-        })
-        auth_user = getattr(link_resp, "user", None)
-        if auth_user and getattr(auth_user, "id", None):
-            data["user_id"] = str(auth_user.id)
-    except Exception:
-        pass  # usuário pode já existir no Auth; continua sem user_id
+    for link_type in ("invite", "recovery"):
+        try:
+            link_resp = sb.auth.admin.generate_link({
+                "type": link_type,
+                "email": payload.email,
+                "options": {"redirect_to": instalar_url},
+            })
+            auth_user = getattr(link_resp, "user", None)
+            if auth_user and getattr(auth_user, "id", None):
+                data["user_id"] = str(auth_user.id)
+            break
+        except Exception:
+            continue  # usuário pode já existir no Auth; tenta próximo tipo
 
     result = sb.table("tenant_usuarios").insert(data).execute()
     if not result.data:
@@ -294,24 +296,36 @@ def enviar_convite_usuario(usuario_id: UUID) -> dict:
     b_res = sb.table("tenant_branding").select("nome_portal").eq("tenant_id", str(u["tenant_id"])).limit(1).execute()
     portal_nome = (b_res.data[0].get("nome_portal") or tenant_nome) if b_res.data else tenant_nome
 
-    # Gera link de convite via Supabase Auth (cria o usuário Auth se não existir)
+    # Gera link de acesso via Supabase Auth
+    # Tenta "invite" (para novos usuários); se falhar (usuário já confirmado), usa "recovery"
     instalar_url = "https://qtqd-vt2a.vercel.app/instalar"
-    setup_link = instalar_url  # fallback se generate_link falhar
-    try:
-        link_resp = sb.auth.admin.generate_link({
-            "type": "invite",
-            "email": u["email"],
-            "options": {"redirect_to": instalar_url},
-        })
-        props = getattr(link_resp, "properties", None)
-        if props:
-            setup_link = getattr(props, "action_link", instalar_url)
-        # Armazena user_id se ainda não estiver salvo
-        auth_user = getattr(link_resp, "user", None)
-        if auth_user and getattr(auth_user, "id", None) and not u.get("user_id"):
-            sb.table("tenant_usuarios").update({"user_id": str(auth_user.id)}).eq("id", str(usuario_id)).execute()
-    except Exception:
-        pass
+    setup_link = None
+    last_error = None
+
+    for link_type in ("invite", "recovery"):
+        try:
+            link_resp = sb.auth.admin.generate_link({
+                "type": link_type,
+                "email": u["email"],
+                "options": {"redirect_to": instalar_url},
+            })
+            props = getattr(link_resp, "properties", None)
+            action = getattr(props, "action_link", None) if props else None
+            if action:
+                setup_link = action
+                auth_user = getattr(link_resp, "user", None)
+                if auth_user and getattr(auth_user, "id", None) and not u.get("user_id"):
+                    sb.table("tenant_usuarios").update({"user_id": str(auth_user.id)}).eq("id", str(usuario_id)).execute()
+                break
+        except Exception as e:
+            last_error = str(e)
+            continue
+
+    if not setup_link:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Nao foi possivel gerar o link de acesso para {u['email']}. Erro: {last_error}",
+        )
 
     perm_label = {"edita": "Edição", "visualiza": "Somente leitura", "relatorio": "Somente relatórios"}.get(u.get("permissao", ""), "Acesso")
 
