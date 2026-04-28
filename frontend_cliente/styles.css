@@ -925,6 +925,8 @@ th {
 }
 
 .action-btn:hover { background: var(--surface-2); }
+.action-btn--primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+.action-btn--primary:hover { background: #1d4ed8; }
 
 /* ── GRÁFICOS ─────────────────────────────────────────── */
 .chart-toolbar {
