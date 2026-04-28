@@ -2,8 +2,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from backend.app.db.client import get_supabase
-from backend.app.core.config import settings
-from supabase import create_client
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -61,10 +59,9 @@ def _tenant_para_usuario(sb, email: str, user_id: str | None = None) -> dict:
 
 @router.post("/login")
 def login(payload: LoginRequest) -> dict:
-    sb_auth = get_supabase()
-    sb_db = create_client(settings.supabase_url, settings.supabase_service_role_key)
+    sb = get_supabase()
     try:
-        resp = sb_auth.auth.sign_in_with_password(
+        resp = sb.auth.sign_in_with_password(
             {"email": payload.email, "password": payload.password}
         )
     except Exception:
@@ -73,7 +70,7 @@ def login(payload: LoginRequest) -> dict:
     if not resp.session:
         raise HTTPException(status_code=401, detail="Falha na autenticação.")
 
-    tu = _tenant_para_usuario(sb_db, resp.user.email, str(resp.user.id))
+    tu = _tenant_para_usuario(get_supabase(), resp.user.email, str(resp.user.id))
     return {
         "access_token": resp.session.access_token,
         "tenant_id": str(tu["tenant_id"]),
@@ -84,13 +81,10 @@ def login(payload: LoginRequest) -> dict:
 
 @router.post("/definir-senha")
 def definir_senha(payload: DefinirSenhaRequest) -> dict:
-    # sb_auth: usado só para operações de auth (get_user, update_user, sign_in)
-    # sb_db:  cliente fresco com service role para queries no banco (evita contaminação de RLS)
-    sb_auth = get_supabase()
-    sb_db = create_client(settings.supabase_url, settings.supabase_service_role_key)
+    sb = get_supabase()  # cliente fresco a cada request (sem singleton)
 
     try:
-        user_resp = sb_auth.auth.get_user(payload.access_token)
+        user_resp = sb.auth.get_user(payload.access_token)
         user = user_resp.user
     except Exception:
         raise HTTPException(
@@ -102,12 +96,12 @@ def definir_senha(payload: DefinirSenhaRequest) -> dict:
         raise HTTPException(status_code=400, detail="A senha deve ter ao menos 6 caracteres.")
 
     try:
-        sb_auth.auth.admin.update_user_by_id(str(user.id), {"password": payload.nova_senha})
+        sb.auth.admin.update_user_by_id(str(user.id), {"password": payload.nova_senha})
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao definir senha: {e}")
 
     try:
-        sign_resp = sb_auth.auth.sign_in_with_password(
+        sign_resp = sb.auth.sign_in_with_password(
             {"email": user.email, "password": payload.nova_senha}
         )
     except Exception:
@@ -117,6 +111,7 @@ def definir_senha(payload: DefinirSenhaRequest) -> dict:
         )
 
     # Tenta lookup pelo app_metadata (gravado no envio do convite)
+    sb_db = get_supabase()  # cliente separado para DB — isolado da contaminação de auth
     app_meta = getattr(user, "app_metadata", None) or {}
     qtqd_usuario_id = app_meta.get("qtqd_usuario_id")
     if qtqd_usuario_id:
@@ -124,9 +119,9 @@ def definir_senha(payload: DefinirSenhaRequest) -> dict:
         if res.data and res.data[0].get("ativo"):
             tu = res.data[0]
         else:
-            tu = _tenant_para_usuario(sb_db, user.email, str(user.id))
+            tu = _tenant_para_usuario(get_supabase(), user.email, str(user.id))
     else:
-        tu = _tenant_para_usuario(sb_db, user.email, str(user.id))
+        tu = _tenant_para_usuario(get_supabase(), user.email, str(user.id))
     return {
         "access_token": sign_resp.session.access_token,
         "tenant_id": str(tu["tenant_id"]),
