@@ -23,12 +23,29 @@
 </head>
 <body>
 
-<!-- Banner de instalação PWA -->
-<div id="pwaBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1e293b;border-top:1px solid #2563eb;padding:14px 20px;display:none;align-items:center;gap:14px;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
+<!-- Modal de instalação PWA (primeira visita) -->
+<div id="pwaModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#1e293b;border:1px solid #2563eb;border-radius:16px;max-width:440px;width:100%;padding:32px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+    <img src="assets/icon-512.png" alt="QTQD" style="width:72px;height:72px;border-radius:16px;margin-bottom:16px">
+    <h2 style="font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:8px">Instale o QTQD</h2>
+    <p style="font-size:14px;color:#94a3b8;margin-bottom:24px;line-height:1.6">Adicione o QTQD à sua área de trabalho para abrir direto, sem precisar do navegador.</p>
+    <button id="pwaModalInstall" style="display:none;width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">📲 Instalar agora</button>
+    <div id="pwaModalManual" style="background:#0f172a;border-radius:10px;padding:16px;margin-bottom:16px;text-align:left">
+      <p style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Como instalar no Chrome / Edge</p>
+      <p style="font-size:13px;color:#cbd5e1;margin-bottom:8px">1. Procure o ícone <strong style="color:#f1f5f9">⊕</strong> ou <strong style="color:#f1f5f9">💻</strong> na barra de endereços</p>
+      <p style="font-size:13px;color:#cbd5e1;margin-bottom:8px">2. Clique e depois em <strong style="color:#f1f5f9">"Instalar"</strong></p>
+      <p style="font-size:13px;color:#cbd5e1">3. O ícone QTQD aparece na área de trabalho ✓</p>
+    </div>
+    <button id="pwaModalDismiss" style="width:100%;background:transparent;color:#64748b;border:1px solid #334155;border-radius:8px;padding:11px;font-size:14px;cursor:pointer">Já instalei / Continuar sem instalar</button>
+  </div>
+</div>
+
+<!-- Banner de instalação PWA (visitas subsequentes) -->
+<div id="pwaBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1e293b;border-top:1px solid #2563eb;padding:14px 20px;align-items:center;gap:14px;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
   <img src="assets/icon-512.png" alt="QTQD" style="width:44px;height:44px;border-radius:10px;flex-shrink:0">
   <div style="flex:1;min-width:0">
     <div style="font-weight:700;font-size:14px;color:#f1f5f9">Instalar QTQD na área de trabalho</div>
-    <div style="font-size:12px;color:#94a3b8">Acesso rápido como aplicativo, sem precisar do navegador</div>
+    <div style="font-size:12px;color:#94a3b8">Acesso rápido sem precisar do navegador</div>
   </div>
   <button id="pwaBannerInstall" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0">Instalar</button>
   <button id="pwaBannerDismiss" style="background:transparent;color:#64748b;border:1px solid #334155;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;flex-shrink:0">Agora não</button>

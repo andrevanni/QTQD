@@ -128,36 +128,47 @@ document.querySelectorAll("[data-chart-range]").forEach(b=>b.addEventListener("c
 document.querySelectorAll("[data-chart-mode]").forEach(b=>b.addEventListener("click",()=>{chartState.mode=b.dataset.chartMode;document.querySelectorAll("[data-chart-mode]").forEach(x=>x.classList.toggle("active",x.dataset.chartMode===chartState.mode));renderChartsPanel()}));
 chartRangeCountInput.addEventListener("input",()=>{chartState.count=Math.max(1,Number(chartRangeCountInput.value)||chartDefaults[chartState.range]);renderChartsPanel()});
 chartFieldsGrid.addEventListener("change",e=>{const input=e.target.closest("input[type='checkbox']");if(!input)return;const selected=Array.from(chartFieldsGrid.querySelectorAll("input[type='checkbox']:checked")).map(i=>i.value);chartState.fields=selected.length?selected:["indice_qt_qd"];renderChartsPanel()});
-// ── Banner de instalação PWA ───────────────────────────
+// ── Instalação PWA ────────────────────────────────────
 (function(){
-  const PWA_DISMISSED_KEY='qtqd_pwa_dismissed';
+  const KEY='qtqd_pwa_dismissed';
+  const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
   let deferredPrompt=null;
-  window.addEventListener('beforeinstallprompt',e=>{
-    e.preventDefault();
-    deferredPrompt=e;
-    if(localStorage.getItem(PWA_DISMISSED_KEY))return;
-    const banner=document.getElementById('pwaBanner');
-    if(banner)banner.style.display='flex';
-  });
-  document.getElementById('pwaBannerInstall')?.addEventListener('click',async()=>{
+
+  function dismiss(){localStorage.setItem(KEY,'1');['pwaModal','pwaBanner'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
+
+  async function triggerInstall(){
     if(!deferredPrompt)return;
     deferredPrompt.prompt();
     const{outcome}=await deferredPrompt.userChoice;
     deferredPrompt=null;
-    const banner=document.getElementById('pwaBanner');
-    if(banner)banner.style.display='none';
-    if(outcome==='accepted')localStorage.setItem(PWA_DISMISSED_KEY,'1');
+    if(outcome==='accepted')dismiss();
+  }
+
+  // Botões do modal
+  document.getElementById('pwaModalInstall')?.addEventListener('click',triggerInstall);
+  document.getElementById('pwaModalDismiss')?.addEventListener('click',dismiss);
+  // Botões do banner
+  document.getElementById('pwaBannerInstall')?.addEventListener('click',triggerInstall);
+  document.getElementById('pwaBannerDismiss')?.addEventListener('click',dismiss);
+
+  window.addEventListener('appinstalled',dismiss);
+
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();
+    deferredPrompt=e;
+    // Mostra o botão de instalação automática no modal/banner
+    const modalBtn=document.getElementById('pwaModalInstall');
+    if(modalBtn)modalBtn.style.display='block';
   });
-  document.getElementById('pwaBannerDismiss')?.addEventListener('click',()=>{
-    localStorage.setItem(PWA_DISMISSED_KEY,'1');
-    const banner=document.getElementById('pwaBanner');
-    if(banner)banner.style.display='none';
-  });
-  window.addEventListener('appinstalled',()=>{
-    localStorage.setItem(PWA_DISMISSED_KEY,'1');
-    const banner=document.getElementById('pwaBanner');
-    if(banner)banner.style.display='none';
-  });
+
+  // Mostra modal na primeira visita (não standalone, não dispensado)
+  if(!isStandalone&&!localStorage.getItem(KEY)){
+    // Aguarda o portal carregar antes de mostrar
+    setTimeout(()=>{
+      const modal=document.getElementById('pwaModal');
+      if(modal)modal.style.display='flex';
+    },2000);
+  }
 })();
 const sidebarRevealButton=$("sidebarRevealButton");
 function openSidebarPreview(){if(window.innerWidth>1180&&document.body.classList.contains("sidebar-collapsed"))document.body.classList.add("sidebar-open")}
