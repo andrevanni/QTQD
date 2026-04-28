@@ -396,6 +396,7 @@ def abrir_portal(tenant_id: UUID) -> dict:
                 "user_id": admin_uid,
                 "tenant_id": str(tenant_id),
                 "nome": "Admin",
+                "email": settings.portal_admin_email,
                 "permissao": "edita",
                 "ativo": True,
                 "created_at": datetime.now(timezone.utc).isoformat(),
