@@ -8,7 +8,7 @@ const ADMIN_TOKEN_KEY = window.QTQD_APP_CONFIG?.adminTokenStorageKey || 'qtqd_ad
 const THEME_KEY       = 'qtqd_admin_theme';
 const FIELD_KEY       = 'qtqd_field_config_v1';
 
-/* ── Catálogo de campos por grupo ────────────────────── */
+/* ── Catálogo de campos por grupo (Padrão SF) ────────── */
 const FIELD_CATALOG = {
   qt: {
     label: 'QT — Quanto Tenho',
@@ -20,12 +20,12 @@ const FIELD_CATALOG = {
       cheques:                  'Cheques',
       trade_marketing:          'Trade marketing',
       outros_qt:                'Outros QT',
+      estoque_custo:            'Estoque (preço custo)',
     },
   },
   qd: {
     label: 'QD — Quanto Devo',
     fields: {
-      estoque_custo:            'Estoque (preço custo)',
       contas_pagar:             'Contas a pagar',
       fornecedores:             'Fornecedores',
       investimentos_assumidos:  'Investimentos assumidos',
@@ -37,7 +37,7 @@ const FIELD_CATALOG = {
     },
   },
   operacional: {
-    label: 'Operacional',
+    label: 'Informações Complementares',
     fields: {
       faturamento_previsto_mes: 'Faturamento previsto no mês',
       compras_mes:              'Compras no mês',
@@ -47,19 +47,60 @@ const FIELD_CATALOG = {
       lucro_liquido_mes:        'Lucro líquido no mês',
     },
   },
+  indicadores: {
+    label: 'Indicadores Operacionais',
+    fields: {
+      pmp:                      'PMP — Prazo Médio de Pagamento',
+      pmv:                      'PMV — Prazo Médio de Venda',
+      pmv_avista:               'PMV À Vista',
+      pmv_30:                   'PMV 30 dias',
+      pmv_60:                   'PMV 60 dias',
+      pmv_90:                   'PMV 90 dias',
+      pmv_120:                  'PMV 120 dias',
+      pmv_outros:               'PMV Outros',
+      pme_excel:                'PME — Cobertura Média (ERP)',
+      cobertura_estoque_dia:    'Cobertura de Estoque (do Dia)',
+      indice_faltas:            'Índice de Faltas %',
+      excesso_curva_a:          'Excesso Curva A >90 dias',
+      excesso_curva_b:          'Excesso Curva B >120 dias',
+      excesso_curva_c:          'Excesso Curva C >150 dias',
+      excesso_curva_d:          'Excesso Curva D >180 dias',
+    },
+  },
 };
 
-/* Campos calculados — somente leitura, exibidos como referência */
-const CALCULATED_CATALOG = [
-  { key: 'qt_total',         label: 'QT Total',                    formula: 'Soma de todos os campos QT' },
-  { key: 'qd_total',         label: 'QD Total',                    formula: 'Soma de todos os campos QD' },
-  { key: 'saldo',            label: 'Saldo (QT − QD)',             formula: 'QT Total − QD Total' },
-  { key: 'indice_cobertura', label: 'Índice de Cobertura (%)',      formula: 'QT Total ÷ QD Total × 100' },
-  { key: 'pme',              label: 'PME — Prazo Médio de Estoque', formula: 'Estoque ÷ CMV × 30' },
-  { key: 'prazo_venda',      label: 'Prazo de Venda (dias)',        formula: 'Contas a receber ÷ (Venda cupom ÷ 30)' },
-  { key: 'prazo_compra',     label: 'Prazo Médio de Compra (dias)', formula: 'Contas a pagar ÷ (Compras ÷ 30)' },
-  { key: 'ciclo_financeiro', label: 'Ciclo de Financiamento (dias)',formula: 'PMP − PMV − PME  (positivo = fornecedores financiam; negativo = farmácia precisa financiar)' },
+/* Campos calculados — exibição + fórmula editável (descrição) */
+const CALCULATED_CATALOG_DEFAULT = [
+  { key: 'qt_total',                     label: 'QT Total',                           formula: 'Saldo bancário + Contas a receber + Estoque' },
+  { key: 'qd_total',                     label: 'QD Total',                           formula: 'Contas a pagar + Dívidas' },
+  { key: 'saldo_qt_qd',                  label: 'Saldo QT/QD',                        formula: 'QT Total − QD Total' },
+  { key: 'indice_qt_qd',                 label: 'Índice QT/QD',                       formula: 'QT Total ÷ QD Total' },
+  { key: 'saldo_sem_dividas',            label: 'Saldo sem Dívidas',                  formula: 'Saldo QT/QD + Financiamentos + Tributos + Ações' },
+  { key: 'indice_sem_dividas',           label: 'Índice sem Dívidas',                 formula: 'QT Total ÷ (QD Total − Dívidas)' },
+  { key: 'saldo_sem_dividas_sem_estoque',label: 'Saldo sem Dívidas e sem Estoque',    formula: 'Saldo sem Dívidas − Estoque' },
+  { key: 'pme',                          label: 'PME Calculado',                      formula: 'Estoque × 30 ÷ CMV (mensal)' },
+  { key: 'ciclo_financiamento',          label: 'Ciclo de Financiamento (dias)',       formula: 'PMP − PMV − PME  (positivo = fornecedores financiam; negativo = farmácia financia)' },
+  { key: 'indice_compra_venda',          label: 'Índice de Compra/Venda (custo)',      formula: 'Compras no mês ÷ CMV no mês' },
+  { key: 'indice_entrada_venda',         label: 'Índice de Entrada/Venda (custo)',     formula: 'Entrada no mês ÷ CMV no mês' },
+  { key: 'margem_bruta',                 label: 'Margem Bruta no mês %',              formula: '(Venda cupom − CMV) ÷ Venda cupom' },
+  { key: 'excesso_total',                label: 'Excesso Crítico Total',              formula: 'Excesso A + Excesso B + Excesso C + Excesso D' },
 ];
+
+const SF_CALC_KEY = 'qtqd_sf_calc_desc_v1';
+function getCalculatedCatalog() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SF_CALC_KEY) || '{}');
+    return CALCULATED_CATALOG_DEFAULT.map(c => ({ ...c, formula: saved[c.key] || c.formula }));
+  } catch { return CALCULATED_CATALOG_DEFAULT; }
+}
+function saveCalcFormula(key, formula) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SF_CALC_KEY) || '{}');
+    saved[key] = formula;
+    localStorage.setItem(SF_CALC_KEY, JSON.stringify(saved));
+  } catch {}
+}
+const CALCULATED_CATALOG = getCalculatedCatalog();
 
 /* Compat: defaultFields mantido para template download */
 const defaultFields = Object.fromEntries(
@@ -818,19 +859,24 @@ function renderFieldConfig(apiConfig = null) {
     list.appendChild(groupDiv);
   });
 
-  // ── Campos calculados (somente leitura) ────────────────
+  // ── Campos calculados (fórmula editável como descrição) ─
   const calcDiv = el('div', 'field-group');
   const calcHdr = el('div', 'field-group-header');
-  calcHdr.innerHTML = '<span class="eyebrow">Campos Calculados — somente leitura</span>';
+  calcHdr.innerHTML = '<span class="eyebrow">Campos Calculados — fórmula editável como descrição</span>';
   calcDiv.appendChild(calcHdr);
-  CALCULATED_CATALOG.forEach(calc => {
+  getCalculatedCatalog().forEach(calc => {
     const row = el('div', 'field-config-item field-config-formula');
     row.innerHTML = `
       <div style="flex:1;min-width:0">
         <span style="font-size:13px;font-weight:700;color:var(--ink)">${calc.label}</span>
-        <div class="formula-text">= ${calc.formula}</div>
+        <span class="key-tag" style="margin-left:6px">${calc.key}</span>
       </div>
-      <span class="badge">fórmula</span>`;
+      <input type="text" class="formula-input" data-calc-key="${calc.key}" value="${calc.formula.replace(/"/g,'&quot;')}" placeholder="Descrição da fórmula" style="flex:2;font-size:12px">
+      <span class="badge">calculado</span>`;
+    row.querySelector('.formula-input').addEventListener('change', e => {
+      saveCalcFormula(calc.key, e.target.value);
+      fb('Descrição da fórmula atualizada.', 'success');
+    });
     calcDiv.appendChild(row);
   });
   list.appendChild(calcDiv);

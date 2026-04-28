@@ -6,7 +6,7 @@
   'use strict';
 
   /* ── Constantes ─────────────────────────────────────── */
-  const STORAGE_KEY = 'qtqd_saved_charts_v2';
+  const STORAGE_KEY = 'qtqd_saved_charts_v2_' + (localStorage.getItem('qtqd_tenant_id_v1') || 'local');
 
   const PALETTE = [
     '#2563eb', '#16a34a', '#dc2626', '#d97706',
@@ -290,6 +290,15 @@
         </div>
         <div id="cedit-${ch.id}" class="chart-edit-panel hidden">
           <input type="text" class="chart-edit-name" value="${ch.name.replace(/"/g,'&quot;')}" placeholder="Nome do gráfico">
+          <div class="chart-edit-period">
+            <label class="chart-edit-period-label">Período</label>
+            <select class="chart-edit-range">
+              <option value="weeks"  ${ch.range==='weeks'  ?'selected':''}>Semanas</option>
+              <option value="months" ${ch.range==='months' ?'selected':''}>Meses</option>
+              <option value="years"  ${ch.range==='years'  ?'selected':''}>Anos</option>
+            </select>
+            <input type="number" class="chart-edit-count" value="${ch.count}" min="1" max="120" placeholder="Qtd">
+          </div>
           <div class="chart-edit-btns">
             ${idx > 0 ? `<button class="chip" data-move-up="${ch.id}" type="button">↑ Acima</button>` : ''}
             ${idx < total - 1 ? `<button class="chip" data-move-down="${ch.id}" type="button">↓ Abaixo</button>` : ''}
@@ -565,16 +574,20 @@
           return;
         }
 
-        /* Salvar edição de nome */
+        /* Salvar edição de nome, período e quantidade */
         const saveEditBtn = e.target.closest('[data-save-edit]');
         if (saveEditBtn) {
           const cid = saveEditBtn.dataset.saveEdit;
           const ch  = savedCharts.find(c => c.id === cid);
           if (!ch) return;
-          const nameInput = document.querySelector(`#cedit-${cid} .chart-edit-name`);
-          const newName   = nameInput?.value.trim();
+          const nameInput  = document.querySelector(`#cedit-${cid} .chart-edit-name`);
+          const rangeInput = document.querySelector(`#cedit-${cid} .chart-edit-range`);
+          const countInput = document.querySelector(`#cedit-${cid} .chart-edit-count`);
+          const newName    = nameInput?.value.trim();
           if (!newName) { if (nameInput) { nameInput.focus(); nameInput.style.borderColor = 'var(--danger,#ef4444)'; setTimeout(() => nameInput.style.borderColor = '', 2000); } return; }
-          ch.name = newName;
+          ch.name  = newName;
+          if (rangeInput) ch.range = rangeInput.value;
+          if (countInput) ch.count = Math.max(1, parseInt(countInput.value) || ch.count);
           persistSaved();
           renderSavedCharts();
           return;
