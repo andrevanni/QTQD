@@ -963,19 +963,29 @@ function _collectFieldItens() {
   return itens;
 }
 
+function fbCampos(msg, type = 'info') {
+  fb(msg, type);
+  const el = $('feedbackCampos');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'feedback-box' + (type === 'error' ? ' error' : type === 'success' ? ' success' : '');
+  el.classList.remove('hidden');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 $('saveFieldConfigButton').addEventListener('click', async () => {
   const tenantId = $('camposClient')?.value;
   const itens    = _collectFieldItens();
   if (tenantId) {
     try {
       await window.QTQD_API_CLIENT.saveComponentesConfig(getToken(), tenantId, itens);
-      fb('Configuração salva no banco para este cliente.', 'success');
-    } catch (e) { fb('Erro ao salvar: ' + e.message, 'error'); }
+      fbCampos(`✓ Configuração salva com sucesso para ${itens.length} campos.`, 'success');
+    } catch (e) { fbCampos('Erro ao salvar: ' + e.message, 'error'); }
   } else {
     const cfg = {};
     itens.forEach(i => { cfg[i.codigo_componente] = { label: i.label_customizado, visible: i.visivel }; });
     localStorage.setItem(FIELD_KEY, JSON.stringify(cfg));
-    fb('Configuração padrão salva localmente (nenhum cliente selecionado).', 'success');
+    fbCampos('Configuração padrão salva localmente (nenhum cliente selecionado).', 'success');
   }
 });
 

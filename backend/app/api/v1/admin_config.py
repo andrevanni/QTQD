@@ -122,17 +122,17 @@ def listar_componentes_config(tenant_id: UUID) -> list[ComponenteConfigResponse]
 @router.put("/componentes-config/{tenant_id}", response_model=list[ComponenteConfigResponse])
 def salvar_componentes_config(tenant_id: UUID, payload: ComponentesConfigUpsertRequest) -> list[ComponenteConfigResponse]:
     sb = get_supabase()
-    rows = []
-    for item in payload.itens:
-        data = {
-            "tenant_id": str(tenant_id),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-            **item.model_dump(),
-        }
-        result = sb.table("tenant_componentes_config").upsert(data, on_conflict="tenant_id,codigo_componente").execute()
-        if result.data:
-            rows.append(ComponenteConfigResponse(**result.data[0]))
-    return rows
+    now = datetime.now(timezone.utc).isoformat()
+    rows_data = [
+        {"tenant_id": str(tenant_id), "updated_at": now, **item.model_dump()}
+        for item in payload.itens
+    ]
+    if not rows_data:
+        return []
+    result = sb.table("tenant_componentes_config").upsert(
+        rows_data, on_conflict="tenant_id,codigo_componente"
+    ).execute()
+    return [ComponenteConfigResponse(**row) for row in (result.data or [])]
 
 
 @router.get("/pdf-config/{tenant_id}", response_model=PdfConfigResponse | None)
