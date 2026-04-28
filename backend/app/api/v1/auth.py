@@ -110,17 +110,21 @@ def definir_senha(payload: DefinirSenhaRequest) -> dict:
             detail="Senha definida com sucesso. Acesse o portal com seu e-mail e senha.",
         )
 
-    # Tenta lookup pelo app_metadata gravado no envio do convite (mais confiável)
+    # DEBUG TEMPORÁRIO — remover após diagnosticar
+    import json
     app_meta = getattr(user, "app_metadata", None) or {}
-    qtqd_usuario_id = app_meta.get("qtqd_usuario_id")
-    if qtqd_usuario_id:
-        res = sb.table("tenant_usuarios").select("tenant_id,permissao,nome,ativo").eq("id", qtqd_usuario_id).limit(1).execute()
-        if res.data and res.data[0].get("ativo"):
-            tu = res.data[0]
-        else:
-            tu = _tenant_para_usuario(sb, user.email, str(user.id))
-    else:
-        tu = _tenant_para_usuario(sb, user.email, str(user.id))
+    todos = sb.table("tenant_usuarios").select("id,email,ativo,user_id").limit(20).execute()
+    por_uid = sb.table("tenant_usuarios").select("id,email,ativo").eq("user_id", str(user.id)).limit(5).execute()
+    por_email = sb.table("tenant_usuarios").select("id,email,ativo").eq("email", user.email.lower()).limit(5).execute()
+    raise HTTPException(status_code=403, detail=json.dumps({
+        "auth_email": user.email,
+        "auth_id": str(user.id),
+        "app_meta": app_meta,
+        "total_rows": len(todos.data),
+        "todos": todos.data,
+        "por_uid": por_uid.data,
+        "por_email": por_email.data,
+    }, default=str, ensure_ascii=False))
     return {
         "access_token": sign_resp.session.access_token,
         "tenant_id": str(tu["tenant_id"]),
