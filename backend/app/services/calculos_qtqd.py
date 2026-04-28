@@ -44,6 +44,7 @@ def calcular_indicadores(valores: AvaliacaoValores) -> list[IndicadorCalculado]:
     pme_para_ciclo = valores.pme_excel if valores.pme_excel > 0 else (pme or 0)
     ciclo_financiamento = valores.pmp - valores.pmv - pme_para_ciclo if (valores.pmp > 0 or valores.pmv > 0) else None
     indice_compra_venda = _safe_divide(valores.compras_mes, valores.venda_custo_mes)
+    indice_entrada_venda = _safe_divide(valores.entrada_mes, valores.venda_custo_mes)
     margem_bruta = _safe_divide(valores.venda_cupom_mes - valores.venda_custo_mes, valores.venda_cupom_mes)
     excesso_total = valores.excesso_curva_a + valores.excesso_curva_b + valores.excesso_curva_c + valores.excesso_curva_d
 
@@ -60,6 +61,7 @@ def calcular_indicadores(valores: AvaliacaoValores) -> list[IndicadorCalculado]:
         ("prazo_venda", "Prazo de venda", prazo_venda, "days"),
         ("ciclo_financiamento", "Ciclo de financiamento", ciclo_financiamento, "days"),
         ("indice_compra_venda", "Indice de compra/venda (custo)", indice_compra_venda, "number"),
+        ("indice_entrada_venda", "Indice de entrada/venda (custo)", indice_entrada_venda, "number"),
         ("margem_bruta", "Margem bruta no mes", margem_bruta, "percent"),
         ("excesso_total", "Excesso critico total", excesso_total, "currency"),
     ]

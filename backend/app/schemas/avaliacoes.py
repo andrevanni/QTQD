@@ -36,6 +36,7 @@ class AvaliacaoValores(BaseModel):
     pmv_120: float = 0
     pmv_outros: float = 0
     pme_excel: float = 0
+    cobertura_estoque_dia: float = 0
     indice_faltas: float = 0
     excesso_curva_a: float = 0
     excesso_curva_b: float = 0
