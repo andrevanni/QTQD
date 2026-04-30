@@ -507,6 +507,57 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 
 ---
 
+## Relatório por E-mail — PDF em Anexo
+
+### Fluxo
+1. Botão **"Fechar"** no histórico (status `rascunho`) → `POST /api/v1/avaliacoes/{id}/fechar`
+2. Backend muda status para `fechada` e chama `enviar_relatorio_para_tenant()`
+3. `relatorio_service.py` busca as últimas `n_retratos` avaliações **excluindo rascunhos** (`.neq("status", "rascunho")`)
+4. Gera HTML (`relatorio_html.py`) + PDF (`relatorio_pdf.py`) com os mesmos dados
+5. Envia e-mail via SMTP com **PDF em anexo** (`relatorio_qtqd_YYYYMMDD.pdf`)
+6. Botão **"Reenviar PDF"** no histórico → `POST /api/v1/avaliacoes/{id}/reenviar-relatorio` (não altera status)
+
+### Parâmetro de teste
+`POST /api/v1/avaliacoes/{id}/reenviar-relatorio?email_teste=addr@x.com`
+→ Restringe o envio apenas a esse e-mail (não envia para todos os usuários do tenant).
+
+### Arquivos envolvidos
+| Arquivo | Responsabilidade |
+|---|---|
+| `services/relatorio_pdf.py` | Gera PDF com fpdf2 — tabela paisagem A4, 9 indicadores × N semanas |
+| `services/relatorio_html.py` | Template HTML do e-mail — layout 100% em tabela, compatível com Gmail/Outlook/Apple Mail |
+| `services/relatorio_service.py` | Orquestra: busca dados, gera HTML+PDF, envia; aceita `email_teste` |
+| `services/email_service.py` | `send_html()` — SMTP_SSL (465) ou STARTTLS (587) conforme `SMTP_PORT`; aceita `pdf_bytes` como anexo |
+| `api/v1/avaliacoes.py` | `/fechar` chama `enviar_relatorio_para_tenant()`; `/reenviar-relatorio` aceita `?email_teste=` |
+
+### Configuração de retratos (`tenant_pdf_config`)
+- Tabela `tenant_pdf_config` por tenant: campos `n_retratos` (padrão 8), `incluir_inspetor`, `incluir_graficos`
+- Se não houver registro, usa os defaults do código
+
+### SMTP
+- Vercel env: `SMTP_PORT=587` → usa STARTTLS (`smtplib.SMTP` + `starttls()`)
+- Se `SMTP_PORT=465` → usa SSL direto (`smtplib.SMTP_SSL`)
+- Host: `mail.servicefarma.far.br` | User: `comercial@servicefarma.far.br`
+
+### Dependência adicionada
+`fpdf2==2.8.3` em `requirements.txt`
+
+### Pendente de validação (sessão 2026-04-30)
+- [ ] Validar corpo do e-mail HTML (layout, logos, tamanhos)
+- [ ] Validar PDF em anexo (8 retratos, colunas, legibilidade)
+- [ ] Confirmar que rascunhos não aparecem mais no PDF
+
+---
+
+## Clientes — Situação atual (2026-04-30)
+
+| Cliente | tenant_id | Lançamentos | Observação |
+|---|---|---|---|
+| Total Socorro / Drogaria da Letícia | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | 103 semanas | Jun/2024 → Abr/2026 |
+| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | 65 semanas | Jul/2024 → Abr/2026; todos `fechada`; nenhum `finalizado` ainda |
+
+---
+
 ## Segurança (pendente)
 
 - Regenerar `SUPABASE_SERVICE_ROLE_KEY` após estabilização
