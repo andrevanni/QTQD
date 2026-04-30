@@ -5,7 +5,7 @@ Usada pelo endpoint admin (manual) e pelo endpoint de finalização (automático
 from datetime import date
 
 
-def enviar_relatorio_para_tenant(tenant_id: str, sb) -> list[str]:
+def enviar_relatorio_para_tenant(tenant_id: str, sb, email_teste: str | None = None) -> list[str]:
     """
     Monta e envia o relatório semanal para todos os usuários ativos do tenant.
     Retorna lista de e-mails que receberam.
@@ -27,11 +27,12 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb) -> list[str]:
     tenant_res = sb.table("tenants").select("nome").eq("id", tenant_id).limit(1).execute()
     tenant_nome = tenant_res.data[0]["nome"] if tenant_res.data else "Cliente"
 
-    # Últimas N avaliações
+    # Últimas N avaliações publicadas (sem rascunhos)
     avals = (
         sb.table("avaliacoes_semanais")
         .select("semana_referencia,valores")
         .eq("tenant_id", tenant_id)
+        .neq("status", "rascunho")
         .order("semana_referencia", desc=True)
         .limit(n_retratos)
         .execute()
@@ -82,7 +83,10 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb) -> list[str]:
         .eq("ativo", True)
         .execute()
     )
-    destinatarios = [u["email"] for u in (usuarios_res.data or []) if u.get("email")]
+    if email_teste:
+        destinatarios = [email_teste]
+    else:
+        destinatarios = [u["email"] for u in (usuarios_res.data or []) if u.get("email")]
     if not destinatarios:
         return []
 

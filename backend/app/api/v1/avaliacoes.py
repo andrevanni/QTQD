@@ -155,8 +155,14 @@ def finalizar(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant))
 
 
 @router.post("/{avaliacao_id}/reenviar-relatorio")
-def reenviar_relatorio(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) -> dict:
-    """Reenvia o e-mail de relatório sem alterar o status da avaliação."""
+def reenviar_relatorio(
+    avaliacao_id: UUID,
+    tenant_id: UUID = Depends(get_current_tenant),
+    email_teste: str | None = None,
+) -> dict:
+    """Reenvia o e-mail de relatório sem alterar o status da avaliação.
+    Passar email_teste=addr@x.com restringe o envio a esse endereço apenas.
+    """
     from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
 
     sb = get_supabase()
@@ -164,7 +170,7 @@ def reenviar_relatorio(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current
         raise HTTPException(status_code=404, detail="Avaliacao nao encontrada.")
 
     try:
-        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb)
+        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb, email_teste=email_teste)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Falha ao enviar relatorio: {e}")
 
