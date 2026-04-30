@@ -119,8 +119,9 @@ def build_relatorio_pdf(tenant_nome: str, periodos: list[dict]) -> bytes:
     # Linhas de dados
     for i, (cod, nome, fmt_fn, color_type) in enumerate(_INDICADORES):
         even = i % 2 == 0
-        pdf.set_fill_color(248, 250, 252 if even else 255, 252 if even else 255)
-        if not even:
+        if even:
+            pdf.set_fill_color(248, 250, 252)
+        else:
             pdf.set_fill_color(255, 255, 255)
 
         pdf.set_font("Helvetica", "", 8)
