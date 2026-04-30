@@ -8,7 +8,13 @@ from backend.app.core.config import settings
 
 
 def _build_transport():
-    smtp = smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port)
+    if settings.smtp_port == 465:
+        smtp = smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port)
+    else:
+        smtp = smtplib.SMTP(settings.smtp_host, settings.smtp_port)
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
     smtp.login(settings.smtp_user, settings.smtp_password)
     return smtp
 
