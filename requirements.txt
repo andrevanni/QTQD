@@ -6,3 +6,4 @@ PyJWT[crypto]==2.9.0
 supabase==2.10.0
 openpyxl==3.1.5
 python-multipart==0.0.20
+fpdf2==2.8.3

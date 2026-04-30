@@ -104,20 +104,24 @@ def atualizar(
 
 @router.post("/{avaliacao_id}/fechar", response_model=AvaliacaoResponse)
 def fechar(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) -> AvaliacaoResponse:
-    update_data = {
-        "status": "fechada",
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
+    from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
+
+    sb = get_supabase()
     result = (
-        get_supabase()
-        .table("avaliacoes_semanais")
-        .update(update_data)
+        sb.table("avaliacoes_semanais")
+        .update({"status": "fechada", "updated_at": datetime.now(timezone.utc).isoformat()})
         .eq("id", str(avaliacao_id))
         .eq("tenant_id", str(tenant_id))
         .execute()
     )
     if not result.data:
         raise HTTPException(status_code=404, detail="Avaliacao nao encontrada.")
+
+    try:
+        enviar_relatorio_para_tenant(str(tenant_id), sb)
+    except Exception:
+        pass  # Não bloqueia o fechamento se o envio falhar
+
     return _serialize(result.data[0])
 
 

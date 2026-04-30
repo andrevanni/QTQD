@@ -71,6 +71,9 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb) -> list[str]:
         logo_cliente_url=logo_cliente_url,
     )
 
+    from backend.app.services.relatorio_pdf import build_relatorio_pdf
+    pdf_bytes = build_relatorio_pdf(tenant_nome=tenant_nome, periodos=periodos)
+
     # Destinatários — todos os usuários ativos com e-mail
     usuarios_res = (
         sb.table("tenant_usuarios")
@@ -84,6 +87,8 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb) -> list[str]:
         return []
 
     today = date.today().strftime("%d/%m/%Y")
+    today_file = date.today().strftime("%Y%m%d")
     subject = f"QTQD Atualizado — {tenant_nome} — {today}"
-    send_html(destinatarios, subject, html)
+    pdf_filename = f"relatorio_qtqd_{today_file}.pdf"
+    send_html(destinatarios, subject, html, pdf_bytes=pdf_bytes, pdf_filename=pdf_filename)
     return destinatarios
