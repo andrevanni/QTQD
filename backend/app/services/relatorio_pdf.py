@@ -340,7 +340,7 @@ def _add_inspector_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
                  page_w)
 
     # ── KPIs ──────────────────────────────────────────────────────────────────
-    _section_title(pdf, "Painel de Saúde Financeira", page_w)
+    _section_title(pdf, "Inspetor IA Financeiro", page_w)
 
     kpis = [
         ("indice_qt_qd",        "ÍNDICE QT/QD",    _fmt_ratio),
@@ -394,7 +394,7 @@ def _add_inspector_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
     pdf.set_y(by + box_h + 6)
 
     # ── Semáforo ──────────────────────────────────────────────────────────────
-    _section_title(pdf, "Semáforo de Saúde", page_w)
+    _section_title(pdf, "Semáforo IA Financeiro", page_w)
 
     semaforo = [
         ("indice_qt_qd",        "LIQUIDEZ",   _fmt_ratio,  "Índice ≥ 1,5x"),
