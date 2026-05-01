@@ -91,6 +91,7 @@ def build_relatorio_html(
     logo_cliente_url: str | None = None,
 ) -> str:
     now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+    periodos = list(reversed(periodos))  # mais recente à esquerda
     n = len(periodos)
 
     # ── Logo do cliente ───────────────────────────────────────────────────────
