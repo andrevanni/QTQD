@@ -77,13 +77,6 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb, email_teste: str | None = N
         logo_cliente_url=logo_cliente_url,
     )
 
-    # Charts config saved in tenant (for PDF charts)
-    charts_cfg_res = sb.table("tenants").select("charts_config").eq("id", tenant_id).limit(1).execute()
-    charts_config = (charts_cfg_res.data[0].get("charts_config") or []) if charts_cfg_res.data else []
-
-    from backend.app.services.relatorio_pdf import build_relatorio_pdf
-    pdf_bytes = build_relatorio_pdf(tenant_nome=tenant_nome, periodos=periodos, charts_config=charts_config)
-
     # Destinatários — todos os usuários ativos com e-mail
     usuarios_res = (
         sb.table("tenant_usuarios")
@@ -100,8 +93,6 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb, email_teste: str | None = N
         return []
 
     today = date.today().strftime("%d/%m/%Y")
-    today_file = date.today().strftime("%Y%m%d")
     subject = f"QTQD Atualizado — {tenant_nome} — {today}"
-    pdf_filename = f"relatorio_qtqd_{today_file}.pdf"
-    send_html(destinatarios, subject, html, pdf_bytes=pdf_bytes, pdf_filename=pdf_filename)
+    send_html(destinatarios, subject, html)
     return destinatarios

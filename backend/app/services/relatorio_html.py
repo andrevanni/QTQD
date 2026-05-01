@@ -226,8 +226,8 @@ def build_relatorio_html(
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
       <td width="52" valign="middle">
-        <img src="{SF_LOGO_URL}" width="44" height="44" alt="Service Farma"
-          style="width:44px;height:44px;object-fit:contain;border-radius:10px;
+        <img src="{SF_LOGO_URL}" height="40" alt="Service Farma"
+          style="height:40px;width:auto;border-radius:8px;
           background:#fff;padding:3px;border:1px solid #e2e8f0;display:block;">
       </td>
       <td style="padding-left:12px;" valign="middle">
