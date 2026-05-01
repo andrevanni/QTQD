@@ -173,9 +173,19 @@ $('pdfClient')?.addEventListener('change', async () => {
   const tenantId = $('pdfClient').value;
   const panel = $('pdfConfigPanel');
   if (!tenantId) { panel.classList.add('hidden'); return; }
+
+  // Limpa para não mostrar dados do cliente anterior enquanto carrega
+  $('pdfNRetratos').value  = 8;
+  $('pdfInspetor').checked = false;
+  $('pdfGraficos').checked = false;
+  $('pdfAtivo').checked    = true;
+  $('pdfTiming').value     = 'imediato';
+  $('pdfDiasApos').value   = 1;
+  $('pdfDiasAposWrap').classList.add('hidden');
+  $('pdfDestinatariosList').innerHTML = '';
   panel.classList.remove('hidden');
 
-  // Carrega config existente
+  // Carrega config existente do cliente selecionado
   try {
     const cfg = await window.QTQD_API_CLIENT.getPdfConfig(getToken(), tenantId);
     if (cfg) {
@@ -184,7 +194,7 @@ $('pdfClient')?.addEventListener('change', async () => {
       $('pdfGraficos').checked       = cfg.incluir_graficos ?? false;
       $('pdfAtivo').checked          = cfg.ativo ?? true;
       $('pdfTiming').value           = cfg.envio_timing ?? 'imediato';
-      $('pdfDiasApos').value         = cfg.dias_apos ?? 0;
+      $('pdfDiasApos').value         = cfg.dias_apos ?? 1;
       $('pdfDiasAposWrap').classList.toggle('hidden', cfg.envio_timing !== 'agendado');
     }
   } catch {}

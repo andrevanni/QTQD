@@ -2,11 +2,14 @@
 from __future__ import annotations
 from datetime import date
 from io import BytesIO
+import os
+
+# Aponta o cache do matplotlib para /tmp (único diretório gravável no Lambda/Vercel)
+os.environ.setdefault("MPLCONFIGDIR", "/tmp")
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 
 from fpdf import FPDF
