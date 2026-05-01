@@ -231,13 +231,12 @@
       return request(base(`/admin/enviar-relatorio/${tenantId}${qs}`), { method: 'POST', headers: adminHeaders(adminToken) });
     },
     async downloadPdf(adminToken, tenantId) {
-      const res = await fetch(base(`/admin/pdf-preview/${tenantId}`), { method: 'GET', headers: adminHeaders(adminToken) });
-      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erro ${res.status}`); }
-      const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url; a.download = `relatorio_qtqd_${tenantId.slice(0,8)}.pdf`; a.click();
-      URL.revokeObjectURL(url);
+      // Abre o portal para o cliente com autoprint=1 → dispara window.print() do Inspetor IA
+      const resp = await fetch(base(`/admin/abrir-portal/${tenantId}`), { method: 'POST', headers: adminHeaders(adminToken) });
+      if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.detail || `Erro ${resp.status}`); }
+      const data = await resp.json();
+      const portalUrl = `https://qtqd-vt2a.vercel.app/cliente?token=${data.access_token}&tenant_id=${tenantId}&autoprint=1`;
+      window.open(portalUrl, '_blank');
     },
 
     /* ── Admin — usuários ───────────────────────────── */
