@@ -226,8 +226,18 @@
     savePdfConfig(adminToken, tenantId, payload) {
       return request(base(`/admin/pdf-config/${tenantId}`), { method: 'PUT', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
     },
-    enviarRelatorio(adminToken, tenantId) {
-      return request(base(`/admin/enviar-relatorio/${tenantId}`), { method: 'POST', headers: adminHeaders(adminToken) });
+    enviarRelatorio(adminToken, tenantId, emailTeste) {
+      const qs = emailTeste ? `?email_teste=${encodeURIComponent(emailTeste)}` : '';
+      return request(base(`/admin/enviar-relatorio/${tenantId}${qs}`), { method: 'POST', headers: adminHeaders(adminToken) });
+    },
+    async downloadPdf(adminToken, tenantId) {
+      const res = await fetch(base(`/admin/pdf-preview/${tenantId}`), { method: 'GET', headers: adminHeaders(adminToken) });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erro ${res.status}`); }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = `relatorio_qtqd_${tenantId.slice(0,8)}.pdf`; a.click();
+      URL.revokeObjectURL(url);
     },
 
     /* ── Admin — usuários ───────────────────────────── */

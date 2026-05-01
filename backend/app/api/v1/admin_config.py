@@ -151,16 +151,70 @@ def salvar_pdf_config(tenant_id: UUID, payload: PdfConfigRequest) -> PdfConfigRe
 
 
 @router.post("/enviar-relatorio/{tenant_id}", status_code=200)
-def enviar_relatorio(tenant_id: UUID) -> dict:
+def enviar_relatorio(tenant_id: UUID, email_teste: str | None = None) -> dict:
     from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
     sb = get_supabase()
     try:
-        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb)
+        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb, email_teste=email_teste)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao enviar relatorio: {e}")
     if not destinatarios:
         raise HTTPException(status_code=400, detail="Nenhum usuario ativo com e-mail ou nenhuma avaliacao encontrada.")
     return {"ok": True, "enviado_para": destinatarios}
+
+
+@router.get("/pdf-preview/{tenant_id}")
+def pdf_preview(tenant_id: UUID):
+    """Gera e retorna o PDF do último relatório fechado para download direto."""
+    from fastapi.responses import Response
+    from backend.app.schemas.avaliacoes import AvaliacaoValores
+    from backend.app.services.calculos_qtqd import calcular_indicadores
+    from backend.app.services.relatorio_pdf import build_relatorio_pdf
+    from datetime import date
+
+    sb = get_supabase()
+
+    tenant_res = sb.table("tenants").select("nome,charts_config").eq("id", str(tenant_id)).limit(1).execute()
+    if not tenant_res.data:
+        raise HTTPException(status_code=404, detail="Cliente nao encontrado.")
+    tenant_nome = tenant_res.data[0]["nome"]
+    charts_config = tenant_res.data[0].get("charts_config") or []
+
+    cfg_res = sb.table("tenant_pdf_config").select("n_retratos").eq("tenant_id", str(tenant_id)).limit(1).execute()
+    n_retratos = int((cfg_res.data[0].get("n_retratos") if cfg_res.data else None) or 8)
+
+    avals = (
+        sb.table("avaliacoes_semanais")
+        .select("semana_referencia,valores")
+        .eq("tenant_id", str(tenant_id))
+        .neq("status", "rascunho")
+        .order("semana_referencia", desc=True)
+        .limit(n_retratos)
+        .execute()
+        .data
+    )
+    if not avals:
+        raise HTTPException(status_code=404, detail="Nenhuma avaliacao publicada encontrada.")
+
+    avals_sorted = sorted(avals, key=lambda x: x["semana_referencia"])
+    periodos = []
+    for av in avals_sorted:
+        try:
+            d = date.fromisoformat(av["semana_referencia"])
+            data_fmt = d.strftime("%d/%m/%Y")
+        except Exception:
+            data_fmt = av["semana_referencia"]
+        raw_valores = av.get("valores") or {}
+        valores = AvaliacaoValores(**raw_valores)
+        periodos.append({"data": data_fmt, "indicadores": calcular_indicadores(valores), "valores": raw_valores})
+
+    pdf_bytes = build_relatorio_pdf(tenant_nome=tenant_nome, periodos=periodos, charts_config=charts_config)
+    filename = f"relatorio_qtqd_{tenant_nome.replace(' ', '_')}_{date.today().strftime('%Y%m%d')}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/usuarios", response_model=list[UsuarioAdminResponse])

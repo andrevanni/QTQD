@@ -233,13 +233,25 @@ $('savePdfConfigBtn')?.addEventListener('click', async () => {
 $('sendNowBtn')?.addEventListener('click', async () => {
   const tenantId = $('pdfClient').value;
   if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
+  const emailTeste = ($('pdfEmailTeste')?.value || '').trim();
   const clientNome = clients.find(c => c.id === tenantId)?.nome || 'cliente';
-  if (!confirm(`Enviar relatório para todos os usuários de "${clientNome}" agora?`)) return;
+  const dest = emailTeste ? `apenas para ${emailTeste}` : `todos os usuários de "${clientNome}"`;
+  if (!confirm(`Enviar relatório para ${dest}?`)) return;
   fb('Enviando...', 'info');
   try {
-    const res = await window.QTQD_API_CLIENT.enviarRelatorio(getToken(), tenantId);
-    fb(`✓ Relatório enviado para ${res.enviado_para?.length || 0} destinatário(s) — ${res.n_periodos} períodos.`, 'success');
+    const res = await window.QTQD_API_CLIENT.enviarRelatorio(getToken(), tenantId, emailTeste || null);
+    fb(`✓ Relatório enviado para ${res.enviado_para?.join(', ') || '?'}.`, 'success');
   } catch (e) { fb('Erro ao enviar: ' + e.message, 'error'); }
+});
+
+$('downloadPdfBtn')?.addEventListener('click', async () => {
+  const tenantId = $('pdfClient').value;
+  if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
+  fb('Gerando PDF...', 'info');
+  try {
+    await window.QTQD_API_CLIENT.downloadPdf(getToken(), tenantId);
+    fb('✓ PDF gerado e baixado.', 'success');
+  } catch (e) { fb('Erro ao gerar PDF: ' + e.message, 'error'); }
 });
 
 const SECTION_META = {
@@ -492,7 +504,7 @@ function renderLicenses() {
 
 function populateClientSelects() {
   ['licenseClient', 'importClient', 'brandingClient', 'camposClient', 'templateClient',
-   'usuarioClient', 'usuarioClientFilter'].forEach(id => {
+   'usuarioClient', 'usuarioClientFilter', 'pdfClient'].forEach(id => {
     const sel = $(id);
     if (!sel) return;
     const cur = sel.value;

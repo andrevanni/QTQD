@@ -276,9 +276,14 @@
                     <input id="pdfDiasApos" type="number" min="1" max="30" value="1">
                   </label>
                 </div>
-                <div class="hero-actions">
+                <label class="field" style="margin-top:8px">
+                  <span>E-mail para teste (deixe vazio para enviar a todos)</span>
+                  <input id="pdfEmailTeste" type="email" placeholder="email@exemplo.com" autocomplete="off">
+                </label>
+                <div class="hero-actions" style="flex-wrap:wrap;gap:8px">
                   <button id="savePdfConfigBtn" class="primary-button" type="button">Salvar configuração</button>
-                  <button id="sendNowBtn" class="secondary-button" type="button">📧 Enviar agora</button>
+                  <button id="sendNowBtn" class="secondary-button" type="button">📧 Enviar relatório</button>
+                  <button id="downloadPdfBtn" class="secondary-button" type="button">⬇️ Baixar PDF</button>
                 </div>
               </div>
             </div>
