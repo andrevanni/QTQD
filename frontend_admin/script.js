@@ -176,8 +176,6 @@ $('pdfClient')?.addEventListener('change', async () => {
 
   // Limpa para não mostrar dados do cliente anterior enquanto carrega
   $('pdfNRetratos').value  = 8;
-  $('pdfInspetor').checked = false;
-  $('pdfGraficos').checked = false;
   $('pdfAtivo').checked    = true;
   $('pdfTiming').value     = 'imediato';
   $('pdfDiasApos').value   = 1;
@@ -190,8 +188,6 @@ $('pdfClient')?.addEventListener('change', async () => {
     const cfg = await window.QTQD_API_CLIENT.getPdfConfig(getToken(), tenantId);
     if (cfg) {
       $('pdfNRetratos').value        = cfg.n_retratos ?? 8;
-      $('pdfInspetor').checked       = cfg.incluir_inspetor ?? false;
-      $('pdfGraficos').checked       = cfg.incluir_graficos ?? false;
       $('pdfAtivo').checked          = cfg.ativo ?? true;
       $('pdfTiming').value           = cfg.envio_timing ?? 'imediato';
       $('pdfDiasApos').value         = cfg.dias_apos ?? 1;
@@ -227,10 +223,8 @@ $('savePdfConfigBtn')?.addEventListener('click', async () => {
   const tenantId = $('pdfClient').value;
   if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
   const payload = {
-    n_retratos:       parseInt($('pdfNRetratos').value || '8'),
-    incluir_inspetor: $('pdfInspetor').checked,
-    incluir_graficos: $('pdfGraficos').checked,
-    ativo:            $('pdfAtivo').checked,
+    n_retratos: parseInt($('pdfNRetratos').value || '8'),
+    ativo:      $('pdfAtivo').checked,
     envio_timing:     $('pdfTiming').value,
     dias_apos:        parseInt($('pdfDiasApos').value || '0'),
   };

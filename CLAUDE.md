@@ -507,54 +507,79 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 
 ---
 
-## Relatório por E-mail — PDF em Anexo
+## Relatório por E-mail
 
 ### Fluxo
 1. Botão **"Fechar"** no histórico (status `rascunho`) → `POST /api/v1/avaliacoes/{id}/fechar`
 2. Backend muda status para `fechada` e chama `enviar_relatorio_para_tenant()`
-3. `relatorio_service.py` busca as últimas `n_retratos` avaliações **excluindo rascunhos** (`.neq("status", "rascunho")`)
-4. Gera HTML (`relatorio_html.py`) + PDF (`relatorio_pdf.py`) com os mesmos dados
-5. Envia e-mail via SMTP com **PDF em anexo** (`relatorio_qtqd_YYYYMMDD.pdf`)
-6. Botão **"Reenviar PDF"** no histórico → `POST /api/v1/avaliacoes/{id}/reenviar-relatorio` (não altera status)
+3. `relatorio_service.py` busca as últimas `n_retratos` avaliações **excluindo rascunhos**
+4. Gera o HTML do e-mail (`relatorio_html.py`) e envia via SMTP — **sem anexo PDF**
+5. Botão **"Reenviar"** no histórico → `POST /api/v1/avaliacoes/{id}/reenviar-relatorio` (não altera status)
+
+> **Não há mais PDF em anexo.** Tentativas de gerar PDF server-side idêntico ao portal falharam por limitações do ambiente Lambda (sem acesso a browser, libs nativas indisponíveis). O e-mail envia apenas o corpo HTML.
+
+### Corpo do e-mail (`relatorio_html.py`)
+- Tabela de indicadores: N retratos configurados no admin, **mais recente à esquerda** (`list(reversed(periodos))`)
+- Indicadores exibidos: QT Total, QD Total, Saldo QT/QD, Índice QT/QD, Saldo s/ Dívidas, PME, PMP, PMV, Ciclo Financeiro
+- **Dados corretos:** PMV, PMP e PME usam os campos **raw** do input do usuário (`pmv`, `pmp`, `pme_excel`) — não os calculados (`prazo_venda`, `prazo_medio_compra`, `pme` calculado). Isso garante os mesmos valores que aparecem no portal.
+- Logo Service Farma no rodapé: `height:40px; width:auto` (proporcional)
+- Link "Acessar portal →" para o cliente gerar o Inspetor IA completo
 
 ### Parâmetro de teste
 `POST /api/v1/avaliacoes/{id}/reenviar-relatorio?email_teste=addr@x.com`
-→ Restringe o envio apenas a esse e-mail (não envia para todos os usuários do tenant).
+→ Restringe o envio apenas a esse e-mail.
+No admin: campo "E-mail para teste" na seção Relatório.
 
 ### Arquivos envolvidos
 | Arquivo | Responsabilidade |
 |---|---|
-| `services/relatorio_pdf.py` | Gera PDF com fpdf2 — tabela paisagem A4, 9 indicadores × N semanas |
-| `services/relatorio_html.py` | Template HTML do e-mail — layout 100% em tabela, compatível com Gmail/Outlook/Apple Mail |
-| `services/relatorio_service.py` | Orquestra: busca dados, gera HTML+PDF, envia; aceita `email_teste` |
-| `services/email_service.py` | `send_html()` — SMTP_SSL (465) ou STARTTLS (587) conforme `SMTP_PORT`; aceita `pdf_bytes` como anexo |
-| `api/v1/avaliacoes.py` | `/fechar` chama `enviar_relatorio_para_tenant()`; `/reenviar-relatorio` aceita `?email_teste=` |
+| `services/relatorio_html.py` | Template HTML do e-mail — 100% tabela, compatível com Gmail/Outlook/Apple Mail |
+| `services/relatorio_service.py` | Orquestra: busca dados, gera HTML, envia; aceita `email_teste` |
+| `services/email_service.py` | `send_html()` — SMTP_SSL (465) ou STARTTLS (587) conforme `SMTP_PORT` |
+| `api/v1/avaliacoes.py` | `/fechar` → envia e-mail; `/reenviar-relatorio` aceita `?email_teste=` |
 
-### Configuração de retratos (`tenant_pdf_config`)
-- Tabela `tenant_pdf_config` por tenant: campos `n_retratos` (padrão 8), `incluir_inspetor`, `incluir_graficos`
-- Se não houver registro, usa os defaults do código
+### Configuração (`tenant_pdf_config`)
+- Tabela `tenant_pdf_config` por tenant: `n_retratos` (padrão 8), `ativo`, `envio_timing`, `dias_apos`
+- Campos `incluir_inspetor` e `incluir_graficos` **ignorados** (removidos da UI)
 
 ### SMTP
-- Vercel env: `SMTP_PORT=587` → usa STARTTLS (`smtplib.SMTP` + `starttls()`)
-- Se `SMTP_PORT=465` → usa SSL direto (`smtplib.SMTP_SSL`)
+- Vercel env: `SMTP_PORT=587` → STARTTLS | `SMTP_PORT=465` → SSL direto
 - Host: `mail.servicefarma.far.br` | User: `comercial@servicefarma.far.br`
-
-### Dependência adicionada
-`fpdf2==2.8.3` em `requirements.txt`
-
-### Pendente de validação (sessão 2026-04-30)
-- [ ] Validar corpo do e-mail HTML (layout, logos, tamanhos)
-- [ ] Validar PDF em anexo (8 retratos, colunas, legibilidade)
-- [ ] Confirmar que rascunhos não aparecem mais no PDF
 
 ---
 
-## Clientes — Situação atual (2026-04-30)
+## Admin — Seção "Relatório" (ex-"Envio PDF")
+
+| Elemento | Função |
+|---|---|
+| Select **Cliente** | Carrega config do tenant (reset automático ao trocar) |
+| **Nº de retratos** | Quantas semanas aparecem no corpo do e-mail |
+| **Envio automático ativo** | Liga/desliga disparo automático ao fechar lançamento |
+| **E-mail para teste** | Se preenchido, envia só para esse endereço |
+| Botão **"Salvar configuração"** | Persiste em `tenant_pdf_config` |
+| Botão **"Enviar relatório"** | Dispara o e-mail imediatamente (com ou sem e-mail teste) |
+| Botão **"Baixar PDF"** | Abre o portal do cliente com `?autoprint=1` → browser gera PDF **idêntico ao portal** via `window.print()` |
+
+> **"Baixar PDF" funciona assim:** chama `POST /admin/abrir-portal/{tenant_id}` → obtém JWT → abre `https://qtqd-vt2a.vercel.app/cliente?token=JWT&tenant_id=UUID&autoprint=1` em nova aba → portal detecta `window._qtqdAutoprint=true` → após carregar, chama `generateInspectorPdf()` que executa `window.print()`. O PDF resultante é idêntico ao que o cliente vê no Inspetor IA.
+
+---
+
+## Clientes — Situação atual (2026-05-01)
 
 | Cliente | tenant_id | Lançamentos | Observação |
 |---|---|---|---|
-| Total Socorro / Drogaria da Letícia | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | 103 semanas | Jun/2024 → Abr/2026 |
-| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | 65 semanas | Jul/2024 → Abr/2026; todos `fechada`; nenhum `finalizado` ainda |
+| Total Socorro / Drogaria da Letícia | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | 103+ semanas | Jun/2024 → atualização contínua |
+| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | 65+ semanas | Jul/2024 → atualização contínua; e-mail configurado |
+
+---
+
+## Histórico de problemas resolvidos (continuação)
+
+36. **E-mail com PMV/PMP/PME errados (0 ou absurdos):** `relatorio_html.py` usava campos calculados (`prazo_venda`, `prazo_medio_compra`, `pme`) que dependem de `venda_cupom_mes`/`compras_mes` (muitas vezes zerados). Fix: usar campos raw `pmv`, `pmp`, e `pme_excel` (com fallback para `pme` calculado), igual ao portal.
+37. **`pdfClient` não populava ao entrar na seção:** `populateClientSelects()` tinha lista fixa sem `pdfClient`. Fix: adicionar `'pdfClient'` à lista.
+38. **Troca de cliente mostrava config do anterior:** campos do painel PDF não eram limpos antes do load async. Fix: reset para defaults imediatamente ao trocar o select.
+39. **PDF server-side não replicável:** todas as libs que convertem HTML→PDF (xhtml2pdf, WeasyPrint) dependem de Cairo/Pango (libs nativas indisponíveis no Vercel Lambda). matplotlib gera charts mas diferentes do Chart.js do portal. Decisão: **sem PDF em anexo**; e-mail envia só HTML; botão "Baixar PDF" no admin abre o portal com `?autoprint=1`.
+40. **`xhtml2pdf` quebrava o build:** depende de `pycairo` que requer Cairo em nível de sistema. Fix: remover `xhtml2pdf` do `requirements.txt`.
 
 ---
 
