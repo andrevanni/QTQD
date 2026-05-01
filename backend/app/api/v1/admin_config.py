@@ -150,6 +150,32 @@ def salvar_pdf_config(tenant_id: UUID, payload: PdfConfigRequest) -> PdfConfigRe
     return PdfConfigResponse(**result.data[0])
 
 
+@router.get("/pdf-debug/{tenant_id}")
+def pdf_debug(tenant_id: UUID) -> dict:
+    """Endpoint temporário de diagnóstico — retorna o traceback do erro do PDF."""
+    import traceback
+    from backend.app.schemas.avaliacoes import AvaliacaoValores
+    from backend.app.services.calculos_qtqd import calcular_indicadores
+    from datetime import date
+    try:
+        sb = get_supabase()
+        tenant_res = sb.table("tenants").select("nome,charts_config").eq("id", str(tenant_id)).limit(1).execute()
+        tenant_nome = tenant_res.data[0]["nome"] if tenant_res.data else "Teste"
+        charts_config = (tenant_res.data[0].get("charts_config") or []) if tenant_res.data else []
+        avals = (sb.table("avaliacoes_semanais").select("semana_referencia,valores")
+                 .eq("tenant_id", str(tenant_id)).neq("status","rascunho")
+                 .order("semana_referencia",desc=True).limit(3).execute().data)
+        periodos = []
+        for av in sorted(avals, key=lambda x: x["semana_referencia"]):
+            raw = av.get("valores") or {}
+            periodos.append({"data": av["semana_referencia"], "indicadores": calcular_indicadores(AvaliacaoValores(**raw)), "valores": raw})
+        from backend.app.services.relatorio_pdf import build_relatorio_pdf
+        pdf_bytes = build_relatorio_pdf(tenant_nome=tenant_nome, periodos=periodos, charts_config=charts_config)
+        return {"ok": True, "bytes": len(pdf_bytes)}
+    except Exception:
+        return {"ok": False, "error": traceback.format_exc()}
+
+
 @router.post("/enviar-relatorio/{tenant_id}", status_code=200)
 def enviar_relatorio(tenant_id: UUID, email_teste: str | None = None) -> dict:
     from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
