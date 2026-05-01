@@ -41,7 +41,7 @@ _PALETTE_CHARTS = [
 # ── Formatadores ──────────────────────────────────────────────────────────────
 
 def _fmt_brl(v: float | None) -> str:
-    if v is None: return "—"
+    if v is None: return "-"
     abs_v = abs(v)
     prefix = "-" if v < 0 else ""
     if abs_v >= 1_000_000: return f"{prefix}R${abs_v/1_000_000:.1f}M".replace(".", ",")
@@ -49,13 +49,13 @@ def _fmt_brl(v: float | None) -> str:
     return f"{prefix}R${abs_v:.0f}"
 
 def _fmt_ratio(v: float | None) -> str:
-    return f"{v:.2f}x".replace(".", ",") if v is not None else "—"
+    return f"{v:.2f}x".replace(".", ",") if v is not None else "-"
 
 def _fmt_days(v: float | None) -> str:
-    return f"{v:.0f}d" if v is not None else "—"
+    return f"{v:.0f}d" if v is not None else "-"
 
 def _fmt_pct(v: float | None) -> str:
-    return f"{v*100:.1f}%".replace(".", ",") if v is not None else "—"
+    return f"{v*100:.1f}%".replace(".", ",") if v is not None else "-"
 
 def _fmt_by(v: float | None, fmt: str) -> str:
     if   fmt == "ratio":    return _fmt_ratio(v)
@@ -164,7 +164,7 @@ def _page_header(pdf: FPDF, tenant_nome: str, subtitle: str, page_w: float) -> N
     pdf.set_xy(pdf.l_margin, 3)
     pdf.set_font("Helvetica", "B", 13)
     _set_rgb(pdf, C_WHITE, "text")
-    pdf.cell(page_w * 0.6, 7, f"QTQD — {tenant_nome}", align="L")
+    pdf.cell(page_w * 0.6, 7, f"QTQD | {tenant_nome}", align="L")
     pdf.set_font("Helvetica", "", 8)
     _set_rgb(pdf, (191, 219, 254), "text")
     pdf.cell(page_w * 0.4, 7, subtitle, align="R")
@@ -377,7 +377,7 @@ def _add_inspector_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
         pdf.set_xy(bx + 5, by + 10)
         pdf.set_font("Helvetica", "B", 13)
         _set_rgb(pdf, color, "text")
-        pdf.cell(box_w - 7, 8, fmt_fn(v) if v is not None else "—", align="L")
+        pdf.cell(box_w - 7, 8, fmt_fn(v) if v is not None else "-", align="L")
 
         # Variação vs anterior
         if len(periodos) >= 2:
@@ -385,7 +385,7 @@ def _add_inspector_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
             if v is not None and prev is not None and prev != 0:
                 delta = ((v - prev) / abs(prev)) * 100
                 dcolor = C_GOOD if delta >= 0 else C_BAD
-                dsign  = "▲" if delta >= 0 else "▼"
+                dsign  = "+" if delta >= 0 else "-"
                 pdf.set_xy(bx + 5, by + 17)
                 pdf.set_font("Helvetica", "", 6)
                 _set_rgb(pdf, dcolor, "text")
@@ -397,12 +397,12 @@ def _add_inspector_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
     _section_title(pdf, "Semáforo IA Financeiro", page_w)
 
     semaforo = [
-        ("indice_qt_qd",        "LIQUIDEZ",   _fmt_ratio,  "Índice ≥ 1,5x"),
+        ("indice_qt_qd",        "LIQUIDEZ",   _fmt_ratio,  "Indice >= 1,5x"),
         ("saldo_qt_qd",         "SALDO",      _fmt_brl,    "Positivo"),
         ("pmp",                 "PMP",        _fmt_days,   "> 60 dias"),
         ("pmv",                 "PMV",        _fmt_days,   "< 60 dias"),
         ("pme",                 "PME",        _fmt_days,   "< 90 dias"),
-        ("ciclo_financiamento", "CICLO",      _fmt_days,   "≥ +10 dias"),
+        ("ciclo_financiamento", "CICLO",      _fmt_days,   ">= +10 dias"),
     ]
     col_w = page_w / len(semaforo)
     box_h_sem = 18
@@ -430,7 +430,7 @@ def _add_inspector_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
         pdf.set_xy(bx, sy + 7)
         pdf.set_font("Helvetica", "B", 10)
         _set_rgb(pdf, color, "text")
-        pdf.cell(col_w - 1, 6, fmt_fn(v) if v is not None else "—", align="C")
+        pdf.cell(col_w - 1, 6, fmt_fn(v) if v is not None else "-", align="C")
 
         # Meta
         pdf.set_xy(bx, sy + 13)
@@ -505,7 +505,7 @@ def _add_evolution_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
     page_w = pdf.w - pdf.l_margin - pdf.r_margin
 
     _page_header(pdf, tenant_nome,
-                 f"Evolução — {periodos[0]['data']} a {periodos[-1]['data']}", page_w)
+                 f"Evolucao: {periodos[0]['data']} a {periodos[-1]['data']}", page_w)
 
     _section_title(pdf, "Evolução QT, QD, Saldo e Índice", page_w)
 
