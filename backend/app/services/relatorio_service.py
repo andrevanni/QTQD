@@ -49,8 +49,13 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb, email_teste: str | None = N
             data_fmt = d.strftime("%d/%m/%Y")
         except Exception:
             data_fmt = av["semana_referencia"]
-        valores = AvaliacaoValores(**(av.get("valores") or {}))
-        periodos.append({"data": data_fmt, "indicadores": calcular_indicadores(valores)})
+        raw_valores = av.get("valores") or {}
+        valores = AvaliacaoValores(**raw_valores)
+        periodos.append({
+            "data": data_fmt,
+            "indicadores": calcular_indicadores(valores),
+            "valores": raw_valores,
+        })
 
     # Branding
     brand_res = (
@@ -72,8 +77,12 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb, email_teste: str | None = N
         logo_cliente_url=logo_cliente_url,
     )
 
+    # Charts config saved in tenant (for PDF charts)
+    charts_cfg_res = sb.table("tenants").select("charts_config").eq("id", tenant_id).limit(1).execute()
+    charts_config = (charts_cfg_res.data[0].get("charts_config") or []) if charts_cfg_res.data else []
+
     from backend.app.services.relatorio_pdf import build_relatorio_pdf
-    pdf_bytes = build_relatorio_pdf(tenant_nome=tenant_nome, periodos=periodos)
+    pdf_bytes = build_relatorio_pdf(tenant_nome=tenant_nome, periodos=periodos, charts_config=charts_config)
 
     # Destinatários — todos os usuários ativos com e-mail
     usuarios_res = (
