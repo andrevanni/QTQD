@@ -114,11 +114,19 @@ def _get_ind(indicadores: list, codigo: str) -> float | None:
     return None
 
 def _get_field(period: dict, key: str) -> float | None:
+    if key == "_pme":
+        raw = period.get("valores", {})
+        pme_excel = float(raw.get("pme_excel") or 0)
+        if pme_excel > 0:
+            return pme_excel
+        return _get_ind(period["indicadores"], "pme")
     v = _get_ind(period["indicadores"], key)
     if v is not None: return v
     raw = period.get("valores", {})
     val = raw.get(key)
-    return float(val) if val is not None else None
+    if val is None: return None
+    f = float(val)
+    return f if f > 0 else None
 
 def _rgb_f(rgb: tuple) -> tuple:
     """Convert (0-255) tuple to (0.0-1.0) for matplotlib."""
@@ -134,7 +142,7 @@ def _semaforo_color(key: str, v: float | None) -> tuple[int,int,int]:
         return C_GOOD if v > 60 else (C_WARN if v > 30 else C_BAD)
     if key == "pmv":
         return C_GOOD if v < 60 else (C_WARN if v < 90 else C_BAD)
-    if key == "pme":
+    if key in ("pme", "_pme"):
         return C_GOOD if v < 90 else (C_WARN if v < 120 else C_BAD)
     if key == "ciclo_financiamento":
         return C_GOOD if v >= 10 else (C_WARN if v >= -10 else C_BAD)
@@ -401,7 +409,7 @@ def _add_inspector_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
         ("saldo_qt_qd",         "SALDO",      _fmt_brl,    "Positivo"),
         ("pmp",                 "PMP",        _fmt_days,   "> 60 dias"),
         ("pmv",                 "PMV",        _fmt_days,   "< 60 dias"),
-        ("pme",                 "PME",        _fmt_days,   "< 90 dias"),
+        ("_pme",                "PME",        _fmt_days,   "< 90 dias"),
         ("ciclo_financiamento", "CICLO",      _fmt_days,   ">= +10 dias"),
     ]
     col_w = page_w / len(semaforo)
@@ -448,9 +456,9 @@ def _add_inspector_page(pdf: FPDF, tenant_nome: str, periodos: list[dict]) -> No
         ("qd_total",            "QD Total",    _fmt_brl,   "money"),
         ("saldo_qt_qd",         "Saldo",       _fmt_brl,   "saldo"),
         ("indice_qt_qd",        "Índice",      _fmt_ratio, "indice"),
-        ("pmp",                 "PMP",         _fmt_days,  None),
-        ("pmv",                 "PMV",         _fmt_days,  None),
-        ("pme",                 "PME",         _fmt_days,  None),
+        ("pmp",   "PMP",  _fmt_days,  None),
+        ("pmv",   "PMV",  _fmt_days,  None),
+        ("_pme",  "PME",  _fmt_days,  None),
         ("ciclo_financiamento", "Ciclo",       _fmt_days,  "ciclo"),
     ]
     recentes = periodos[-8:]

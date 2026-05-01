@@ -39,16 +39,17 @@ def _color_indice(v: float | None) -> str:
 
 SF_LOGO_URL = "https://qtqd-vt2a.vercel.app/cliente/assets/logo_alta.jpg"
 
+# Igual ao portal: usa pmv/pmp raw e pme_excel preferencial
 INDICADORES_SHOW = [
-    ("qt_total",            "QT Total",           _fmt_brl,   None),
-    ("qd_total",            "QD Total",            _fmt_brl,   None),
-    ("saldo_qt_qd",         "Saldo QT/QD",         _fmt_brl,   _color_saldo),
-    ("indice_qt_qd",        "Índice QT/QD",        _fmt_ratio, _color_indice),
-    ("saldo_sem_dividas",   "Saldo s/ dívidas",    _fmt_brl,   _color_saldo),
-    ("pme",                 "PME",                 _fmt_days,  None),
-    ("prazo_venda",         "Prazo de Venda",      _fmt_days,  None),
-    ("prazo_medio_compra",  "Prazo Médio Compra",  _fmt_days,  None),
-    ("ciclo_financiamento", "Ciclo Financeiro",    _fmt_days,  None),
+    ("qt_total",            "QT Total",          _fmt_brl,   None),
+    ("qd_total",            "QD Total",          _fmt_brl,   None),
+    ("saldo_qt_qd",         "Saldo QT/QD",       _fmt_brl,   _color_saldo),
+    ("indice_qt_qd",        "Índice QT/QD",      _fmt_ratio, _color_indice),
+    ("saldo_sem_dividas",   "Saldo s/ dívidas",  _fmt_brl,   _color_saldo),
+    ("_pme",                "PME",               _fmt_days,  None),
+    ("pmp",                 "PMP",               _fmt_days,  None),
+    ("pmv",                 "PMV",               _fmt_days,  None),
+    ("ciclo_financiamento", "Ciclo Financeiro",  _fmt_days,  None),
 ]
 
 
@@ -57,6 +58,28 @@ def _get_ind(indicadores: list, codigo: str) -> float | None:
         if i.codigo == codigo:
             return i.valor
     return None
+
+
+def _get_period_val(p: dict, key: str) -> float | None:
+    """Busca valor do período: campos raw (pmv, pmp, pme_excel) têm prioridade."""
+    if key == "_pme":
+        # Preferência: pme_excel (input do ERP) > pme calculado
+        raw = p.get("valores", {})
+        pme_excel = float(raw.get("pme_excel") or 0)
+        if pme_excel > 0:
+            return pme_excel
+        return _get_ind(p["indicadores"], "pme")
+    # Campos que vêm dos valores raw (inputs do usuário)
+    _RAW_FIELDS = {"pmp", "pmv", "pme_excel"}
+    if key in _RAW_FIELDS:
+        raw = p.get("valores", {})
+        val = raw.get(key)
+        if val is not None:
+            f = float(val)
+            return f if f > 0 else None
+        return None
+    # Campos calculados
+    return _get_ind(p["indicadores"], key)
 
 
 def build_relatorio_html(
@@ -101,7 +124,7 @@ def build_relatorio_html(
         bg = "#f8fafc" if i % 2 == 0 else "#ffffff"
         cells = ""
         for p in periodos:
-            v = _get_ind(p["indicadores"], cod)
+            v = _get_period_val(p, cod)
             color = color_fn(v) if color_fn else "#374151"
             weight = "700" if color_fn else "400"
             cells += (
