@@ -1,20 +1,18 @@
 """
-PDF do relatório QTQD — gerado via xhtml2pdf (HTML -> PDF).
-Replica a estrutura e visual do Inspetor IA do Portal do Cliente.
+PDF do relatório QTQD.
+- Layout: fpdf2
+- Gráficos: quickchart.io (Chart.js API — mesma biblioteca do portal)
 """
 from __future__ import annotations
 from datetime import date
 from io import BytesIO
-import base64
-import os
+import json
+import urllib.request
+import urllib.parse
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp")
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
+from fpdf import FPDF
 
-# ── Lookup de valores ─────────────────────────────────────────────────────────
+# ── Lookup ────────────────────────────────────────────────────────────────────
 
 def _ind(indicadores, key):
     for i in indicadores:
@@ -23,7 +21,6 @@ def _ind(indicadores, key):
     return None
 
 def _val(p: dict, key: str):
-    """Busca valor: pmv/pmp/pme_excel vêm dos valores raw (igual ao portal)."""
     if key == "_pme":
         raw = p.get("valores", {})
         e = float(raw.get("pme_excel") or 0)
@@ -49,32 +46,27 @@ def _brl(v):
 
 def _brl_full(v):
     if v is None: return "-"
-    return f"R$ {abs(v):_.2f}".replace("_", ".").replace(",","X").replace(".",",").replace("X",".") if v >= 0 \
-        else f"-R$ {abs(v):_.2f}".replace("_", ".").replace(",","X").replace(".",",").replace("X",".")
+    neg = v < 0
+    s = f"R$ {abs(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"-{s}" if neg else s
 
 def _ratio(v): return f"{v:.2f}x".replace(".", ",") if v is not None else "-"
-def _days(v):  return f"{int(v)} dias"             if v is not None else "-"
+def _days(v):  return f"{int(round(v))} d"           if v is not None else "-"
 
 FMT: dict[str, str] = {
-    "qt_total":"currency","qd_total":"currency","saldo_qt_qd":"currency",
-    "indice_qt_qd":"ratio","saldo_sem_dividas":"currency","ciclo_financiamento":"days",
-    "pme":"days","pmp":"days","pmv":"days","pme_excel":"days","_pme":"days",
-    "margem_bruta":"percent","excesso_total":"currency",
-    "saldo_bancario":"currency","estoque_custo":"currency",
-    "contas_receber":"currency","fornecedores":"currency","dividas":"currency",
-    "faturamento_previsto_mes":"currency","compras_mes":"currency",
-    "venda_cupom_mes":"currency","venda_custo_mes":"currency",
+    "qt_total": "currency", "qd_total": "currency", "saldo_qt_qd": "currency",
+    "indice_qt_qd": "ratio", "saldo_sem_dividas": "currency",
+    "ciclo_financiamento": "days", "pme": "days", "pmp": "days", "pmv": "days",
+    "_pme": "days", "margem_bruta": "percent", "excesso_total": "currency",
 }
 LABELS: dict[str, str] = {
-    "qt_total":"QT Total","qd_total":"QD Total","saldo_qt_qd":"Saldo QT/QD",
-    "indice_qt_qd":"Indice QT/QD","saldo_sem_dividas":"Saldo s/ Dividas",
-    "ciclo_financiamento":"Ciclo Financeiro","_pme":"PME","pmp":"PMP","pmv":"PMV",
-    "estoque_custo":"Estoque (custo)","saldo_bancario":"Saldo Bancario",
-    "contas_receber":"Contas a Receber","fornecedores":"Fornecedores","dividas":"Dividas",
-    "margem_bruta":"Margem Bruta","excesso_total":"Excesso Total",
+    "qt_total": "QT Total", "qd_total": "QD Total", "saldo_qt_qd": "Saldo QT/QD",
+    "indice_qt_qd": "Indice QT/QD", "saldo_sem_dividas": "Saldo s/ Dividas",
+    "ciclo_financiamento": "Ciclo Financeiro", "_pme": "PME", "pmp": "PMP", "pmv": "PMV",
+    "estoque_custo": "Estoque (custo)", "saldo_bancario": "Saldo Bancario",
+    "contas_receber": "Contas a Receber", "fornecedores": "Fornecedores",
+    "dividas": "Dividas", "margem_bruta": "Margem Bruta", "excesso_total": "Excesso Total",
 }
-
-PALETTE = ["#2563eb","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d"]
 
 def _fmt_by(v, key):
     f = FMT.get(key, "currency")
@@ -83,442 +75,390 @@ def _fmt_by(v, key):
     if f == "percent": return f"{v*100:.1f}%" if v is not None else "-"
     return _brl(v)
 
-# ── Cores condicionais (igual ao portal) ──────────────────────────────────────
+# ── Cores condicionais ────────────────────────────────────────────────────────
 
-def _kpi_cls(key, v):
+def _kpi_color(key, v):
     if key == "indice_qt_qd":
-        return "good" if (v and v >= 1.5) else ("warn" if (v and v >= 1.0) else "bad")
-    if key in ("saldo_qt_qd","saldo_sem_dividas"):
-        return "good" if (v is not None and v >= 0) else "bad"
+        return (22,163,74) if (v and v>=1.5) else ((217,119,6) if (v and v>=1.0) else (220,38,38))
+    if key in ("saldo_qt_qd", "saldo_sem_dividas"):
+        return (22,163,74) if (v is not None and v>=0) else (220,38,38)
     if key == "ciclo_financiamento":
-        return "good" if (v and v >= 10) else ("warn" if (v and v >= -10) else "bad")
-    return "blue"
+        return (22,163,74) if (v and v>=10) else ((217,119,6) if (v and v>=-10) else (220,38,38))
+    return (37,99,235)
 
-def _sem_cls(key, v):
-    if v is None: return "neutral"
-    if key == "indice_qt_qd": return "good" if v >= 1.5 else ("warning" if v >= 1.0 else "bad")
-    if key == "saldo_qt_qd":  return "good" if v >= 0 else "bad"
-    if key == "pmp":  return "good" if v > 60 else ("warning" if v > 30 else "bad")
-    if key == "pmv":  return "good" if v < 60 else ("warning" if v < 90 else "bad")
-    if key == "_pme": return "good" if v < 90 else ("warning" if v < 120 else "bad")
-    if key == "ciclo_financiamento": return "good" if v >= 10 else ("warning" if v >= -10 else "bad")
-    return "neutral"
+def _sem_color(key, v):
+    if v is None: return (100,116,139)
+    if key == "indice_qt_qd": return (22,163,74) if v>=1.5 else ((217,119,6) if v>=1.0 else (220,38,38))
+    if key == "saldo_qt_qd":  return (22,163,74) if v>=0   else (220,38,38)
+    if key == "pmp":  return (22,163,74) if v>60  else ((217,119,6) if v>30  else (220,38,38))
+    if key == "pmv":  return (22,163,74) if v<60  else ((217,119,6) if v<90  else (220,38,38))
+    if key == "_pme": return (22,163,74) if v<90  else ((217,119,6) if v<120 else (220,38,38))
+    if key == "ciclo_financiamento": return (22,163,74) if v>=10 else ((217,119,6) if v>=-10 else (220,38,38))
+    return (100,116,139)
 
-def _row_cls(ct, v):
-    if ct == "saldo":  return "good" if (v is not None and v >= 0) else "bad"
+def _row_color(ct, v):
+    if ct == "saldo":  return (22,163,74) if (v is not None and v>=0) else (220,38,38)
     if ct == "indice":
-        if v is None: return ""
-        return "good" if v >= 1.5 else ("warn" if v >= 1.0 else "bad")
+        if v is None: return (71,85,105)
+        return (22,163,74) if v>=1.5 else ((217,119,6) if v>=1.0 else (220,38,38))
     if ct == "ciclo":
-        if v is None: return ""
-        return "good" if v >= 10 else ("warn" if v >= -10 else "bad")
-    return ""
+        if v is None: return (71,85,105)
+        return (22,163,74) if v>=10 else ((217,119,6) if v>=-10 else (220,38,38))
+    return (71,85,105)
 
-# ── Matplotlib ────────────────────────────────────────────────────────────────
+# ── fpdf2 helpers ─────────────────────────────────────────────────────────────
 
-def _mpl_tick(v, _, fmt="currency"):
-    if fmt == "days":    return f"{v:.0f}d"
-    if fmt == "percent": return f"{v*100:.0f}%"
-    if fmt == "ratio":   return f"{v:.1f}x"
-    a = abs(v); s = "-" if v < 0 else ""
-    if a >= 1e6: return f"{s}{a/1e6:.1f}M"
-    if a >= 1e3: return f"{s}{a/1e3:.0f}K"
-    return f"{s}{a:.0f}"
+def _rgb(pdf, c, t="text"):
+    r,g,b = c
+    if t == "text":  pdf.set_text_color(r,g,b)
+    elif t == "fill": pdf.set_fill_color(r,g,b)
+    elif t == "draw": pdf.set_draw_color(r,g,b)
 
-def _style_ax(ax, title=""):
-    ax.set_facecolor("#f8fafc")
-    for sp in ["top","right"]: ax.spines[sp].set_visible(False)
-    for sp in ["left","bottom"]: ax.spines[sp].set_color("#e2e8f0")
-    ax.tick_params(colors="#64748b", labelsize=7)
-    ax.grid(axis="y", color="#e2e8f0", linewidth=0.5, linestyle="--", zorder=0)
-    ax.set_axisbelow(True)
-    if title:
-        ax.set_title(title, fontsize=9, color="#0f172a", fontweight="bold", pad=6)
+def _page_header(pdf, tenant, subtitle, pw):
+    _rgb(pdf,(15,23,42),"fill"); pdf.rect(0,0,pdf.w,18,style="F")
+    pdf.set_xy(pdf.l_margin,3); pdf.set_font("Helvetica","B",12)
+    _rgb(pdf,(255,255,255)); pdf.cell(pw*0.65,7,f"QTQD | {tenant}",align="L")
+    pdf.set_font("Helvetica","",8); _rgb(pdf,(191,219,254))
+    pdf.cell(pw*0.35,7,subtitle,align="R"); pdf.ln(21)
 
-def _fig_to_b64(fig) -> str:
-    buf = BytesIO()
-    fig.savefig(buf, format="png", dpi=130, bbox_inches="tight",
-                facecolor="white", edgecolor="none")
-    plt.close(fig)
-    buf.seek(0)
-    return base64.b64encode(buf.read()).decode()
+def _section(pdf, title, pw):
+    _rgb(pdf,(37,99,235),"fill"); pdf.rect(pdf.l_margin,pdf.get_y(),3,5,style="F")
+    pdf.set_xy(pdf.l_margin+5,pdf.get_y()); pdf.set_font("Helvetica","B",8)
+    _rgb(pdf,(15,23,42)); pdf.cell(pw-5,5,title.upper(),align="L"); pdf.ln(8)
 
-def _chart_qt_qd(periodos, w_in) -> str:
-    labels = [p["data"][-5:] for p in periodos]
-    qt  = [_val(p,"qt_total")    or 0 for p in periodos]
-    qd  = [_val(p,"qd_total")    or 0 for p in periodos]
-    sal = [_val(p,"saldo_qt_qd") or 0 for p in periodos]
-    idx = [_val(p,"indice_qt_qd") or 0 for p in periodos]
-    x = list(range(len(labels)))
+def _footer(pdf):
+    pdf.set_y(-10); pdf.set_font("Helvetica","I",6); _rgb(pdf,(148,163,184))
+    pdf.cell(0,4,"Service Farma - Grupo A3 - Direitos Reservados  |  Enviado automaticamente pelo sistema QTQD",align="C")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(w_in, 3.2))
-    fig.patch.set_facecolor("white")
+# ── quickchart.io — Chart.js server-side ─────────────────────────────────────
 
-    bw = 0.35
-    ax1.bar([i-bw/2 for i in x], qt, width=bw, label="QT", color="#2563eb", alpha=0.85, zorder=3)
-    ax1.bar([i+bw/2 for i in x], qd, width=bw, label="QD", color="#dc2626", alpha=0.85, zorder=3)
-    ax1.set_xticks(x); ax1.set_xticklabels(labels, rotation=40, ha="right", fontsize=6)
-    ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v,p: _mpl_tick(v,p,"currency")))
-    ax1.legend(fontsize=7, framealpha=0.5, loc="upper left")
-    _style_ax(ax1, "QT vs QD por Semana")
+_QC_BASE = "https://quickchart.io/chart"
+_BLUE, _RED, _GREEN, _AMBER = "#2563eb", "#dc2626", "#16a34a", "#d97706"
 
-    colors = ["#16a34a" if v >= 0 else "#dc2626" for v in sal]
-    ax2.bar(x, sal, color=colors, alpha=0.85, zorder=3, label="Saldo")
-    ax2r = ax2.twinx()
-    ax2r.plot(x, idx, color="#2563eb", lw=2, marker="o", ms=3, label="Indice", zorder=5)
-    ax2r.axhline(1.0, color="#d97706", lw=1, ls="--", alpha=0.7)
-    ax2r.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v,p: f"{v:.1f}x"))
-    ax2r.tick_params(colors="#64748b", labelsize=6)
-    ax2r.spines["top"].set_visible(False)
-    ax2.set_xticks(x); ax2.set_xticklabels(labels, rotation=40, ha="right", fontsize=6)
-    ax2.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v,p: _mpl_tick(v,p,"currency")))
-    h1,l1 = ax2.get_legend_handles_labels(); h2,l2 = ax2r.get_legend_handles_labels()
-    ax2.legend(h1+h2, l1+l2, fontsize=7, framealpha=0.5, loc="upper left")
-    _style_ax(ax2, "Saldo QT/QD e Indice")
+def _qc_png(config: dict, width=800, height=350) -> bytes | None:
+    """Chama quickchart.io e retorna bytes PNG do gráfico."""
+    try:
+        params = urllib.parse.urlencode({
+            "c": json.dumps(config, separators=(",", ":")),
+            "w": width, "h": height,
+            "bkg": "white", "f": "png",
+        })
+        url = f"{_QC_BASE}?{params}"
+        req = urllib.request.Request(url, headers={"User-Agent": "QTQD/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.read()
+    except Exception:
+        return None
 
-    fig.tight_layout(pad=0.8)
-    return _fig_to_b64(fig)
+def _embed_png(pdf, png_bytes: bytes, x, y, w, h):
+    buf = BytesIO(png_bytes)
+    pdf.image(buf, x=x, y=y, w=w, h=h, type="PNG")
 
-def _chart_prazos(periodos, w_in) -> str:
-    labels = [p["data"][-5:] for p in periodos]
-    pmp   = [_val(p,"pmp")               or 0           for p in periodos]
-    pmv   = [_val(p,"pmv")               or 0           for p in periodos]
-    pme   = [_val(p,"_pme")              or 0           for p in periodos]
-    ciclo = [(_val(p,"ciclo_financiamento") if _val(p,"ciclo_financiamento") is not None else float("nan")) for p in periodos]
-    x = list(range(len(labels)))
+def _tick_callback(fmt):
+    if fmt == "days":    return "value + 'd'"
+    if fmt == "percent": return "(value*100).toFixed(1)+'%'"
+    if fmt == "ratio":   return "value.toFixed(1)+'x'"
+    return "(Math.abs(value)>=1e6?(value/1e6).toFixed(1)+'M':Math.abs(value)>=1e3?(value/1e3).toFixed(0)+'K':value.toFixed(0))"
 
-    fig, ax = plt.subplots(figsize=(w_in, 2.8))
-    fig.patch.set_facecolor("white")
-    ax.plot(x, pmp,  color="#2563eb", lw=2, marker="o", ms=3, label="PMP")
-    ax.plot(x, pmv,  color="#d97706", lw=2, marker="s", ms=3, label="PMV")
-    ax.plot(x, pme,  color="#16a34a", lw=2, marker="^", ms=3, label="PME")
-    ax.plot(x, ciclo,color="#dc2626", lw=1.5, marker="D", ms=3, ls="--", label="Ciclo")
-    ax.axhline(0, color="#e2e8f0", lw=0.6)
-    ax.set_xticks(x); ax.set_xticklabels(labels, rotation=40, ha="right", fontsize=6)
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v,p: f"{v:.0f}d"))
-    ax.legend(fontsize=7, framealpha=0.5, ncol=4, loc="upper left")
-    _style_ax(ax, "Prazos Operacionais: PMP | PMV | PME | Ciclo")
-    fig.tight_layout(pad=0.8)
-    return _fig_to_b64(fig)
+def _axis_opts(fmt):
+    return {"ticks": {"callback": f"function(value){{return {_tick_callback(fmt)}}}", "maxTicksLimit": 6}}
 
-def _chart_custom(cfg: dict, periodos, w_in) -> str | None:
-    keys: list[str] = cfg.get("fields", [])
-    count = max(1, int(cfg.get("count", 12)))
+def _chart_qt_qd(periodos: list[dict]) -> bytes | None:
+    labels = [p["data"] for p in periodos]
+    qt  = [(_val(p,"qt_total")    or 0) for p in periodos]
+    qd  = [(_val(p,"qd_total")    or 0) for p in periodos]
+    cfg = {
+        "type": "bar",
+        "data": {
+            "labels": labels,
+            "datasets": [
+                {"label":"QT Total","data":qt,"backgroundColor":f"{_BLUE}CC","borderColor":_BLUE,"borderWidth":1},
+                {"label":"QD Total","data":qd,"backgroundColor":f"{_RED}CC", "borderColor":_RED, "borderWidth":1},
+            ],
+        },
+        "options": {
+            "plugins": {"title": {"display":True,"text":"QT vs QD por Semana"}},
+            "scales": {"y": _axis_opts("currency")},
+        },
+    }
+    return _qc_png(cfg, width=760, height=320)
+
+def _chart_saldo_indice(periodos: list[dict]) -> bytes | None:
+    labels = [p["data"] for p in periodos]
+    sal = [(_val(p,"saldo_qt_qd")  or 0) for p in periodos]
+    idx = [(_val(p,"indice_qt_qd") or 0) for p in periodos]
+    cores_sal = [_GREEN if v >= 0 else _RED for v in sal]
+    cfg = {
+        "type": "bar",
+        "data": {
+            "labels": labels,
+            "datasets": [
+                {"label":"Saldo QT/QD","data":sal,"backgroundColor":cores_sal,"borderWidth":0,"yAxisID":"y"},
+                {"label":"Indice QT/QD","data":idx,"type":"line","borderColor":_BLUE,"backgroundColor":"transparent",
+                 "borderWidth":2,"pointRadius":3,"yAxisID":"y2"},
+            ],
+        },
+        "options": {
+            "plugins": {"title":{"display":True,"text":"Saldo QT/QD e Indice QT/QD"}},
+            "scales": {
+                "y":  dict(position="left", **_axis_opts("currency")),
+                "y2": dict(position="right", grid={"drawOnChartArea":False}, **_axis_opts("ratio")),
+            },
+        },
+    }
+    return _qc_png(cfg, width=760, height=320)
+
+def _chart_prazos(periodos: list[dict]) -> bytes | None:
+    labels = [p["data"] for p in periodos]
+    pmp   = [(_val(p,"pmp")  or 0) for p in periodos]
+    pmv   = [(_val(p,"pmv")  or 0) for p in periodos]
+    pme   = [(_val(p,"_pme") or 0) for p in periodos]
+    ciclo = [(_val(p,"ciclo_financiamento") if _val(p,"ciclo_financiamento") is not None else None) for p in periodos]
+    cfg = {
+        "type": "line",
+        "data": {
+            "labels": labels,
+            "datasets": [
+                {"label":"PMP",  "data":pmp,   "borderColor":_BLUE,  "backgroundColor":"transparent","borderWidth":2,"pointRadius":3},
+                {"label":"PMV",  "data":pmv,   "borderColor":_AMBER, "backgroundColor":"transparent","borderWidth":2,"pointRadius":3},
+                {"label":"PME",  "data":pme,   "borderColor":_GREEN, "backgroundColor":"transparent","borderWidth":2,"pointRadius":3},
+                {"label":"Ciclo","data":ciclo, "borderColor":_RED,   "backgroundColor":"transparent","borderWidth":2,"pointRadius":3,"borderDash":[5,3]},
+            ],
+        },
+        "options": {
+            "plugins": {"title":{"display":True,"text":"Prazos Operacionais: PMP | PMV | PME | Ciclo"}},
+            "scales": {"y": _axis_opts("days")},
+        },
+    }
+    return _qc_png(cfg, width=760, height=300)
+
+def _chart_custom(cfg_chart: dict, periodos: list[dict]) -> bytes | None:
+    keys: list[str] = cfg_chart.get("fields", [])
+    count = max(1, int(cfg_chart.get("count", 12)))
+    chart_type = cfg_chart.get("type", "line")
     pts = periodos[-count:] if len(periodos) > count else periodos
     if not pts or not keys: return None
-    labels = [p["data"][-5:] for p in pts]
-    x = list(range(len(labels)))
-    series = []
-    for k in keys:
-        vals = [_val(p, k) for p in pts]
+
+    labels = [p["data"] for p in pts]
+    COLORS = ["#2563eb","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d"]
+    datasets = []
+    prim_fmt = FMT.get(keys[0], "currency")
+
+    for i, key in enumerate(keys):
+        vals = [_val(p, key) for p in pts]
         if all(v is None for v in vals): continue
-        series.append({
-            "key": k, "vals": vals,
-            "fmt": FMT.get(k, "currency"),
-            "color": PALETTE[len(series) % len(PALETTE)],
-            "label": LABELS.get(k, k.replace("_"," ").title()),
-        })
-    if not series: return None
-
-    fig, ax = plt.subplots(figsize=(w_in, 2.8))
-    fig.patch.set_facecolor("white")
-    pf = series[0]["fmt"]
-    ct = cfg.get("type", "line")
-
-    for s in series:
-        vals = [v if v is not None else float("nan") for v in s["vals"]]
-        if ct == "bar":
-            bw = 0.6 / max(len(series), 1)
-            off = (series.index(s) - len(series)/2 + 0.5) * bw
-            ax.bar([xi+off for xi in x], vals, width=bw, color=s["color"], alpha=0.85, label=s["label"], zorder=3)
+        color = COLORS[i % len(COLORS)]
+        lbl = LABELS.get(key, key.replace("_"," ").title())
+        if chart_type == "bar":
+            datasets.append({"label":lbl,"data":vals,"backgroundColor":f"{color}CC","borderColor":color,"borderWidth":1})
         else:
-            ax.plot(x, vals, color=s["color"], lw=2, marker="o", ms=3, label=s["label"], zorder=3)
+            datasets.append({"label":lbl,"data":vals,"borderColor":color,"backgroundColor":"transparent","borderWidth":2,"pointRadius":3})
 
-    ax.set_xticks(x); ax.set_xticklabels(labels, rotation=40, ha="right", fontsize=6)
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v,p,f=pf: _mpl_tick(v,p,f)))
-    if len(series) > 1:
-        ax.legend(fontsize=7, framealpha=0.5, loc="best", ncol=min(len(series), 4))
-    _style_ax(ax, cfg.get("name", "Grafico"))
-    fig.tight_layout(pad=0.8)
-    return _fig_to_b64(fig)
+    if not datasets: return None
+    cfg = {
+        "type": chart_type,
+        "data": {"labels": labels, "datasets": datasets},
+        "options": {
+            "plugins": {"title":{"display":True,"text":cfg_chart.get("name","Grafico")}},
+            "scales": {"y": _axis_opts(prim_fmt)},
+        },
+    }
+    return _qc_png(cfg, width=760, height=300)
 
-# ── HTML builder ──────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# PÁGINA 1 — TABELA DE SEMANAS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-_CSS = """
-@page { size: A4 landscape; margin: 1.2cm; }
-body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 0; }
+_TABELA_ROWS = [
+    ("qt_total",            "QT Total",         _brl,   ""),
+    ("qd_total",            "QD Total",         _brl,   ""),
+    ("saldo_qt_qd",         "Saldo QT/QD",      _brl,   "saldo"),
+    ("indice_qt_qd",        "Indice QT/QD",     _ratio, "indice"),
+    ("saldo_sem_dividas",   "Saldo s/ Dividas", _brl,   "saldo"),
+    ("_pme",                "PME",              _days,  ""),
+    ("pmp",                 "PMP",              _days,  ""),
+    ("pmv",                 "PMV",              _days,  ""),
+    ("ciclo_financiamento", "Ciclo Financeiro", _days,  "ciclo"),
+]
 
-/* HEADER */
-.page-header { background-color: #0f172a; padding: 14px 18px; margin-bottom: 14px; }
-.page-header-title { color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 3px; }
-.page-header-sub { color: #bfdbfe; font-size: 10px; margin: 0; }
+def _page_tabela(pdf, tenant, periodos):
+    pdf.add_page()
+    pw = pdf.w - pdf.l_margin - pdf.r_margin
 
-/* SECTION TITLE */
-.section-title { font-size: 8px; font-weight: bold; text-transform: uppercase;
-    letter-spacing: 0.06em; color: #2563eb; margin: 14px 0 8px;
-    padding-left: 7px; border-left: 3px solid #2563eb; }
+    _rgb(pdf,(15,23,42),"fill"); pdf.rect(0,0,pdf.w,26,style="F")
+    pdf.set_xy(pdf.l_margin,5); pdf.set_font("Helvetica","B",14)
+    _rgb(pdf,(255,255,255))
+    pdf.cell(pw*0.75,8,f"Relatorio QTQD - {tenant}",align="L")
+    pdf.set_font("Helvetica","",9); _rgb(pdf,(191,219,254))
+    pdf.set_xy(pdf.l_margin,14)
+    pdf.cell(pw,7,f"Gerado em {date.today().strftime('%d/%m/%Y')} | {len(periodos)} retratos",align="L")
+    pdf.ln(18)
 
-/* KPI CARDS TABLE */
-.kpi-table { width: 100%; border-spacing: 8px; border-collapse: separate; margin-bottom: 4px; }
-.kpi-card { padding: 13px 11px 10px; border: 1px solid #e2e8f0; background-color: #f8fafc;
-    vertical-align: top; width: 25%; }
-.kpi-card.good { border-left: 4px solid #16a34a; }
-.kpi-card.bad  { border-left: 4px solid #dc2626; }
-.kpi-card.warn { border-left: 4px solid #d97706; }
-.kpi-card.blue { border-left: 4px solid #2563eb; }
-.kpi-label { font-size: 8px; font-weight: bold; text-transform: uppercase;
-    color: #64748b; letter-spacing: 0.05em; margin-bottom: 6px; }
-.kpi-value { font-size: 20px; font-weight: bold; margin: 0 0 4px; }
-.kpi-value.good { color: #16a34a; }
-.kpi-value.bad  { color: #dc2626; }
-.kpi-value.warn { color: #d97706; }
-.kpi-value.blue { color: #2563eb; }
-.kpi-sub { font-size: 9px; color: #64748b; }
+    n = len(periodos); lw = 46.0; dw = (pw-lw)/max(n,1); rh = 7.5
+    pdf.set_font("Helvetica","B",8); _rgb(pdf,(241,245,249),"fill")
+    _rgb(pdf,(71,85,105)); _rgb(pdf,(226,232,240),"draw")
+    pdf.set_x(pdf.l_margin)
+    pdf.cell(lw,rh,"Indicador",border="B",align="L",fill=True)
+    for p in periodos:
+        pdf.cell(dw,rh,p["data"],border="B",align="R",fill=True)
+    pdf.ln()
 
-/* SEMAPHORE TABLE */
-.sem-table { width: 100%; border-spacing: 6px; border-collapse: separate; margin-bottom: 4px; }
-.sem-item { padding: 9px 6px 7px; border: 1px solid #e2e8f0; text-align: center;
-    background-color: #f8fafc; vertical-align: top; }
-.sem-item.good    { border-color: #16a34a; background-color: #f0fdf4; }
-.sem-item.bad     { border-color: #dc2626; background-color: #fef2f2; }
-.sem-item.warning { border-color: #d97706; background-color: #fffbeb; }
-.sem-label { font-size: 7px; font-weight: bold; text-transform: uppercase;
-    color: #64748b; letter-spacing: 0.04em; margin-bottom: 4px; }
-.sem-value { font-size: 15px; font-weight: bold; margin: 0 0 2px; color: #0f172a; }
-.sem-value.good    { color: #16a34a; }
-.sem-value.bad     { color: #dc2626; }
-.sem-value.warning { color: #d97706; }
-.sem-meta { font-size: 7px; color: #64748b; }
-
-/* DATA TABLES */
-.data-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-.data-table th { background-color: #1e3a8a; color: #ffffff; padding: 6px 8px;
-    font-size: 9px; font-weight: 600; text-align: right; }
-.data-table th.left { text-align: left; }
-.data-table td { padding: 5px 8px; font-size: 9px; border-bottom: 1px solid #f1f5f9;
-    text-align: right; }
-.data-table td.left { text-align: left; font-weight: 600; color: #475569; }
-.data-table tr.even td { background-color: #f8fafc; }
-.txt-good { color: #16a34a; font-weight: bold; }
-.txt-bad  { color: #dc2626; font-weight: bold; }
-.txt-warn { color: #d97706; font-weight: bold; }
-
-/* CHARTS */
-.chart-img { width: 100%; }
-.chart-title { font-size: 9px; font-weight: bold; color: #0f172a; margin: 10px 0 4px; }
-
-/* FOOTER */
-.footer { font-size: 7px; color: #94a3b8; text-align: center; margin-top: 12px;
-    border-top: 1px solid #f1f5f9; padding-top: 6px; }
-"""
-
-def _h(s: str) -> str:
-    """Escapa HTML."""
-    return str(s).replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
-
-def _build_html(tenant_nome: str, periodos: list[dict], charts_config: list[dict]) -> str:
-    hoje = date.today().strftime("%d/%m/%Y")
-    latest = periodos[-1]
-    chart_w_in = 10.2   # ~260mm
-
-    # ── Gráficos base64 ──────────────────────────────────────────────────────
-    b64_qt_qd  = _chart_qt_qd(periodos, chart_w_in)
-    b64_prazos = _chart_prazos(periodos, chart_w_in)
-    pdf_charts = [c for c in charts_config if c.get("includePdf")]
-    custom_b64 = []
-    for cfg in pdf_charts:
-        b64 = _chart_custom(cfg, periodos, chart_w_in)
-        if b64:
-            custom_b64.append((cfg.get("name","Grafico"), b64))
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # SEÇÃO 1 — TABELA DE SEMANAS
-    # ══════════════════════════════════════════════════════════════════════════
-    _TABELA_ROWS = [
-        ("qt_total",            "QT Total",         _brl,   ""),
-        ("qd_total",            "QD Total",         _brl,   ""),
-        ("saldo_qt_qd",         "Saldo QT/QD",      _brl,   "saldo"),
-        ("indice_qt_qd",        "Indice QT/QD",     _ratio, "indice"),
-        ("saldo_sem_dividas",   "Saldo s/ Dividas", _brl,   "saldo"),
-        ("_pme",                "PME",              _days,  ""),
-        ("pmp",                 "PMP",              _days,  ""),
-        ("pmv",                 "PMV",              _days,  ""),
-        ("ciclo_financiamento", "Ciclo Financeiro", _days,  "ciclo"),
-    ]
-
-    thead_cells = '<th class="left">Indicador</th>' + "".join(
-        f'<th>{_h(p["data"])}</th>' for p in periodos)
-
-    tbody = ""
-    for i, (key, nome, fn, ct) in enumerate(_TABELA_ROWS):
-        row_cls = "even" if i % 2 == 0 else ""
-        cells = f'<td class="left">{_h(nome)}</td>'
+    for i,(cod,nome,fn,ct) in enumerate(_TABELA_ROWS):
+        _rgb(pdf,(248,250,252) if i%2==0 else (255,255,255),"fill")
+        pdf.set_x(pdf.l_margin); pdf.set_font("Helvetica","",8); _rgb(pdf,(71,85,105))
+        pdf.cell(lw,rh,nome,border="B",align="L",fill=True)
         for p in periodos:
-            v = _val(p, key)
-            txt_cls = _row_cls(ct, v)
-            cells += f'<td class="{txt_cls}">{_h(fn(v))}</td>'
-        tbody += f'<tr class="{row_cls}">{cells}</tr>'
+            v = _val(p,cod); c = _row_color(ct,v)
+            _rgb(pdf,c)
+            pdf.set_font("Helvetica","B" if ct in ("saldo","indice","ciclo") else "",8)
+            pdf.cell(dw,rh,fn(v),border="B",align="R",fill=True)
+        pdf.ln()
+    _footer(pdf)
 
-    tabela_html = f"""
-<div class="page-header">
-  <div class="page-header-title">QTQD - Relatorio Semanal | {_h(tenant_nome)}</div>
-  <div class="page-header-sub">Tabela de Indicadores | {len(periodos)} retratos | Gerado em {hoje}</div>
-</div>
-<p class="section-title">Evolucao dos Indicadores por Semana</p>
-<table class="data-table">
-  <thead><tr>{thead_cells}</tr></thead>
-  <tbody>{tbody}</tbody>
-</table>
-<div class="footer">Service Farma - Grupo A3 - Direitos Reservados | Enviado automaticamente pelo sistema QTQD</div>
-"""
+# ═══════════════════════════════════════════════════════════════════════════════
+# PÁGINA 2 — INSPETOR IA FINANCEIRO
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # SEÇÃO 2 — INSPETOR IA FINANCEIRO
-    # ══════════════════════════════════════════════════════════════════════════
-    _KPIS = [
-        ("indice_qt_qd",        "INDICE QT/QD",     _ratio),
-        ("saldo_qt_qd",         "SALDO QT/QD",      _brl),
-        ("saldo_sem_dividas",   "SALDO S/ DIVIDAS", _brl),
-        ("ciclo_financiamento", "CICLO FINANCEIRO", _days),
+_KPIS = [
+    ("indice_qt_qd",        "INDICE QT/QD",     _ratio),
+    ("saldo_qt_qd",         "SALDO QT/QD",      _brl),
+    ("saldo_sem_dividas",   "SALDO S/ DIVIDAS", _brl),
+    ("ciclo_financiamento", "CICLO FINANCEIRO", _days),
+]
+_SEM = [
+    ("indice_qt_qd",        "LIQUIDEZ",  _ratio, ">=1,5x"),
+    ("saldo_qt_qd",         "SALDO",     _brl,   "Positivo"),
+    ("pmp",                 "PMP",       _days,  ">60d"),
+    ("pmv",                 "PMV",       _days,  "<60d"),
+    ("_pme",                "PME",       _days,  "<90d"),
+    ("ciclo_financiamento", "CICLO",     _days,  ">=+10d"),
+]
+
+def _page_inspetor(pdf, tenant, periodos):
+    pdf.add_page()
+    pw = pdf.w - pdf.l_margin - pdf.r_margin
+    latest = periodos[-1]
+
+    _page_header(pdf, tenant, f"Inspetor IA Financeiro | Semana {latest['data']}", pw)
+    _section(pdf, "Inspetor IA Financeiro", pw)
+
+    # KPI cards
+    bw = (pw-9)/4; bh = 28; by = pdf.get_y()
+    for i,(key,lbl,fn) in enumerate(_KPIS):
+        v = _val(latest,key); c = _kpi_color(key,v)
+        bx = pdf.l_margin + i*(bw+3)
+        _rgb(pdf,(248,250,252),"fill"); _rgb(pdf,c,"draw")
+        pdf.set_line_width(0.5); pdf.rect(bx,by,bw,bh,style="FD")
+        _rgb(pdf,c,"fill"); pdf.rect(bx,by,2.5,bh,style="F")
+        pdf.set_xy(bx+5,by+4); pdf.set_font("Helvetica","B",6.5)
+        _rgb(pdf,(100,116,139)); pdf.cell(bw-7,4,lbl,align="L")
+        pdf.set_xy(bx+5,by+11); pdf.set_font("Helvetica","B",15)
+        _rgb(pdf,c); pdf.cell(bw-7,10,fn(v) if v is not None else "-",align="L")
+        if len(periodos)>=2:
+            pv = _val(periodos[-2],key)
+            if v is not None and pv and pv!=0:
+                d = ((v-pv)/abs(pv))*100
+                dc = (22,163,74) if d>=0 else (220,38,38)
+                sign = "+" if d>=0 else ""
+                pdf.set_xy(bx+5,by+22); pdf.set_font("Helvetica","",6)
+                _rgb(pdf,dc); pdf.cell(bw-7,4,f"{sign}{d:.1f}% vs anterior",align="L")
+    pdf.set_y(by+bh+8)
+
+    # Semáforo
+    _section(pdf,"Semaforo IA Financeiro",pw)
+    cw = pw/6; sh = 22; sy = pdf.get_y()
+    for i,(key,lbl,fn,meta) in enumerate(_SEM):
+        v = _val(latest,key); c = _sem_color(key,v)
+        soft = tuple(min(255,x+205) for x in c)
+        bx = pdf.l_margin + i*cw
+        _rgb(pdf,soft,"fill"); _rgb(pdf,c,"draw")
+        pdf.set_line_width(0.6); pdf.rect(bx,sy,cw-1,sh,style="FD")
+        pdf.set_xy(bx,sy+2); pdf.set_font("Helvetica","B",6.5)
+        _rgb(pdf,(100,116,139)); pdf.cell(cw-1,4,lbl,align="C")
+        pdf.set_xy(bx,sy+8); pdf.set_font("Helvetica","B",12)
+        _rgb(pdf,c); pdf.cell(cw-1,7,fn(v) if v is not None else "-",align="C")
+        pdf.set_xy(bx,sy+17); pdf.set_font("Helvetica","",6)
+        _rgb(pdf,(100,116,139)); pdf.cell(cw-1,4,meta,align="C")
+    pdf.set_y(sy+sh+8)
+
+    # Histórico (últimas 8 semanas, mais recente primeiro)
+    _section(pdf,"Evolucao Recente",pw)
+    hist_keys = [
+        ("qt_total","QT Total",_brl,""),("qd_total","QD Total",_brl,""),
+        ("saldo_qt_qd","Saldo",_brl,"saldo"),("indice_qt_qd","Indice",_ratio,"indice"),
+        ("_pme","PME",_days,""),("pmp","PMP",_days,""),("pmv","PMV",_days,""),
+        ("ciclo_financiamento","Ciclo",_days,"ciclo"),
     ]
+    rec = list(reversed(periodos[-8:]))
+    lw2 = 34; hcw = (pw-lw2)/max(len(rec),1); rh2 = 6.5
 
-    kpi_cells = ""
-    for key, lbl, fn in _KPIS:
-        v = _val(latest, key)
-        cls = _kpi_cls(key, v)
-        delta_html = ""
-        if len(periodos) >= 2:
-            pv = _val(periodos[-2], key)
-            if v is not None and pv and pv != 0:
-                d = ((v - pv) / abs(pv)) * 100
-                sign = "+" if d >= 0 else ""
-                dc = "good" if d >= 0 else "bad"
-                delta_html = f'<div class="kpi-sub txt-{dc}">{sign}{d:.1f}% vs semana anterior</div>'
-        kpi_cells += f"""
-        <td class="kpi-card {cls}">
-          <div class="kpi-label">{_h(lbl)}</div>
-          <div class="kpi-value {cls}">{_h(fn(v)) if v is not None else "-"}</div>
-          {delta_html}
-        </td>"""
+    _rgb(pdf,(241,245,249),"fill"); _rgb(pdf,(226,232,240),"draw"); pdf.set_line_width(0.2)
+    pdf.set_x(pdf.l_margin); pdf.set_font("Helvetica","B",6.5); _rgb(pdf,(71,85,105))
+    pdf.cell(lw2,rh2,"Indicador",border="B",align="L",fill=True)
+    for p in rec: pdf.cell(hcw,rh2,p["data"][-5:],border="B",align="R",fill=True)
+    pdf.ln()
 
-    _SEM = [
-        ("indice_qt_qd", "LIQUIDEZ",  _ratio, "Indice &gt;= 1,5x"),
-        ("saldo_qt_qd",  "SALDO",     _brl,   "Positivo"),
-        ("pmp",          "PMP",       _days,  "&gt; 60 dias"),
-        ("pmv",          "PMV",       _days,  "&lt; 60 dias"),
-        ("_pme",         "PME",       _days,  "&lt; 90 dias"),
-        ("ciclo_financiamento","CICLO",_days, "&gt;= +10 dias"),
-    ]
+    for i,(cod,nome,fn,ct) in enumerate(hist_keys):
+        _rgb(pdf,(248,250,252) if i%2==0 else (255,255,255),"fill")
+        pdf.set_x(pdf.l_margin); pdf.set_font("Helvetica","B",6.5); _rgb(pdf,(15,23,42))
+        pdf.cell(lw2,rh2,nome,border="B",align="L",fill=True)
+        for p in rec:
+            v = _val(p,cod); c = _row_color(ct,v); _rgb(pdf,c)
+            pdf.set_font("Helvetica","B" if ct in ("saldo","indice","ciclo") else "",6.5)
+            pdf.cell(hcw,rh2,fn(v),border="B",align="R",fill=True)
+        pdf.ln()
+    _footer(pdf)
 
-    sem_cells = ""
-    for key, lbl, fn, meta in _SEM:
-        v = _val(latest, key)
-        cls = _sem_cls(key, v)
-        sem_cells += f"""
-        <td class="sem-item {cls}">
-          <div class="sem-label">{_h(lbl)}</div>
-          <div class="sem-value {cls}">{_h(fn(v)) if v is not None else "-"}</div>
-          <div class="sem-meta">{meta}</div>
-        </td>"""
+# ═══════════════════════════════════════════════════════════════════════════════
+# PÁGINAS 3+ — GRÁFICOS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    # Tabela histórica (últimas 8 semanas, mais recente primeiro)
-    _HIST = [
-        ("qt_total",           "QT Total",  _brl_full, ""),
-        ("qd_total",           "QD Total",  _brl_full, ""),
-        ("saldo_qt_qd",        "Saldo",     _brl_full, "saldo"),
-        ("indice_qt_qd",       "Indice",    _ratio,    "indice"),
-        ("_pme",               "PME",       _days,     ""),
-        ("pmp",                "PMP",       _days,     ""),
-        ("pmv",                "PMV",       _days,     ""),
-        ("ciclo_financiamento","Ciclo",     _days,     "ciclo"),
-    ]
-    rec8 = list(reversed(periodos[-8:]))
+def _pages_graficos(pdf, tenant, periodos, charts_config):
+    pdf.add_page()
+    pw = pdf.w - pdf.l_margin - pdf.r_margin
+    _page_header(pdf, tenant,
+                 f"Graficos | {periodos[0]['data']} a {periodos[-1]['data']}", pw)
 
-    hist_head = '<th class="left">Indicador</th>' + "".join(
-        f'<th>{_h(p["data"])}</th>' for p in rec8)
-    hist_body = ""
-    for i, (key, nome, fn, ct) in enumerate(_HIST):
-        row_cls = "even" if i % 2 == 0 else ""
-        cells = f'<td class="left">{_h(nome)}</td>'
-        for p in rec8:
-            v = _val(p, key)
-            tc = _row_cls(ct, v)
-            cells += f'<td class="{tc}">{_h(fn(v))}</td>'
-        hist_body += f'<tr class="{row_cls}">{cells}</tr>'
+    chart_h = 60.0
 
-    inspetor_html = f"""
-<div class="page-header">
-  <div class="page-header-title">Inspetor IA Financeiro | {_h(tenant_nome)}</div>
-  <div class="page-header-sub">Semana de {_h(latest["data"])} | Gerado em {hoje}</div>
-</div>
+    def _draw(title, png, with_break=False):
+        nonlocal pw
+        if png is None: return
+        remaining = pdf.h - pdf.b_margin - pdf.get_y()
+        if remaining < chart_h + 12:
+            pdf.add_page()
+            pw = pdf.w - pdf.l_margin - pdf.r_margin
+            _page_header(pdf, tenant, "Graficos", pw)
+        _section(pdf, title, pw)
+        _embed_png(pdf, png, pdf.l_margin, pdf.get_y(), pw, chart_h)
+        pdf.set_y(pdf.get_y() + chart_h + 8)
 
-<p class="section-title">Inspetor IA Financeiro</p>
-<table class="kpi-table">
-  <tr>{kpi_cells}</tr>
-</table>
+    _draw("QT vs QD por Semana",              _chart_qt_qd(periodos))
+    _draw("Saldo QT/QD e Indice QT/QD",       _chart_saldo_indice(periodos))
+    _draw("Prazos: PMP | PMV | PME | Ciclo",  _chart_prazos(periodos))
 
-<p class="section-title">Semaforo IA Financeiro</p>
-<table class="sem-table">
-  <tr>{sem_cells}</tr>
-</table>
+    for cfg in (charts_config or []):
+        if not cfg.get("includePdf"): continue
+        png = _chart_custom(cfg, periodos)
+        _draw(cfg.get("name","Grafico"), png)
 
-<p class="section-title">Evolucao Recente</p>
-<table class="data-table">
-  <thead><tr>{hist_head}</tr></thead>
-  <tbody>{hist_body}</tbody>
-</table>
-<div class="footer">Service Farma - Grupo A3 - Direitos Reservados</div>
-"""
+    _footer(pdf)
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # SEÇÃO 3 — GRÁFICOS
-    # ══════════════════════════════════════════════════════════════════════════
-    custom_blocks = "".join(
-        f'<div class="chart-title">{_h(nome)}</div>'
-        f'<img class="chart-img" src="data:image/png;base64,{b64}"/>'
-        for nome, b64 in custom_b64
-    )
-
-    graficos_html = f"""
-<div class="page-header">
-  <div class="page-header-title">Graficos | {_h(tenant_nome)}</div>
-  <div class="page-header-sub">{_h(periodos[0]["data"])} a {_h(periodos[-1]["data"])} | Gerado em {hoje}</div>
-</div>
-
-<p class="section-title">QT vs QD por Semana e Saldo &amp; Indice QT/QD</p>
-<img class="chart-img" src="data:image/png;base64,{b64_qt_qd}"/>
-
-<p class="section-title">Prazos Operacionais: PMP | PMV | PME | Ciclo Financeiro</p>
-<img class="chart-img" src="data:image/png;base64,{b64_prazos}"/>
-
-{f'<p class="section-title">Graficos Personalizados</p>' + custom_blocks if custom_blocks else ''}
-
-<div class="footer">Service Farma - Grupo A3 - Direitos Reservados</div>
-"""
-
-    return f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<style>{_CSS}</style>
-</head><body>
-{tabela_html}
-<pdf:nextpage/>
-{inspetor_html}
-<pdf:nextpage/>
-{graficos_html}
-</body></html>"""
-
-
-# ── Entry point ───────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENTRY POINT
+# ═══════════════════════════════════════════════════════════════════════════════
 
 def build_relatorio_pdf(
     tenant_nome: str,
     periodos: list[dict],
     charts_config: list[dict] | None = None,
 ) -> bytes:
-    from xhtml2pdf import pisa
+    pdf = FPDF(orientation="L", unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=12)
+    pdf.set_margins(12, 12, 12)
 
-    html = _build_html(tenant_nome, periodos, charts_config or [])
-    buf = BytesIO()
-    pisa.CreatePDF(html, dest=buf, encoding="utf-8")
-    buf.seek(0)
-    return buf.read()
+    _page_tabela(pdf, tenant_nome, periodos)
+    _page_inspetor(pdf, tenant_nome, periodos)
+    _pages_graficos(pdf, tenant_nome, periodos, charts_config or [])
+
+    return bytes(pdf.output())
