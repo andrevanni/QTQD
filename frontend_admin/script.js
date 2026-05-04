@@ -167,6 +167,7 @@ function loadPdfSection() {
   populateClientSelects();
   $('pdfConfigPanel')?.classList.add('hidden');
   $('pdfDestinatariosList').innerHTML = '';
+  loadEmailLog(null);
 }
 
 $('pdfClient')?.addEventListener('change', async () => {
@@ -201,8 +202,8 @@ $('pdfClient')?.addEventListener('change', async () => {
     const list  = $('pdfDestinatariosList');
     list.innerHTML = '';
     const ativos = usrs.filter(u => u.ativo);
-    if (!ativos.length) { list.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhum usuário ativo.</p>'; return; }
-    ativos.forEach(u => {
+    if (!ativos.length) { list.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhum usuário ativo.</p>'; }
+    else ativos.forEach(u => {
       const card = el('article', 'entity-card');
       card.innerHTML = `
         <div class="entity-card-row">
@@ -213,6 +214,8 @@ $('pdfClient')?.addEventListener('change', async () => {
       list.appendChild(card);
     });
   } catch {}
+
+  loadEmailLog(tenantId);
 });
 
 $('pdfTiming')?.addEventListener('change', () => {
@@ -256,6 +259,58 @@ $('downloadPdfBtn')?.addEventListener('click', async () => {
     await window.QTQD_API_CLIENT.downloadPdf(getToken(), tenantId);
     fb('✓ PDF gerado e baixado.', 'success');
   } catch (e) { fb('Erro ao gerar PDF: ' + e.message, 'error'); }
+});
+
+/* ── Log de e-mails ──────────────────────────────────── */
+const ORIGEM_LABEL = { fechar: 'Fechar lançamento', finalizar: 'Finalizar', reenviar: 'Reenviar', admin: 'Admin (manual)' };
+
+async function loadEmailLog(tenantId) {
+  const container = $('emailLogContainer');
+  if (!container) return;
+  container.innerHTML = '<p style="color:var(--muted);font-size:13px">Carregando...</p>';
+  try {
+    const logs = await window.QTQD_API_CLIENT.getEmailLog(getToken(), tenantId || null);
+    if (!logs.length) {
+      container.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhum envio registrado.</p>';
+      return;
+    }
+    const rows = logs.map(l => {
+      const data = new Date(l.enviado_em).toLocaleString('pt-BR');
+      const dest = (l.destinatarios || []).join(', ') || '—';
+      const badge = l.status === 'success'
+        ? `<span class="badge ativo" style="font-size:11px">✓ Enviado</span>`
+        : `<span class="badge cancelado" style="font-size:11px">✗ Erro</span>`;
+      const erroHtml = l.erro ? `<br><span style="font-size:11px;color:var(--muted)">${l.erro}</span>` : '';
+      const origem = ORIGEM_LABEL[l.origem] || l.origem || '—';
+      const c = clients.find(c => c.id === l.tenant_id);
+      const clienteNome = c ? c.nome : (l.tenant_id || '').substring(0, 8) + '…';
+      return `<tr>
+        <td style="padding:8px 12px;font-size:12px;white-space:nowrap">${data}</td>
+        <td style="padding:8px 12px;font-size:12px">${clienteNome}</td>
+        <td style="padding:8px 12px;font-size:12px">${origem}</td>
+        <td style="padding:8px 12px;font-size:12px;max-width:260px">${dest}</td>
+        <td style="padding:8px 12px">${badge}${erroHtml}</td>
+      </tr>`;
+    }).join('');
+    container.innerHTML = `<table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:var(--surface-2);text-align:left">
+          <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)">Data/Hora</th>
+          <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)">Cliente</th>
+          <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)">Origem</th>
+          <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)">Destinatários</th>
+          <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  } catch (e) {
+    container.innerHTML = `<p style="color:var(--muted);font-size:13px">Erro ao carregar log: ${e.message}</p>`;
+  }
+}
+
+$('refreshEmailLogBtn')?.addEventListener('click', () => {
+  loadEmailLog($('pdfClient')?.value || null);
 });
 
 const SECTION_META = {

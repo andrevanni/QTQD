@@ -155,12 +155,28 @@ def enviar_relatorio(tenant_id: UUID, email_teste: str | None = None) -> dict:
     from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
     sb = get_supabase()
     try:
-        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb, email_teste=email_teste)
+        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb, email_teste=email_teste, origem="admin")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao enviar relatorio: {e}")
     if not destinatarios:
         raise HTTPException(status_code=400, detail="Nenhum usuario ativo com e-mail ou nenhuma avaliacao encontrada.")
     return {"ok": True, "enviado_para": destinatarios}
+
+
+@router.get("/email-log")
+def listar_email_log(tenant_id: UUID | None = None, limit: int = 100) -> list[dict]:
+    """Retorna o histórico de envios de e-mail, opcionalmente filtrado por tenant."""
+    query = (
+        get_supabase()
+        .table("email_log")
+        .select("*")
+        .order("enviado_em", desc=True)
+        .limit(limit)
+    )
+    if tenant_id:
+        query = query.eq("tenant_id", str(tenant_id))
+    result = query.execute()
+    return result.data or []
 
 
 @router.get("/pdf-preview/{tenant_id}")

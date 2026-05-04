@@ -118,7 +118,7 @@ def fechar(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) ->
         raise HTTPException(status_code=404, detail="Avaliacao nao encontrada.")
 
     try:
-        enviar_relatorio_para_tenant(str(tenant_id), sb)
+        enviar_relatorio_para_tenant(str(tenant_id), sb, avaliacao_id=str(avaliacao_id), origem="fechar")
     except Exception:
         pass  # Não bloqueia o fechamento se o envio falhar
 
@@ -143,7 +143,7 @@ def finalizar(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant))
     avaliacao = _serialize(final.data[0])
 
     try:
-        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb)
+        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb, avaliacao_id=str(avaliacao_id), origem="finalizar")
     except Exception:
         destinatarios = []
 
@@ -170,7 +170,7 @@ def reenviar_relatorio(
         raise HTTPException(status_code=404, detail="Avaliacao nao encontrada.")
 
     try:
-        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb, email_teste=email_teste)
+        destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb, email_teste=email_teste, avaliacao_id=str(avaliacao_id), origem="reenviar")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Falha ao enviar relatorio: {e}")
 

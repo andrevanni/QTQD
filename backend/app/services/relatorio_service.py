@@ -5,7 +5,13 @@ Usada pelo endpoint admin (manual) e pelo endpoint de finalização (automático
 from datetime import date
 
 
-def enviar_relatorio_para_tenant(tenant_id: str, sb, email_teste: str | None = None) -> list[str]:
+def enviar_relatorio_para_tenant(
+    tenant_id: str,
+    sb,
+    email_teste: str | None = None,
+    avaliacao_id: str | None = None,
+    origem: str = "manual",
+) -> list[str]:
     """
     Monta e envia o relatório semanal para todos os usuários ativos do tenant.
     Retorna lista de e-mails que receberam.
@@ -94,5 +100,30 @@ def enviar_relatorio_para_tenant(tenant_id: str, sb, email_teste: str | None = N
 
     today = date.today().strftime("%d/%m/%Y")
     subject = f"QTQD Atualizado — {tenant_nome} — {today}"
-    send_html(destinatarios, subject, html)
+
+    status_log = "success"
+    erro_log: str | None = None
+    try:
+        send_html(destinatarios, subject, html)
+    except Exception as e:
+        status_log = "error"
+        erro_log = str(e)
+        raise
+    finally:
+        try:
+            log_row: dict = {
+                "tenant_id": tenant_id,
+                "destinatarios": destinatarios,
+                "status": status_log,
+                "n_destinatarios": len(destinatarios),
+                "origem": origem,
+            }
+            if avaliacao_id:
+                log_row["avaliacao_id"] = avaliacao_id
+            if erro_log:
+                log_row["erro"] = erro_log
+            sb.table("email_log").insert(log_row).execute()
+        except Exception:
+            pass  # log nunca pode quebrar o fluxo principal
+
     return destinatarios

@@ -230,6 +230,11 @@
       const qs = emailTeste ? `?email_teste=${encodeURIComponent(emailTeste)}` : '';
       return request(base(`/admin/enviar-relatorio/${tenantId}${qs}`), { method: 'POST', headers: adminHeaders(adminToken) });
     },
+    getEmailLog(adminToken, tenantId, limit = 100) {
+      const qs = new URLSearchParams({ limit });
+      if (tenantId) qs.set('tenant_id', tenantId);
+      return request(base(`/admin/email-log?${qs}`), { method: 'GET', headers: adminHeaders(adminToken) });
+    },
     async downloadPdf(adminToken, tenantId) {
       // Abre o portal para o cliente com autoprint=1 → dispara window.print() do Inspetor IA
       const resp = await fetch(base(`/admin/abrir-portal/${tenantId}`), { method: 'POST', headers: adminHeaders(adminToken) });
