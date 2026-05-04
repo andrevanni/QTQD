@@ -117,10 +117,13 @@ def fechar(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) ->
     if not result.data:
         raise HTTPException(status_code=404, detail="Avaliacao nao encontrada.")
 
-    try:
-        enviar_relatorio_para_tenant(str(tenant_id), sb, avaliacao_id=str(avaliacao_id), origem="fechar")
-    except Exception:
-        pass  # Não bloqueia o fechamento se o envio falhar
+    cfg_res = sb.table("tenant_pdf_config").select("ativo").eq("tenant_id", str(tenant_id)).limit(1).execute()
+    envio_ativo = (cfg_res.data[0].get("ativo", True) if cfg_res.data else True)
+    if envio_ativo:
+        try:
+            enviar_relatorio_para_tenant(str(tenant_id), sb, avaliacao_id=str(avaliacao_id), origem="fechar")
+        except Exception:
+            pass  # Não bloqueia o fechamento se o envio falhar
 
     return _serialize(result.data[0])
 
