@@ -170,6 +170,8 @@ Todos os campos financeiros ficam no JSONB `avaliacoes_semanais.valores`.
 **Indicadores Operacionais (inputs):**
 `pmp`, `pmv`, `pmv_avista`, `pmv_30`, `pmv_60`, `pmv_90`, `pmv_120`, `pmv_outros`, `pme_excel`, `indice_faltas`, `excesso_curva_a`, `excesso_curva_b`, `excesso_curva_c`, `excesso_curva_d`
 
+> **`indice_faltas` — ratio decimal (0–1):** 6,82% é armazenado como `0.0682`. O formulário exibe `valor × 100` e salva `input ÷ 100` automaticamente. `fmtPercent()` já multiplica por 100 para exibição.
+
 **Calculados (não persistidos, gerados em `calculos_qtqd.py`):**
 `qt_total`, `qd_total`, `saldo_qt_qd`, `indice_qt_qd`, `saldo_sem_dividas`, `indice_sem_dividas`, `saldo_sem_dividas_sem_estoque`, `pme` (calculado), `prazo_medio_compra`, `prazo_venda`, `ciclo_financiamento`, `indice_compra_venda`, `margem_bruta`, `excesso_total`
 
@@ -580,6 +582,9 @@ No admin: campo "E-mail para teste" na seção Relatório.
 38. **Troca de cliente mostrava config do anterior:** campos do painel PDF não eram limpos antes do load async. Fix: reset para defaults imediatamente ao trocar o select.
 39. **PDF server-side não replicável:** todas as libs que convertem HTML→PDF (xhtml2pdf, WeasyPrint) dependem de Cairo/Pango (libs nativas indisponíveis no Vercel Lambda). matplotlib gera charts mas diferentes do Chart.js do portal. Decisão: **sem PDF em anexo**; e-mail envia só HTML; botão "Baixar PDF" no admin abre o portal com `?autoprint=1`.
 40. **`xhtml2pdf` quebrava o build:** depende de `pycairo` que requer Cairo em nível de sistema. Fix: remover `xhtml2pdf` do `requirements.txt`.
+41. **`indice_faltas` exibindo 682% ao digitar 6,82:** campo é armazenado como ratio (0–1), mas o formulário não fazia a conversão. Fix: `fillForm` multiplica por 100 antes de exibir; `collectFormData` divide por 100 antes de salvar. Único registro incorreto corrigido diretamente no banco (Drogaria SV, semana 2026-05-01: 6.82 → 0.0682).
+
+> **Convenção `indice_faltas`:** armazenado como **ratio decimal** (ex: 0.0682 = 6,82%). No formulário, o usuário digita o valor percentual (6,82) e o sistema converte automaticamente. `fmtPercent()` multiplica por 100 para exibição — não alterar essa lógica.
 
 ---
 
