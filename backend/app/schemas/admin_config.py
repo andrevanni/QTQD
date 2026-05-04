@@ -73,8 +73,6 @@ class PdfConfigRequest(BaseModel):
     n_retratos:       int  = 8
     incluir_inspetor: bool = False
     incluir_graficos: bool = False
-    envio_timing:     str  = "imediato"  # 'imediato' | 'agendado'
-    dias_apos:        int  = 0
     ativo:            bool = True
 
 

@@ -178,9 +178,6 @@ $('pdfClient')?.addEventListener('change', async () => {
   // Limpa para não mostrar dados do cliente anterior enquanto carrega
   $('pdfNRetratos').value  = 8;
   $('pdfAtivo').checked    = true;
-  $('pdfTiming').value     = 'imediato';
-  $('pdfDiasApos').value   = 1;
-  $('pdfDiasAposWrap').classList.add('hidden');
   $('pdfDestinatariosList').innerHTML = '';
   panel.classList.remove('hidden');
 
@@ -188,11 +185,8 @@ $('pdfClient')?.addEventListener('change', async () => {
   try {
     const cfg = await window.QTQD_API_CLIENT.getPdfConfig(getToken(), tenantId);
     if (cfg) {
-      $('pdfNRetratos').value        = cfg.n_retratos ?? 8;
-      $('pdfAtivo').checked          = cfg.ativo ?? true;
-      $('pdfTiming').value           = cfg.envio_timing ?? 'imediato';
-      $('pdfDiasApos').value         = cfg.dias_apos ?? 1;
-      $('pdfDiasAposWrap').classList.toggle('hidden', cfg.envio_timing !== 'agendado');
+      $('pdfNRetratos').value = cfg.n_retratos ?? 8;
+      $('pdfAtivo').checked   = cfg.ativo ?? true;
     }
   } catch {}
 
@@ -218,18 +212,12 @@ $('pdfClient')?.addEventListener('change', async () => {
   loadEmailLog(tenantId);
 });
 
-$('pdfTiming')?.addEventListener('change', () => {
-  $('pdfDiasAposWrap').classList.toggle('hidden', $('pdfTiming').value !== 'agendado');
-});
-
 $('savePdfConfigBtn')?.addEventListener('click', async () => {
   const tenantId = $('pdfClient').value;
   if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
   const payload = {
     n_retratos: parseInt($('pdfNRetratos').value || '8'),
     ativo:      $('pdfAtivo').checked,
-    envio_timing:     $('pdfTiming').value,
-    dias_apos:        parseInt($('pdfDiasApos').value || '0'),
   };
   try {
     await window.QTQD_API_CLIENT.savePdfConfig(getToken(), tenantId, payload);
