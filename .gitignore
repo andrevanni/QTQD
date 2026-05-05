@@ -34,6 +34,11 @@ Desktop.ini
 *.tmp
 *.bak
 
+# Dados e arquivos locais de implantação (não pertencem ao repositório)
+*.xlsx
+*.ico
+*.png
+
 # Temporary helper copies used for manual SQL execution
 copiar_schema_supabase.sql
 copiar_schema_supabase.txt
@@ -41,3 +46,4 @@ copiar_seed_supabase.sql
 copiar_seed_supabase.txt
 
 .vercel
+.env*.local
