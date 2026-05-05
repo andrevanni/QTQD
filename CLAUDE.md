@@ -92,6 +92,9 @@ QTQD/
       admin_config.py     POST /admin/abrir-portal/{tenant_id} (auto-registra admin em tenant_usuarios se ausente)
                           POST /admin/branding/{tenant_id}/logo  (upload para Supabase Storage)
                           POST /admin/usuarios/{id}/enviar-convite (gera link Supabase Auth + envia e-mail)
+                          GET  /admin/email-log (histórico de envios, filtrável por tenant_id)
+    services/
+      relatorio_service.py  Orquestra envio: busca dados, gera HTML, envia SMTP, grava em email_log
     schemas/avaliacoes.py
     services/
       calculos_qtqd.py    Indicadores calculados
@@ -99,10 +102,8 @@ QTQD/
       excel_import.py
   api/index.py
   tools/
-    importar_qtqdts.py        Importação inicial do QTQDTS.xlsx
+    importar_qtqdsv.py           Importação de dados históricos via Excel (base para novos clientes)
     atualizar_excesso_faltas.py  Atualiza excesso_curva_a/b/c/d e indice_faltas nos registros existentes
-    analisar_excel.py
-    analisar_campos.py
   vercel.json
   requirements.txt
 ```
@@ -131,7 +132,7 @@ QTQD/
 | Nome | tenant_id | Status |
 |------|-----------|--------|
 | **Total Socorro / Drogaria da Letícia** | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | implantacao — **103 semanas importadas** (jun/2024 → abr/2026) |
-| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | implantacao — sem dados |
+| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | implantacao — **65+ semanas importadas**; 7 usuários ativos configurados |
 
 > `nome_portal` no branding: "Drogaria da Letícia". Logo já configurada no bucket `logos` do Supabase Storage.
 
@@ -226,9 +227,10 @@ Todos os campos financeiros ficam no JSONB `avaliacoes_semanais.valores`.
 - `POST /api/v1/admin/branding/{tenant_id}/logo` — upload de logo (JPG/PNG/WebP ≤2MB) para Supabase Storage bucket `logos`
 - `GET/POST /api/v1/admin/usuarios` — gestão de `tenant_usuarios`
 - `POST /api/v1/admin/usuarios/{id}/enviar-convite` — gera link Supabase Auth (tenta `recovery` primeiro, depois `invite`) + salva `qtqd_usuario_id`/`qtqd_tenant_id` no `app_metadata` do Auth + envia e-mail
-- `POST /api/v1/avaliacoes/{id}/fechar` — muda status para `fechada`
+- `POST /api/v1/avaliacoes/{id}/fechar` — muda status para `fechada` + envia e-mail se `tenant_pdf_config.ativo = true`
 - `POST /api/v1/avaliacoes/{id}/finalizar` — muda para `finalizado` + envia e-mail de relatório
 - `POST /api/v1/avaliacoes/{id}/reenviar-relatorio` — reenvia e-mail do relatório sem alterar status
+- `GET /api/v1/admin/email-log` — histórico de envios de e-mail (admin)
 
 ### Supabase SDK — padrões
 
@@ -541,8 +543,24 @@ No admin: campo "E-mail para teste" na seção Relatório.
 | `api/v1/avaliacoes.py` | `/fechar` → envia e-mail; `/reenviar-relatorio` aceita `?email_teste=` |
 
 ### Configuração (`tenant_pdf_config`)
-- Tabela `tenant_pdf_config` por tenant: `n_retratos` (padrão 8), `ativo`, `envio_timing`, `dias_apos`
-- Campos `incluir_inspetor` e `incluir_graficos` **ignorados** (removidos da UI)
+- Tabela `tenant_pdf_config` por tenant: `n_retratos` (padrão 8), `ativo`
+- Campos `incluir_inspetor`, `incluir_graficos`, `envio_timing` e `dias_apos` **ignorados** (removidos da UI e do schema Pydantic — envio é sempre imediato ao fechar)
+
+### Log de envios (`email_log`)
+Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
+
+| Coluna | Descrição |
+|---|---|
+| `tenant_id` | Tenant destinatário |
+| `avaliacao_id` | Avaliação que disparou o envio (NULL para envios manuais) |
+| `enviado_em` | Timestamp UTC do envio |
+| `destinatarios` | Array de e-mails que receberam |
+| `status` | `'success'` ou `'error'` |
+| `erro` | Mensagem de erro SMTP (preenchida só em falhas) |
+| `n_destinatarios` | Quantidade de destinatários |
+| `origem` | `'fechar'`, `'finalizar'`, `'reenviar'` ou `'admin'` |
+
+> O log é visível no painel admin → **Relatório → Log de envios de e-mail**, filtrado por cliente.
 
 ### SMTP
 - Vercel env: `SMTP_PORT=587` → STARTTLS | `SMTP_PORT=465` → SSL direto
@@ -561,17 +579,18 @@ No admin: campo "E-mail para teste" na seção Relatório.
 | Botão **"Salvar configuração"** | Persiste em `tenant_pdf_config` |
 | Botão **"Enviar relatório"** | Dispara o e-mail imediatamente (com ou sem e-mail teste) |
 | Botão **"Baixar PDF"** | Abre o portal do cliente com `?autoprint=1` → browser gera PDF **idêntico ao portal** via `window.print()` |
+| **Log de envios** | Tabela com histórico de todos os envios — data, cliente, origem, destinatários, status/erro. Filtra por cliente ao selecionar; botão "↻ Atualizar" recarrega. |
 
 > **"Baixar PDF" funciona assim:** chama `POST /admin/abrir-portal/{tenant_id}` → obtém JWT → abre `https://qtqd-vt2a.vercel.app/cliente?token=JWT&tenant_id=UUID&autoprint=1` em nova aba → portal detecta `window._qtqdAutoprint=true` → após carregar, chama `generateInspectorPdf()` que executa `window.print()`. O PDF resultante é idêntico ao que o cliente vê no Inspetor IA.
 
 ---
 
-## Clientes — Situação atual (2026-05-01)
+## Clientes — Situação atual (2026-05-04)
 
 | Cliente | tenant_id | Lançamentos | Observação |
 |---|---|---|---|
 | Total Socorro / Drogaria da Letícia | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | 103+ semanas | Jun/2024 → atualização contínua |
-| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | 65+ semanas | Jul/2024 → atualização contínua; e-mail configurado |
+| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | 65+ semanas | Jul/2024 → atualização contínua; 7 usuários ativos (Admin, AVJ, Caio, Cassiano, Elias, Evandro, Raquel) |
 
 ---
 
@@ -585,6 +604,10 @@ No admin: campo "E-mail para teste" na seção Relatório.
 41. **`indice_faltas` exibindo 682% ao digitar 6,82:** campo é armazenado como ratio (0–1), mas o formulário não fazia a conversão. Fix: `fillForm` multiplica por 100 antes de exibir; `collectFormData` divide por 100 antes de salvar. Único registro incorreto corrigido diretamente no banco (Drogaria SV, semana 2026-05-01: 6.82 → 0.0682).
 
 > **Convenção `indice_faltas`:** armazenado como **ratio decimal** (ex: 0.0682 = 6,82%). No formulário, o usuário digita o valor percentual (6,82) e o sistema converte automaticamente. `fmtPercent()` multiplica por 100 para exibição — não alterar essa lógica.
+
+42. **Flag `ativo` do `tenant_pdf_config` ignorada no `/fechar`:** o endpoint enviava e-mail sempre, independente da checkbox "Envio automático ativo". Fix: verificar `cfg.ativo` antes de chamar `enviar_relatorio_para_tenant`. Envios manuais pelo admin não são afetados.
+43. **Campos "Timing de envio" e "Enviar após quantos dias" sem implementação:** existiam na UI e no schema Pydantic mas nunca foram lidos no backend — o envio sempre foi imediato. Fix: removidos do HTML, JS e `PdfConfigRequest`. Campos `envio_timing` e `dias_apos` permanecem no banco mas são ignorados.
+44. **Log de envios ausente:** falhas de SMTP eram silenciadas por `except: pass` sem rastro. Fix: tabela `email_log` no Supabase + `relatorio_service.py` grava sucesso/erro em bloco `finally` após cada envio. Endpoint `GET /admin/email-log` e seção visual no painel admin.
 
 ---
 
