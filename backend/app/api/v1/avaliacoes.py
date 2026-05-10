@@ -93,6 +93,7 @@ def atualizar(
     row = current.data[0]
     next_valores = AvaliacaoValores(**(payload.valores.model_dump() if payload.valores else row.get("valores") or {}))
     update_data = {
+        "semana_referencia": str(payload.semana_referencia) if payload.semana_referencia else row["semana_referencia"],
         "status": payload.status or row["status"],
         "observacoes": payload.observacoes if payload.observacoes is not None else row.get("observacoes"),
         "valores": next_valores.model_dump(),
@@ -176,6 +177,9 @@ def reenviar_relatorio(
         destinatarios = enviar_relatorio_para_tenant(str(tenant_id), sb, email_teste=email_teste, avaliacao_id=str(avaliacao_id), origem="reenviar")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Falha ao enviar relatorio: {e}")
+
+    if not destinatarios:
+        raise HTTPException(status_code=400, detail="Nenhum usuario ativo com e-mail cadastrado para este tenant.")
 
     return {"enviado_para": destinatarios, "n_destinatarios": len(destinatarios)}
 

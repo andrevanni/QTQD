@@ -52,6 +52,7 @@ class AvaliacaoCreateRequest(AvaliacaoValores):
 
 
 class AvaliacaoUpdateRequest(BaseModel):
+    semana_referencia: date | None = None
     status: str | None = None
     observacoes: str | None = None
     valores: AvaliacaoValores | None = None
