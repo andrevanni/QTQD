@@ -124,6 +124,7 @@ QTQD/
 | `ADMIN_TOKEN` | Token do painel admin |
 | `CORS_ORIGINS` | Origens permitidas |
 | `PORTAL_ADMIN_PASSWORD` | Senha do usuário `andre@servicefarma.far.br` para "Acessar Portal" |
+| `RESEND_API_KEY` | API key do Resend para envio de e-mail (começa com `re_...`) — **primário** |
 
 ---
 
@@ -517,7 +518,7 @@ O PDF usa CSS `@media print` em `styles.css`. **NÃO usa jsPDF.**
 1. Botão **"Fechar"** no histórico (status `rascunho`) → `POST /api/v1/avaliacoes/{id}/fechar`
 2. Backend muda status para `fechada` e chama `enviar_relatorio_para_tenant()`
 3. `relatorio_service.py` busca as últimas `n_retratos` avaliações **excluindo rascunhos**
-4. Gera o HTML do e-mail (`relatorio_html.py`) e envia via SMTP — **sem anexo PDF**
+4. Gera o HTML do e-mail (`relatorio_html.py`) e envia via **Resend** (fallback SMTP) — **sem anexo PDF**
 5. Botão **"Reenviar"** no histórico → `POST /api/v1/avaliacoes/{id}/reenviar-relatorio` (não altera status)
 
 > **Não há mais PDF em anexo.** Tentativas de gerar PDF server-side idêntico ao portal falharam por limitações do ambiente Lambda (sem acesso a browser, libs nativas indisponíveis). O e-mail envia apenas o corpo HTML.
@@ -539,7 +540,7 @@ No admin: campo "E-mail para teste" na seção Relatório.
 |---|---|
 | `services/relatorio_html.py` | Template HTML do e-mail — 100% tabela, compatível com Gmail/Outlook/Apple Mail |
 | `services/relatorio_service.py` | Orquestra: busca dados, gera HTML, envia; aceita `email_teste` |
-| `services/email_service.py` | `send_html()` — SMTP_SSL (465) ou STARTTLS (587) conforme `SMTP_PORT` |
+| `services/email_service.py` | `send_html()` — usa **Resend** quando `RESEND_API_KEY` configurada; fallback SMTP_SSL (465) ou STARTTLS (587) conforme `SMTP_PORT` |
 | `api/v1/avaliacoes.py` | `/fechar` → envia e-mail; `/reenviar-relatorio` aceita `?email_teste=` |
 
 ### Configuração (`tenant_pdf_config`)
@@ -562,9 +563,10 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 
 > O log é visível no painel admin → **Relatório → Log de envios de e-mail**, filtrado por cliente.
 
-### SMTP
-- Vercel env: `SMTP_PORT=587` → STARTTLS | `SMTP_PORT=465` → SSL direto
-- Host: `mail.servicefarma.far.br` | User: `comercial@servicefarma.far.br`
+### Envio de e-mail — Resend (primário) + SMTP (fallback)
+- **Resend:** usado quando `RESEND_API_KEY` está configurada no Vercel. Mais confiável em ambiente serverless (HTTP API, sem problemas de porta/firewall). Pacote `resend==2.10.0` no `requirements.txt`.
+- **SMTP (fallback):** `mail.servicefarma.far.br` | User: `comercial@servicefarma.far.br` | `SMTP_PORT=465` → SSL com `ssl.create_default_context()` | `SMTP_PORT=587` → STARTTLS
+- **`reenviar-relatorio` retorna 400** quando não há destinatários ativos com e-mail (antes retornava 200 vazio, parecendo sucesso)
 
 ---
 
@@ -585,7 +587,7 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 
 ---
 
-## Clientes — Situação atual (2026-05-04)
+## Clientes — Situação atual (2026-05-10)
 
 | Cliente | tenant_id | Lançamentos | Observação |
 |---|---|---|---|
@@ -608,6 +610,9 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 42. **Flag `ativo` do `tenant_pdf_config` ignorada no `/fechar`:** o endpoint enviava e-mail sempre, independente da checkbox "Envio automático ativo". Fix: verificar `cfg.ativo` antes de chamar `enviar_relatorio_para_tenant`. Envios manuais pelo admin não são afetados.
 43. **Campos "Timing de envio" e "Enviar após quantos dias" sem implementação:** existiam na UI e no schema Pydantic mas nunca foram lidos no backend — o envio sempre foi imediato. Fix: removidos do HTML, JS e `PdfConfigRequest`. Campos `envio_timing` e `dias_apos` permanecem no banco mas são ignorados.
 44. **Log de envios ausente:** falhas de SMTP eram silenciadas por `except: pass` sem rastro. Fix: tabela `email_log` no Supabase + `relatorio_service.py` grava sucesso/erro em bloco `finally` após cada envio. Endpoint `GET /admin/email-log` e seção visual no painel admin.
+45. **E-mail não enviado ao fechar lançamento (Drogaria SV, mai/2026):** `email_service.py` usava apenas SMTP direto; servidor `mail.servicefarma.far.br` retornava `535 Incorrect authentication data` para IPs do Vercel (AWS). `RESEND_API_KEY` existia no Vercel mas nunca havia sido integrada ao código. Fix: `email_service.py` agora usa Resend quando `RESEND_API_KEY` configurada, com fallback SMTP. Padrão idêntico ao PEC-SF. Pacote `resend==2.10.0` adicionado ao `requirements.txt`.
+46. **`reenviar-relatorio` mostrava sucesso falso com destinatários vazios:** endpoint retornava 200 com lista vazia quando não havia usuários ativos com e-mail; frontend exibia "PDF reenviado para destinatários cadastrados." Fix: endpoint agora retorna 400 com mensagem clara, igual ao endpoint admin.
+47. **Data de lançamento fechado não podia ser editada:** `AvaliacaoUpdateRequest` não incluía `semana_referencia`; endpoint PATCH e payload do frontend também não a enviavam — a data ficava inalterada após salvar. Fix: campo `semana_referencia` adicionado ao schema, ao endpoint PATCH e ao payload do frontend.
 
 ---
 
