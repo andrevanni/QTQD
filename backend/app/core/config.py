@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     smtp_user:      str = "comercial@servicefarma.far.br"
     smtp_password:  str = ""
     smtp_from_name: str = "QTQD – Service Farma"
+    resend_api_key: str = ""
 
     # Token administrativo para endpoints de admin (X-Admin-Token header)
     admin_token: str = "trocar-este-token"
