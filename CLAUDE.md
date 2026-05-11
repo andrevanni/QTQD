@@ -614,9 +614,48 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 46. **`reenviar-relatorio` mostrava sucesso falso com destinatários vazios:** endpoint retornava 200 com lista vazia quando não havia usuários ativos com e-mail; frontend exibia "PDF reenviado para destinatários cadastrados." Fix: endpoint agora retorna 400 com mensagem clara, igual ao endpoint admin.
 47. **Data de lançamento fechado não podia ser editada:** `AvaliacaoUpdateRequest` não incluía `semana_referencia`; endpoint PATCH e payload do frontend também não a enviavam — a data ficava inalterada após salvar. Fix: campo `semana_referencia` adicionado ao schema, ao endpoint PATCH e ao payload do frontend.
 
+48. **Cadastro de admins no painel admin:** nova seção "Admins" no menu lateral. Tabela `admin_logins` no Supabase (id, email, nome, ativo, is_master, created_at). Endpoints `GET/POST /admin/admins`, `PATCH /admin/admins/{id}/revogar`, `PATCH /admin/admins/{id}/reativar`, `DELETE /admin/admins/{id}`. Convite envia e-mail via Resend com link do painel + ADMIN_TOKEN. Admin master (`andre@servicefarma.far.br`, `is_master=true`) não pode ser revogado nem excluído.
+
+> **Limitação atual:** todos os admins compartilham o mesmo `ADMIN_TOKEN`. "Revogar" apenas marca o registro como inativo no banco — não impede acesso técnico com o token. Autenticação individual por admin (e-mail + senha + JWT) está pendente (ver abaixo).
+
+---
+
+## Admin — Seção "Admins"
+
+| Elemento | Função |
+|---|---|
+| Lista de cards | Exibe todos os admins com nome, e-mail, data de cadastro e badges (master / revogado) |
+| **Convidar administrador** | Formulário com e-mail + nome → cria registro em `admin_logins` + envia e-mail com link e token |
+| Botão **Revogar** | Marca `ativo = false` no banco (não impede acesso técnico) |
+| Botão **Reativar** | Marca `ativo = true` |
+| Botão **Excluir** | Remove permanentemente do banco (bloqueado para master) |
+
+### Arquivos envolvidos
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `backend/app/api/v1/admin_logins.py` | CRUD de admins protegido por `X-Admin-Token` |
+| `frontend_admin/index.html` | Nav "Admins" + seção HTML com lista e formulário de convite |
+| `frontend_admin/script.js` | `loadAdmins()`, `renderAdmins()`, handlers de revogar/reativar/excluir/convidar |
+| `shared/api_client.js` | Métodos `listAdmins`, `convidarAdmin`, `revogarAdmin`, `reativarAdmin`, `excluirAdmin` |
+
+### Tabela `admin_logins` (Supabase)
+
+```sql
+CREATE TABLE IF NOT EXISTS admin_logins (
+  id         uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
+  email      text        NOT NULL UNIQUE,
+  nome       text,
+  ativo      boolean     DEFAULT true,
+  is_master  boolean     DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+```
+
 ---
 
 ## Segurança (pendente)
 
 - Regenerar `SUPABASE_SERVICE_ROLE_KEY` após estabilização
 - Revogar tokens GitHub usados durante implantação inicial
+- **Autenticação individual de admins:** substituir ADMIN_TOKEN compartilhado por login e-mail + senha com JWT por admin. Cada admin teria credenciais próprias no Supabase Auth (`app_metadata.qtqd_admin = true`). Revogação passaria a funcionar de verdade. Padrão: igual ao PEC-SF e Agenda de Compras Web.
