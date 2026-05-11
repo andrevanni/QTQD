@@ -309,6 +309,7 @@ const SECTION_META = {
   enviopdf:   { eyebrow: 'Comunicação',          title: 'Envio de relatório por e-mail' },
   usuarios:   { eyebrow: 'Acesso ao Sistema',    title: 'Usuários do cliente' },
   identidade: { eyebrow: 'Identidade Visual',    title: 'Branding por cliente' },
+  admins:     { eyebrow: 'Controle de Acesso',   title: 'Administradores do sistema' },
   ambiente:   { eyebrow: 'Conexão',              title: 'Ambiente e configurações' },
 };
 
@@ -331,6 +332,7 @@ function openSection(id) {
   if (id === 'usuarios')   loadUsuarios();
   if (id === 'enviopdf')   loadPdfSection();
   if (id === 'identidade') loadBranding();
+  if (id === 'admins')     loadAdmins();
   if (id === 'ambiente')   renderAmbiente();
 }
 
@@ -1194,6 +1196,96 @@ $('testApiConnectionButton')?.addEventListener('click', async () => {
     if (label) label.textContent = '✗ Falhou';
     fb('Falha na conexão: ' + err.message, 'error');
   }
+});
+
+/* ═══════════════════════════════════════════════════════
+   ADMINS
+   ═══════════════════════════════════════════════════════ */
+let adminsData = [];
+
+async function loadAdmins() {
+  try {
+    adminsData = await window.QTQD_API_CLIENT.listAdmins(getToken());
+    renderAdmins();
+  } catch (e) { fb('Erro ao carregar admins: ' + e.message, 'error'); }
+}
+
+function renderAdmins() {
+  const list = $('adminsList');
+  const count = $('adminsCount');
+  if (!list) return;
+
+  if (count) count.textContent = `${adminsData.length} admin(s)`;
+
+  if (!adminsData.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:8px 0">Nenhum admin cadastrado.</p>';
+    return;
+  }
+
+  list.innerHTML = adminsData.map(a => {
+    const criado = a.created_at ? new Date(a.created_at).toLocaleDateString('pt-BR') : '—';
+    const badges = [
+      a.is_master ? '<span class="badge ativo" style="font-size:10px">master</span>' : '',
+      !a.ativo    ? '<span class="badge cancelado" style="font-size:10px">revogado</span>' : '',
+    ].filter(Boolean).join(' ');
+    const acoes = a.is_master ? '' : `
+      <div class="action-row" style="margin-top:8px">
+        ${a.ativo
+          ? `<button class="action-btn" type="button" onclick="revogarAdmin('${a.id}','${a.email}')">Revogar</button>`
+          : `<button class="action-btn" type="button" onclick="reativarAdmin('${a.id}','${a.email}')">Reativar</button>`
+        }
+        <button class="action-btn action-btn--danger" type="button" onclick="excluirAdmin('${a.id}','${a.email}')">Excluir</button>
+      </div>`;
+    return `
+      <article class="entity-card" style="opacity:${a.ativo ? 1 : 0.6}">
+        <div class="entity-card-row">
+          <strong>${a.nome || a.email}</strong>
+          ${badges}
+        </div>
+        <span style="font-size:12px;color:var(--muted)">${a.email}</span>
+        <span style="font-size:11px;color:var(--muted)">Desde ${criado}</span>
+        ${acoes}
+      </article>`;
+  }).join('');
+}
+
+async function revogarAdmin(id, email) {
+  if (!confirm(`Revogar acesso de ${email}?`)) return;
+  try {
+    await window.QTQD_API_CLIENT.revogarAdmin(getToken(), id);
+    fb(`Acesso de ${email} revogado.`, 'success');
+    await loadAdmins();
+  } catch (e) { fb('Erro: ' + e.message, 'error'); }
+}
+
+async function reativarAdmin(id, email) {
+  try {
+    await window.QTQD_API_CLIENT.reativarAdmin(getToken(), id);
+    fb(`Acesso de ${email} reativado.`, 'success');
+    await loadAdmins();
+  } catch (e) { fb('Erro: ' + e.message, 'error'); }
+}
+
+async function excluirAdmin(id, email) {
+  if (!confirm(`Excluir permanentemente o admin ${email}? Esta ação não pode ser desfeita.`)) return;
+  try {
+    await window.QTQD_API_CLIENT.excluirAdmin(getToken(), id);
+    fb(`Admin ${email} excluído.`, 'success');
+    await loadAdmins();
+  } catch (e) { fb('Erro: ' + e.message, 'error'); }
+}
+
+$('adminConviteForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('adminConviteEmail').value.trim();
+  const nome  = $('adminConviteNome').value.trim();
+  if (!email) return;
+  try {
+    await window.QTQD_API_CLIENT.convidarAdmin(getToken(), { email, nome: nome || null });
+    fb(`Convite enviado para ${email}.`, 'success');
+    $('adminConviteForm').reset();
+    await loadAdmins();
+  } catch (e) { fb('Erro: ' + e.message, 'error'); }
 });
 
 /* ═══════════════════════════════════════════════════════

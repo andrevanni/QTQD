@@ -262,6 +262,23 @@
       return request(base(`/admin/usuarios/${id}/enviar-convite`), { method: 'POST', headers: adminHeaders(adminToken) });
     },
 
+    /* ── Admin — admins (controle de acesso) ────────── */
+    listAdmins(adminToken) {
+      return request(base('/admin/admins'), { method: 'GET', headers: adminHeaders(adminToken) });
+    },
+    convidarAdmin(adminToken, payload) {
+      return request(base('/admin/admins'), { method: 'POST', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
+    },
+    revogarAdmin(adminToken, id) {
+      return request(base(`/admin/admins/${id}/revogar`), { method: 'PATCH', headers: adminHeaders(adminToken) });
+    },
+    reativarAdmin(adminToken, id) {
+      return request(base(`/admin/admins/${id}/reativar`), { method: 'PATCH', headers: adminHeaders(adminToken) });
+    },
+    excluirAdmin(adminToken, id) {
+      return request(base(`/admin/admins/${id}`), { method: 'DELETE', headers: adminHeaders(adminToken) });
+    },
+
     /* ── Admin — importações ─────────────────────────── */
     listImportacoes(adminToken, tenantId) {
       const qs = tenantId ? `?tenant_id=${tenantId}` : '';

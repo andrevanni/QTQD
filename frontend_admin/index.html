@@ -65,6 +65,10 @@
             <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg></span>
             <span class="nav-label">Identidade Visual</span>
           </button>
+          <button class="nav-link" data-section="admins" type="button">
+            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg></span>
+            <span class="nav-label">Admins</span>
+          </button>
           <button class="nav-link" data-section="ambiente" type="button">
             <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm14 1a1 1 0 11-2 0 1 1 0 012 0zM2 13a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2zm14 1a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"/></svg></span>
             <span class="nav-label">Ambiente</span>
@@ -370,6 +374,36 @@
                 </div>
                 <strong id="brandingPreviewName">Cliente Demonstração</strong>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Admins ────────────────────────────────────── -->
+        <section id="admins" class="admin-section hidden">
+          <div class="board two-column">
+            <div>
+              <div class="board-header">
+                <h2 class="board-title">Administradores <span id="adminsCount" class="badge" style="font-size:11px"></span></h2>
+              </div>
+              <div id="adminsList" class="card-list"></div>
+            </div>
+            <div class="form-panel">
+              <div class="board-header">
+                <h2 class="board-title">Convidar administrador</h2>
+              </div>
+              <form id="adminConviteForm" class="stack-form">
+                <label class="field">
+                  <span>E-mail</span>
+                  <input id="adminConviteEmail" type="email" required placeholder="email@exemplo.com" autocomplete="off">
+                </label>
+                <label class="field">
+                  <span>Nome (opcional)</span>
+                  <input id="adminConviteNome" type="text" placeholder="Nome do administrador" autocomplete="off">
+                </label>
+                <div class="form-actions">
+                  <button class="btn" type="submit">Enviar convite</button>
+                </div>
+              </form>
             </div>
           </div>
         </section>
