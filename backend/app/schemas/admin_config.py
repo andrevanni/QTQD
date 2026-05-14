@@ -70,12 +70,10 @@ class ComponenteConfigResponse(ComponenteConfigItem):
 
 
 class PdfConfigRequest(BaseModel):
-    n_retratos:            int  = 8
-    incluir_inspetor:      bool = False
-    incluir_graficos:      bool = False
-    ativo:                 bool = True
-    rascunhos_ativo:       bool = False
-    rascunhos_dia_semana:  int  = 1   # 1=Seg … 7=Dom
+    n_retratos:       int  = 8
+    incluir_inspetor: bool = False
+    incluir_graficos: bool = False
+    ativo:            bool = True
 
 
 class PdfConfigResponse(PdfConfigRequest):

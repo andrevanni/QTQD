@@ -230,10 +230,6 @@
       const qs = emailTeste ? `?email_teste=${encodeURIComponent(emailTeste)}` : '';
       return request(base(`/admin/enviar-relatorio/${tenantId}${qs}`), { method: 'POST', headers: adminHeaders(adminToken) });
     },
-    enviarAcompanhamento(adminToken, tenantId, emailTeste) {
-      const qs = emailTeste ? `?email_teste=${encodeURIComponent(emailTeste)}` : '';
-      return request(base(`/admin/enviar-acompanhamento/${tenantId}${qs}`), { method: 'POST', headers: adminHeaders(adminToken) });
-    },
     getEmailLog(adminToken, tenantId, limit = 100) {
       const qs = new URLSearchParams({ limit });
       if (tenantId) qs.set('tenant_id', tenantId);

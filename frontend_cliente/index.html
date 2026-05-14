@@ -157,13 +157,6 @@
         <span class="nav-label">Histórico</span>
       </button>
 
-      <button class="nav-link" data-section="acompanhamento" type="button">
-        <span class="nav-icon">
-          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
-        </span>
-        <span class="nav-label">Acompanhamento</span>
-      </button>
-
       <button class="nav-link" data-section="cadastro" type="button">
         <span class="nav-icon">
           <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
@@ -610,41 +603,6 @@
           <canvas id="liquidityChart"></canvas>
         </div>
 
-      </div>
-    </section>
-
-    <!-- ═══ SEÇÃO: Acompanhamento de Rascunhos ═══ -->
-    <section id="acompanhamento" class="section-view hidden">
-      <div class="page-hero">
-        <h1 class="page-hero-title">Acompanhamento</h1>
-        <p class="page-hero-sub">Status dos lançamentos — confirmados e pendentes de fechamento</p>
-      </div>
-
-      <!-- Seletor de visualização -->
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <button id="acompMesAtualBtn" class="primary-button" type="button"
-          onclick="renderAcompanhamento('mes_atual')">📅 Mês Atual</button>
-        <button id="acompHistoricoBtn" class="secondary-button" type="button"
-          onclick="renderAcompanhamento('historico')">📊 Últimos 3 Meses</button>
-      </div>
-
-      <!-- Resumo KPIs -->
-      <div id="acompKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;"></div>
-
-      <!-- Tabela -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <p class="eyebrow" id="acompEyebrow">Mês Atual</p>
-            <h2 class="card-title" id="acompTitle">Lançamentos do mês</h2>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table id="acompTable">
-            <thead id="acompThead"></thead>
-            <tbody id="acompTbody"></tbody>
-          </table>
-        </div>
       </div>
     </section>
 

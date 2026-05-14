@@ -163,22 +163,6 @@ def enviar_relatorio(tenant_id: UUID, email_teste: str | None = None) -> dict:
     return {"ok": True, "enviado_para": destinatarios}
 
 
-@router.post("/enviar-acompanhamento/{tenant_id}", status_code=200)
-def enviar_acompanhamento(tenant_id: UUID, email_teste: str | None = None, meses: int = 3) -> dict:
-    """Envia o relatório de acompanhamento de rascunhos para o tenant."""
-    from backend.app.services.relatorio_rascunhos_service import enviar_acompanhamento_rascunhos
-    sb = get_supabase()
-    try:
-        destinatarios = enviar_acompanhamento_rascunhos(
-            str(tenant_id), sb, email_teste=email_teste, origem="admin", meses=meses
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao enviar acompanhamento: {e}")
-    if not destinatarios:
-        raise HTTPException(status_code=400, detail="Nenhum usuario ativo com e-mail ou nenhum lancamento encontrado.")
-    return {"ok": True, "enviado_para": destinatarios}
-
-
 @router.get("/email-log")
 def listar_email_log(tenant_id: UUID | None = None, limit: int = 100) -> list[dict]:
     """Retorna o histórico de envios de e-mail, opcionalmente filtrado por tenant."""
