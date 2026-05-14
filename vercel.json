@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "crons": [
+    {
+      "path": "/api/v1/cron/acompanhamento-semanal",
+      "schedule": "0 9 * * 1"
+    }
+  ],
   "builds": [
     {
       "src": "api/index.py",

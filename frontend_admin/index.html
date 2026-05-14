@@ -265,6 +265,28 @@
                   <span>E-mail para teste (deixe vazio para enviar a todos)</span>
                   <input id="pdfEmailTeste" type="email" placeholder="email@exemplo.com" autocomplete="off">
                 </label>
+                <!-- Acompanhamento semanal de rascunhos -->
+                <div style="padding:14px;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border);border-left:3px solid #f59e0b;">
+                  <p style="margin:0 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#d97706;">📋 Acompanhamento Semanal de Rascunhos</p>
+                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:10px;">
+                    <input id="rascunhosAtivo" type="checkbox"> Envio automático semanal ativo
+                  </label>
+                  <label class="field" style="margin-bottom:8px;max-width:240px;">
+                    <span style="font-size:12px;">Dia da semana</span>
+                    <select id="rascunhosDiaSemana" style="font-size:13px;">
+                      <option value="1">Segunda-feira</option>
+                      <option value="2">Terça-feira</option>
+                      <option value="3">Quarta-feira</option>
+                      <option value="4">Quinta-feira</option>
+                      <option value="5">Sexta-feira</option>
+                      <option value="6">Sábado</option>
+                      <option value="7">Domingo</option>
+                    </select>
+                  </label>
+                  <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Envia o status de todos os lançamentos dos últimos 3 meses — confirmados e pendentes.</p>
+                  <button id="sendAcompBtn" class="secondary-button" type="button" style="font-size:12px;padding:6px 14px;">📋 Enviar acompanhamento agora</button>
+                </div>
+
                 <div class="hero-actions" style="flex-wrap:wrap;gap:8px">
                   <button id="savePdfConfigBtn" class="primary-button" type="button">Salvar configuração</button>
                   <button id="sendNowBtn" class="secondary-button" type="button">📧 Enviar relatório</button>

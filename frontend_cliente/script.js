@@ -104,7 +104,87 @@ function renderInspector(){const m=buildInspectorModel();if(!m){$('inspectorInit
 function generateInspectorCharts(){const m=buildInspectorModel();if(!m||!window.Chart)return;destroyInspectorCharts();const slice=m.ordered.slice(-52);const labels=slice.map(i=>fmtDate(i.weekDate)),ink=getComputedStyle(document.body).getPropertyValue('--ink').trim(),muted=getComputedStyle(document.body).getPropertyValue('--muted').trim();efficiencyChartInstance=new Chart($('efficiencyChart'),{type:'line',data:{labels,datasets:[{label:'Índice QT/QD',data:slice.map(i=>i.indice_qt_qd||0),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',tension:.3,fill:false,yAxisID:'y2',pointRadius:slice.length>30?1:3},{label:'QT',data:slice.map(i=>i.qt_total),borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.08)',tension:.3,fill:false,pointRadius:0},{label:'QD',data:slice.map(i=>i.qd_total),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.08)',tension:.3,fill:false,pointRadius:0},{label:'Saldo',data:slice.map(i=>i.saldo_qt_qd),borderColor:'#f59e0b',tension:.3,fill:false,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:ink,boxWidth:12,font:{size:11}}}},scales:{x:{ticks:{color:muted,maxTicksLimit:12,font:{size:10}}},y:{ticks:{color:muted,callback:v=>fmtNum(v/1e6)+'M'},position:'left'},y2:{ticks:{color:'#2563eb',callback:v=>fmtNum(v)},position:'right',grid:{drawOnChartArea:false}}}}})}
 async function generateInspectorPdf(){renderInspector();generateInspectorCharts();await new Promise(r=>setTimeout(r,1000));const m=buildInspectorModel();const narrative=$("inspectorNarrative");if(m&&narrative){narrative.innerHTML=parseInspectorMd(buildInspectorNarrative(m))}const statusEl=$("inspectorAnalysisStatus");if(statusEl){statusEl.className="insp-ai-status done";statusEl.textContent="✓ Concluído"}const b=getBranding();const pName=$("printClientName"),pLogo=$("printClientLogo"),pDate=$("printDate");if(pName)pName.textContent=b.clientName||"—";if(pDate)pDate.textContent="Gerado em "+new Date().toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});if(pLogo){if(b.clientLogoUrl){pLogo.src=b.clientLogoUrl;pLogo.style.display="block"}else pLogo.style.display="none"}window.print()}
 function setSidebarCollapsed(collapse){document.body.classList.remove("sidebar-collapsed","sidebar-open")}
-function openSection(id){document.querySelectorAll(".section-view").forEach(s=>s.classList.toggle("hidden",s.id!==id));document.querySelectorAll(".nav-link[data-section]").forEach(b=>b.classList.toggle("active",b.dataset.section===id));if(id==="painel"){populateYearFilter();renderMatrix()}if(id==="graficos")renderChartsPanel();if(id==="inspetor"){renderInspector();generateInspectorCharts()}setSidebarCollapsed(id!=="cadastro")}
+function openSection(id){document.querySelectorAll(".section-view").forEach(s=>s.classList.toggle("hidden",s.id!==id));document.querySelectorAll(".nav-link[data-section]").forEach(b=>b.classList.toggle("active",b.dataset.section===id));if(id==="painel"){populateYearFilter();renderMatrix()}if(id==="graficos")renderChartsPanel();if(id==="inspetor"){renderInspector();generateInspectorCharts()}if(id==="acompanhamento")renderAcompanhamento("mes_atual");setSidebarCollapsed(id!=="cadastro")}
+
+// ─── Acompanhamento de Rascunhos ────────────────────────────────────────────
+let _acompMode="mes_atual";
+function renderAcompanhamento(mode){
+  _acompMode=mode||_acompMode;
+  const now=new Date();
+  const curYear=now.getFullYear(),curMonth=now.getMonth();
+  // Botões de modo
+  const btnMes=document.getElementById("acompMesAtualBtn"),btnHist=document.getElementById("acompHistoricoBtn");
+  if(btnMes&&btnHist){if(_acompMode==="mes_atual"){btnMes.className="primary-button";btnHist.className="secondary-button"}else{btnMes.className="secondary-button";btnHist.className="primary-button"}}
+
+  if(_acompMode==="mes_atual"){
+    // Registros do mês atual (todos os status)
+    const mesRecs=records.filter(r=>{const d=new Date(r.weekDate);return d.getFullYear()===curYear&&d.getMonth()===curMonth}).sort((a,b)=>a.weekDate.localeCompare(b.weekDate));
+    const nRasc=mesRecs.filter(r=>r.status==="rascunho").length;
+    const nConf=mesRecs.length-nRasc;
+    const mesNome=now.toLocaleString("pt-BR",{month:"long",year:"numeric"});
+    // KPIs
+    const kpis=document.getElementById("acompKpis");
+    if(kpis)kpis.innerHTML=`
+      <div class="stat-card"><p class="stat-label">Total</p><p class="stat-value">${mesRecs.length}</p></div>
+      <div class="stat-card" style="border-color:#16a34a"><p class="stat-label">✅ Confirmados</p><p class="stat-value" style="color:#16a34a">${nConf}</p></div>
+      <div class="stat-card" style="border-color:${nRasc>0?"#f59e0b":"#e2e8f0"}"><p class="stat-label">⚠️ Rascunhos</p><p class="stat-value" style="color:${nRasc>0?"#d97706":"#374151"}">${nRasc}</p></div>`;
+    // Título
+    const ey=document.getElementById("acompEyebrow"),ti=document.getElementById("acompTitle");
+    if(ey)ey.textContent="Mês Atual";if(ti)ti.textContent=`Lançamentos de ${mesNome.charAt(0).toUpperCase()+mesNome.slice(1)}`;
+    // Tabela
+    const thead=document.getElementById("acompThead"),tbody=document.getElementById("acompTbody");
+    if(thead)thead.innerHTML=`<tr><th>Semana</th><th>Status</th><th>QT Total</th><th>QD Total</th><th>Saldo</th><th>Índice</th><th>Ação</th></tr>`;
+    if(tbody){
+      if(!mesRecs.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Nenhum lançamento neste mês.</td></tr>`;return}
+      tbody.innerHTML=mesRecs.map(r=>{
+        const vals=r.valores||{};const calcs=r.calculated||{};
+        const qt=fmtMoneyShort(calcs.qt_total||0),qd=fmtMoneyShort(calcs.qd_total||0);
+        const saldo=calcs.saldo_qt_qd;const ind=calcs.indice_qt_qd;
+        const saldoCor=saldo>=0?"#16a34a":"#dc2626";
+        const indCor=ind>=1.5?"#16a34a":ind>=1.0?"#d97706":"#dc2626";
+        const badge=r.status==="rascunho"
+          ?`<span class="badge badge-warning">⚠ Rascunho</span>`
+          :`<span class="badge badge-success">✓ ${r.status==="finalizado"?"Finalizado":"Fechado"}</span>`;
+        const acao=r.status==="rascunho"&&canEdit()
+          ?`<button class="secondary-button btn-sm" onclick="fecharAvaliacao('${r.id}')">Fechar</button>`:"";
+        const rowStyle=r.status==="rascunho"?"background:#fffbeb;border-left:3px solid #f59e0b":"";
+        return`<tr style="${rowStyle}"><td>${isoToBr(r.weekDate)}</td><td>${badge}</td><td>${qt}</td><td>${qd}</td><td style="color:${saldoCor};font-weight:700">${saldo!=null?fmtMoneyShort(saldo):"—"}</td><td style="color:${indCor};font-weight:700">${ind!=null?fmtNum(ind)+"x":"—"}</td><td>${acao}</td></tr>`
+      }).join("")
+    }
+  } else {
+    // Histórico: últimos 3 meses como colunas
+    const meses=Array.from({length:3},(_,i)=>{const d=new Date(curYear,curMonth-2+i,1);return{year:d.getFullYear(),month:d.getMonth(),label:d.toLocaleString("pt-BR",{month:"short",year:"2-digit"})}});
+    const ey=document.getElementById("acompEyebrow"),ti=document.getElementById("acompTitle");
+    if(ey)ey.textContent="Histórico";if(ti)ti.textContent="Comparativo dos últimos 3 meses";
+    // Agrupa registros por mês
+    const byMes=meses.map(m=>records.filter(r=>{const d=new Date(r.weekDate);return d.getFullYear()===m.year&&d.getMonth()===m.month}).sort((a,b)=>a.weekDate.localeCompare(b.weekDate)));
+    // KPIs: total, confirmados, rascunhos para o mês mais recente
+    const recente=byMes[2]||[];const nRasc=recente.filter(r=>r.status==="rascunho").length;
+    const kpis=document.getElementById("acompKpis");
+    if(kpis)kpis.innerHTML=`
+      <div class="stat-card"><p class="stat-label">Mês atual — Total</p><p class="stat-value">${recente.length}</p></div>
+      <div class="stat-card" style="border-color:#16a34a"><p class="stat-label">✅ Confirmados</p><p class="stat-value" style="color:#16a34a">${recente.length-nRasc}</p></div>
+      <div class="stat-card" style="border-color:${nRasc>0?"#f59e0b":"#e2e8f0"}"><p class="stat-label">⚠️ Rascunhos</p><p class="stat-value" style="color:${nRasc>0?"#d97706":"#374151"}">${nRasc}</p></div>`;
+    // Tabela pivot: colunas = meses, linhas = por posição de semana (1ª, 2ª, ...)
+    const thead=document.getElementById("acompThead"),tbody=document.getElementById("acompTbody");
+    if(thead)thead.innerHTML=`<tr><th>Semana</th>${meses.map(m=>`<th colspan="3" style="text-align:center">${m.label.toUpperCase()}</th>`).join("")}</tr><tr><th></th>${meses.map(()=>`<th>Status</th><th>QT</th><th>Saldo</th>`).join("")}</tr>`;
+    if(tbody){
+      const maxRows=Math.max(...byMes.map(m=>m.length),1);
+      tbody.innerHTML=Array.from({length:maxRows},(_,i)=>{
+        const semNum=`${i+1}ª sem.`;
+        const cols=meses.map((m,mi)=>{
+          const r=byMes[mi][i];if(!r)return`<td colspan="3" style="color:var(--muted);text-align:center">—</td>`;
+          const calcs=r.calculated||{};const saldo=calcs.saldo_qt_qd;
+          const badge=r.status==="rascunho"?`<span style="color:#d97706;font-size:11px;font-weight:700">⚠ Rasc.</span>`:`<span style="color:#16a34a;font-size:11px;font-weight:700">✓ OK</span>`;
+          const saldoCor=saldo>=0?"#16a34a":"#dc2626";
+          const rowStyle=r.status==="rascunho"?"background:#fffbeb":"";
+          return`<td style="${rowStyle}">${badge}</td><td style="${rowStyle}">${fmtMoneyShort(calcs.qt_total||0)}</td><td style="${rowStyle};color:${saldoCor};font-weight:700">${saldo!=null?fmtMoneyShort(saldo):"—"}</td>`;
+        }).join("");
+        return`<tr><td style="font-weight:600;white-space:nowrap">${semNum}</td>${cols}</tr>`;
+      }).join("")
+    }
+  }
+}
 document.getElementById("matrixYearFilter")?.addEventListener("change",()=>renderMatrix());
 function renderChartFieldOptions(){const ALWAYS=['saldo_qt_qd','indice_qt_qd'];let html='';let inGroup=false;let groupImplied='';const impliedHeaders={qt_total:'QT — Quanto Tenho',qd_total:'QD — Quanto Devo',saldo_qt_qd:'Indicadores QT/QD'};matrixRows.forEach(row=>{if(row.type==='empty')return;if(row.type==='section'){if(inGroup)html+='</div></div>';html+=`<div class="chart-field-group"><div class="chart-field-group-label">${row.label}</div><div class="chart-field-pills">`;inGroup=true;return}if(row.rowClass==='row-header'&&impliedHeaders[row.key]){if(inGroup)html+='</div></div>';html+=`<div class="chart-field-group"><div class="chart-field-group-label">${impliedHeaders[row.key]}</div><div class="chart-field-pills">`;inGroup=true}if(!row.key)return;if(!ALWAYS.includes(row.key)&&!isFieldVisible(row.key))return;const chk=chartState.fields.includes(row.key)?'checked':'';const lbl=getFieldLabel(row.key,row.label);html+=`<label class="chart-field-option"><input type="checkbox" value="${row.key}" ${chk}><span>${lbl}</span></label>`});if(inGroup)html+='</div></div>';chartFieldsGrid.innerHTML=html;chartFieldsGrid.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>{chartState.fields=Array.from(chartFieldsGrid.querySelectorAll('input:checked')).map(i=>i.value);renderChartsPanel()}))}
 function aggregateRecords(range,count){const ordered=[...publishedRecords()].sort((a,b)=>a.weekDate.localeCompare(b.weekDate));if(range==="weeks")return ordered.slice(-count).map(i=>({label:fmtDate(i.weekDate),record:i}));const grouped=new Map();ordered.forEach(i=>{const d=new Date(`${i.weekDate}T00:00:00`);const key=range==="months"?`${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`:`${d.getFullYear()}`;grouped.set(key,i)});return Array.from(grouped.entries()).slice(-count).map(([label,record])=>({label,record}))}

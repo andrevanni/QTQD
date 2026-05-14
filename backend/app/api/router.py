@@ -7,6 +7,7 @@ from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.avaliacoes import router as avaliacoes_router
 from backend.app.api.v1.cliente_config import router as cliente_config_router
 from backend.app.api.v1.importacao import router as importacao_router
+from backend.app.api.v1.cron import router as cron_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -22,3 +23,4 @@ api_router.include_router(admin_clientes_router)
 api_router.include_router(admin_config_router)
 api_router.include_router(admin_logins_router)
 api_router.include_router(importacao_router)
+api_router.include_router(cron_router)

@@ -176,8 +176,10 @@ $('pdfClient')?.addEventListener('change', async () => {
   if (!tenantId) { panel.classList.add('hidden'); return; }
 
   // Limpa para não mostrar dados do cliente anterior enquanto carrega
-  $('pdfNRetratos').value  = 8;
-  $('pdfAtivo').checked    = true;
+  $('pdfNRetratos').value        = 8;
+  $('pdfAtivo').checked          = true;
+  $('rascunhosAtivo').checked    = false;
+  $('rascunhosDiaSemana').value  = '1';
   $('pdfDestinatariosList').innerHTML = '';
   panel.classList.remove('hidden');
 
@@ -185,8 +187,10 @@ $('pdfClient')?.addEventListener('change', async () => {
   try {
     const cfg = await window.QTQD_API_CLIENT.getPdfConfig(getToken(), tenantId);
     if (cfg) {
-      $('pdfNRetratos').value = cfg.n_retratos ?? 8;
-      $('pdfAtivo').checked   = cfg.ativo ?? true;
+      $('pdfNRetratos').value       = cfg.n_retratos ?? 8;
+      $('pdfAtivo').checked         = cfg.ativo ?? true;
+      $('rascunhosAtivo').checked   = cfg.rascunhos_ativo ?? false;
+      $('rascunhosDiaSemana').value = String(cfg.rascunhos_dia_semana ?? 1);
     }
   } catch {}
 
@@ -216,12 +220,30 @@ $('savePdfConfigBtn')?.addEventListener('click', async () => {
   const tenantId = $('pdfClient').value;
   if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
   const payload = {
-    n_retratos: parseInt($('pdfNRetratos').value || '8'),
-    ativo:      $('pdfAtivo').checked,
+    n_retratos:           parseInt($('pdfNRetratos').value || '8'),
+    ativo:                $('pdfAtivo').checked,
+    rascunhos_ativo:      $('rascunhosAtivo').checked,
+    rascunhos_dia_semana: parseInt($('rascunhosDiaSemana').value || '1'),
   };
   try {
     await window.QTQD_API_CLIENT.savePdfConfig(getToken(), tenantId, payload);
     fb('Configuração de envio salva.', 'success');
+  } catch (e) { fb('Erro: ' + e.message, 'error'); }
+});
+
+$('sendAcompBtn')?.addEventListener('click', async () => {
+  const tenantId = $('pdfClient').value;
+  if (!tenantId) { fb('Selecione um cliente.', 'error'); return; }
+  const emailTeste = ($('pdfEmailTeste')?.value || '').trim();
+  const clientNome = clients.find(c => c.id === tenantId)?.nome || 'cliente';
+  const dest = emailTeste ? `apenas para ${emailTeste}` : `todos os usuários de "${clientNome}"`;
+  if (!confirm(`Enviar acompanhamento de rascunhos para ${dest}?`)) return;
+  fb('Enviando...', 'info');
+  try {
+    const params = emailTeste ? `?email_teste=${encodeURIComponent(emailTeste)}` : '';
+    await window.QTQD_API_CLIENT.enviarAcompanhamento(getToken(), tenantId, emailTeste || null);
+    fb('Acompanhamento enviado com sucesso!', 'success');
+    loadEmailLog(tenantId);
   } catch (e) { fb('Erro: ' + e.message, 'error'); }
 });
 
