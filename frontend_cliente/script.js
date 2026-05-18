@@ -63,42 +63,140 @@ function buildInspectorModel(){const ordered=[...publishedRecords()].sort((a,b)=
 function destroyInspectorCharts(){if(liquidityChartInstance)liquidityChartInstance.destroy();if(efficiencyChartInstance)efficiencyChartInstance.destroy();liquidityChartInstance=null;efficiencyChartInstance=null}
 function parseInspectorMd(text){return text.split('\n').map(line=>{if(/^\*\*\d+\./.test(line))return`<div class="stream-section">${line.replace(/\*\*/g,'')}</div>`;if(line.startsWith('- '))return`<div class="stream-bullet">${line.slice(2).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</div>`;if(!line.trim())return'<div class="stream-spacer"></div>';return`<div class="stream-line">${line.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</div>`}).join('')}
 function streamInspectorText(el,text){const statusEl=$('inspectorAnalysisStatus');if(statusEl){statusEl.className='insp-ai-status analyzing';statusEl.textContent='Analisando...'}el.innerHTML='<span class="insp-cursor"></span>';let i=0;const iv=setInterval(()=>{i+=5;const chunk=text.slice(0,i);el.innerHTML=parseInspectorMd(chunk)+'<span class="insp-cursor"></span>';if(i>=text.length){clearInterval(iv);el.innerHTML=parseInspectorMd(text);if(statusEl){statusEl.className='insp-ai-status done';statusEl.textContent='✓ Concluído'}}},12)}
-function buildInspectorNarrative(m){const l=m.latest,idx=l.indice_qt_qd||0,saldo=l.saldo_qt_qd,pmp=l.pmp||0,pmv=l.pmv||0,pme=l.pme_excel||l.pme||0,ciclo=l.ciclo_financiamento;const sit=idx>=1.1?'confortável':idx>=1?'próxima do equilíbrio':idx>=0.85?'abaixo do ideal':'crítica';const trend=m.indice.length>4?(m.indice[m.indice.length-1]>m.indice[m.indice.length-5]?'em recuperação':'em queda'):'estável';const qtComps=[['Estoque',l.estoque_custo||0],['Cartões',matrixVal(l,'cartoes')||l.cartoes||0],['Convênios',matrixVal(l,'convenios')||l.convenios||0],['Saldo bancário',l.saldo_bancario||0],['Trade marketing',l.trade_marketing||0],['Outros QT',l.outros_qt||0],['Cheques',l.cheques||0]].filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);const qdComps=[['Financiamentos',l.financiamentos||0],['Fornecedores',l.fornecedores||0],['Outras despesas',l.outras_despesas_assumidas||0],['Investimentos',l.investimentos_assumidos||0],['Tributos',l.tributos_atrasados||0],['Ações/Processos',l.acoes_processos||0]].filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);const topQt=qtComps[0];const topQd=qdComps[0];
-return`**1. Situação Atual**
-A semana de **${fmtDate(l.weekDate)}** fechou com QT de **${fmtMoney(l.qt_total)}** e QD de **${fmtMoney(l.qd_total)}**, gerando saldo de **${fmtMoney(saldo)}** e Índice QT/QD de **${fmtNum(idx)}** — situação ${sit}, tendência ${trend}.
+function buildInspectorNarrative(m){
+  const ordered=m.ordered, l=m.latest, n=ordered.length;
+  const prev=n>=2?ordered[n-2]:null;
+  const prev4=n>=5?ordered[n-5]:null;
+  const idx=l.indice_qt_qd||0, pmp=l.pmp||0, pmv=l.pmv||0, pme=l.pme_excel||l.pme||0, ciclo=l.ciclo_financiamento;
 
-**2. Composição do QT — Quanto Tenho**
-${topQt?`O ativo principal é **${topQt[0]}** (${fmtMoney(topQt[1])}), correspondendo a ${fmtNum((topQt[1]/l.qt_total)*100)}% do QT.`:''}${qtComps[1]?` Em seguida, **${qtComps[1][0]}** com ${fmtMoney(qtComps[1][1])} (${fmtNum((qtComps[1][1]/l.qt_total)*100)}%).`:''}${l.saldo_bancario<0?' O **saldo bancário está negativo**, indicando saldo devedor em conta.':''}
+  // ── Funções auxiliares ──
+  const slope=(arr,w=8)=>{const d=arr.filter(v=>v!=null&&!isNaN(v)).slice(-w);const len=d.length;if(len<3)return 0;const xm=(len-1)/2,ym=d.reduce((a,b)=>a+b,0)/len;let num=0,den=0;d.forEach((y,i)=>{num+=(i-xm)*(y-ym);den+=(i-xm)**2;});return den?num/den:0;};
+  const ma=(arr,w)=>{const d=arr.filter(v=>v!=null&&!isNaN(v)).slice(-w);return d.length?d.reduce((a,b)=>a+b,0)/d.length:0;};
+  const pctDiff=(a,b)=>(a&&Math.abs(a)>0.01)?(b-a)/Math.abs(a):null;
+  const fmtPct=v=>v===null?'':` (${v>=0?'+':''}${fmtNum(v*100)}%)`;
+  const fmtDelta=v=>v===null?'':` (${v>=0?'+':''}${fmtMoneyShort(v)})`;
+  const consec=(arr,dir)=>{let c=0;for(let i=arr.length-1;i>0;i--){if(dir==='up'&&arr[i]>arr[i-1])c++;else if(dir==='dn'&&arr[i]<arr[i-1])c++;else break;}return c;};
 
-**3. Composição do QD — Quanto Devo**
-${topQd?`O maior passivo é **${topQd[0]}** (${fmtMoney(topQd[1])}), representando ${fmtNum((topQd[1]/l.qd_total)*100)}% do QD.`:''} ${qdComps[1]?`Seguido por **${qdComps[1][0]}** com ${fmtMoney(qdComps[1][1])} (${fmtNum((qdComps[1][1]/l.qd_total)*100)}%).`:''}
+  // ── Tendências ──
+  const idxSlope=slope(m.indice,8);
+  const qtSlope=slope(m.qt,8);
+  const qdSlope=slope(m.qd,8);
+  const cicloVals=m.ciclo.filter(v=>v!=null);
+  const cicloSlope=slope(cicloVals,8);
+  const idxAvg4=ma(m.indice,4), idxAvg8=ma(m.indice,8);
+  const pmpAvg=ma(m.pmp,8), pmvAvg=ma(m.pmv,8), pmeAvg=ma(m.pme,8);
+  const idxProj4=idx+idxSlope*4;
+  const idxConsecUp=consec(m.indice,'up'), idxConsecDn=consec(m.indice,'dn');
 
-**4. Prazos e Ciclo Financeiro**
-${pmp>0?`PMP: **${fmtDays(pmp)}** — prazo médio que a farmácia tem para pagar fornecedores.`:'PMP não informado para este período.'}
-${pmv>0?`PMV: **${fmtDays(pmv)}** — prazo médio para receber dos clientes.`:'PMV não informado para este período.'}
-${pme>0?`PME: **${fmtDays(pme)}** — cobertura média de estoque.`:''}
-${ciclo!=null?`Ciclo de financiamento: **${fmtDays(ciclo)}**${ciclo>=0?' (favorável — fornecedores financiam a operação)':` (desfavorável — a farmácia financia ${fmtDays(Math.abs(ciclo))} de capital de giro)`}.`:'Ciclo não calculado — informe PMP e PMV.'}
+  // ── Variações semanais ──
+  const dIdx=prev?idx-(prev.indice_qt_qd||0):null;
+  const dQT=prev?l.qt_total-prev.qt_total:null;
+  const dQD=prev?l.qd_total-prev.qd_total:null;
+  const dSaldo=prev?l.saldo_qt_qd-prev.saldo_qt_qd:null;
+
+  // Maiores movimentos nos componentes QT (semana a semana)
+  const qtMoves=prev?[
+    ['Cartões',       matrixVal(l,'cartoes'),    matrixVal(prev,'cartoes')],
+    ['Convênios',     l.convenios||0,            prev.convenios||0],
+    ['Saldo bancário',l.saldo_bancario||0,       prev.saldo_bancario||0],
+    ['Estoque',       l.estoque_custo||0,        prev.estoque_custo||0],
+    ['Trade marketing',l.trade_marketing||0,     prev.trade_marketing||0],
+  ].map(([nm,v,p])=>[nm,v-p,pctDiff(p,v)]).filter(([,d])=>Math.abs(d)>500).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,3):[];
+
+  // Maiores movimentos nos componentes QD
+  const qdMoves=prev?[
+    ['Fornecedores',        l.fornecedores||0,              prev.fornecedores||0],
+    ['Financiamentos',      l.financiamentos||0,            prev.financiamentos||0],
+    ['Outras despesas',     l.outras_despesas_assumidas||0, prev.outras_despesas_assumidas||0],
+    ['Investimentos',       l.investimentos_assumidos||0,   prev.investimentos_assumidos||0],
+    ['Tributos atrasados',  l.tributos_atrasados||0,        prev.tributos_atrasados||0],
+  ].map(([nm,v,p])=>[nm,v-p,pctDiff(p,v)]).filter(([,d])=>Math.abs(d)>500).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,3):[];
+
+  // ── Textos de tendência ──
+  const sit=idx>=1.2?'confortável':idx>=1?'no limite do equilíbrio':idx>=0.8?'abaixo do ideal':'crítica';
+  let tendTxt='';
+  if(idxConsecDn>=3)tendTxt=`**${idxConsecDn}ª semana consecutiva de queda** no índice`;
+  else if(idxConsecUp>=3)tendTxt=`**${idxConsecUp}ª semana consecutiva de recuperação**`;
+  else if(Math.abs(idxSlope)<0.005)tendTxt='índice **estável** nas últimas semanas';
+  else tendTxt=idxSlope>0?'tendência de **recuperação gradual**':'tendência de **deterioração gradual**';
+
+  let projTxt='';
+  if(n>=4&&Math.abs(idxSlope)>=0.003){
+    const dir=idxSlope>0?'chegar a':'cair para';
+    projTxt=`Mantida a velocidade atual, o índice deve ${dir} **${fmtNum(idxProj4)}** em 4 semanas.`;
+  }
+
+  // ── Situação do ciclo ──
+  let cicloTxt='';
+  if(ciclo!=null&&pmp>0&&pmv>0){
+    const cicloMa=ma(cicloVals,8);
+    const cicloDelta=cicloVals.length>=2?ciclo-cicloVals[cicloVals.length-2]:null;
+    cicloTxt=`Ciclo de financiamento: **${fmtDays(ciclo)}** `;
+    cicloTxt+=ciclo>=0?'(favorável — fornecedores financiam a operação)':'(desfavorável — farmácia financia o capital de giro)';
+    if(cicloVals.length>=4)cicloTxt+=`, média histórica **${fmtDays(cicloMa)}**`;
+    if(cicloDelta!=null&&Math.abs(cicloDelta)>=1)cicloTxt+=` — variou **${cicloDelta>=0?'+':''}${fmtNum(cicloDelta)} dias** na semana`;
+    cicloTxt+='.';
+  }
+
+  // ── Seção de prazos comparada à média ──
+  const prazosTxt=[];
+  if(pmp>0){
+    const diff=pmp-pmpAvg;
+    prazosTxt.push(`PMP **${fmtDays(pmp)}** ${Math.abs(diff)>2?`(média ${fmtDays(pmpAvg)}, **${diff>0?'+':''}${fmtNum(diff)} dias`):'(em linha com a média'})`);}
+  if(pmv>0){
+    const diff=pmv-pmvAvg;
+    prazosTxt.push(`PMV **${fmtDays(pmv)}** ${Math.abs(diff)>2?`(média ${fmtDays(pmvAvg)}, **${diff>0?'+':''}${fmtNum(diff)} dias`):'(em linha com a média'})`);}
+  if(pme>0){
+    const diff=pme-pmeAvg;
+    prazosTxt.push(`PME **${fmtDays(pme)}** ${Math.abs(diff)>2?`(média ${fmtDays(pmeAvg)}, **${diff>0?'+':''}${fmtNum(diff)} dias`):'(em linha com a média'})`);}
+
+  // ── Riscos baseados em tendência ──
+  const riscos=[];
+  if(idxConsecDn>=2)riscos.push(`- **Índice em queda há ${idxConsecDn} semanas** — deterioração contínua exige ação antes que ultrapasse limites críticos.`);
+  if(qdSlope>0&&qtSlope<qdSlope)riscos.push(`- **QD crescendo mais rápido que QT** — passivos avançam ${fmtMoneyShort(qdSlope)}/semana enquanto ativos crescem ${fmtMoneyShort(qtSlope)}/semana; pressão estrutural sobre o saldo.`);
+  if(idx<1)riscos.push(`- **Índice abaixo de 1,0** — passivos superam ativos em **${fmtMoneyShort(Math.abs(l.saldo_qt_qd))}**. Cobertura insuficiente.`);
+  if(l.saldo_bancario<0)riscos.push(`- **Saldo bancário negativo** (${fmtMoney(l.saldo_bancario)}) — saldo devedor em conta corrente, risco de inadimplência operacional.`);
+  if(pme>0&&pme>pmeAvg*1.2)riscos.push(`- **PME ${fmtNum(((pme/pmeAvg)-1)*100)}% acima da média histórica** — estoque acumulando; capital imobilizado acima do padrão operacional.`);
+  if(pmv>0&&pmp>0&&pmv>pmp)riscos.push(`- **PMV (${fmtDays(pmv)}) maior que PMP (${fmtDays(pmp)})** — farmácia paga antes de receber; ciclo desfavorável estruturalmente.`);
+  if(ciclo!=null&&cicloSlope<-1&&cicloVals.length>=4)riscos.push(`- **Ciclo piorando ${fmtNum(Math.abs(cicloSlope))} dias/semana** nas últimas semanas — tendência de aperto no capital de giro.`);
+  if((l.excesso_total||0)>0)riscos.push(`- **Excesso de estoque: ${fmtMoney(l.excesso_total)}** imobilizado acima de 90 dias — capital que poderia reduzir o QD.`);
+  if((l.indice_faltas||0)>0.05)riscos.push(`- **Índice de faltas ${fmtPercent(l.indice_faltas)}** — ruptura acima de 5% impacta faturamento e fidelidade do cliente.`);
+  if(!riscos.length)riscos.push('- Nenhum risco estrutural identificado nesta semana. Manter monitoramento regular.');
+
+  // ── Recomendações data-driven ──
+  const recs=[];
+  if(idxConsecDn>=2)recs.push(`Identificar e reduzir o componente de **QD que mais cresceu** nas últimas ${idxConsecDn} semanas para reverter a queda do índice.`);
+  if(qdSlope>0&&qdSlope>Math.abs(qtSlope))recs.push(`Conter o crescimento do QD — passivos avançam **${fmtMoneyShort(qdSlope)}/semana**; avaliar renegociação ou antecipação de pagamentos de maior custo.`);
+  if(pmp>0&&pmp<45)recs.push(`Negociar extensão de prazo com fornecedores — PMP atual de **${fmtDays(pmp)}** está abaixo do referencial de 45 dias.`);
+  if(pme>0&&pme>pmeAvg*1.15)recs.push(`Acelerar giro do estoque — PME ${fmtNum(((pme/pmeAvg)-1)*100)}% acima da média. Priorizar produtos de maior saída e reavaliar mix de compras.`);
+  if((l.excesso_total||0)>l.qt_total*0.05)recs.push(`Trabalhar ativamente o excesso crítico de **${fmtMoney(l.excesso_total)}** — liquidação ou devolução libera capital para reduzir QD.`);
+  if(recs.length<3)recs.push(`Manter monitoramento semanal do **Índice QT/QD** (atual ${fmtNum(idx)}, média 4 sem. ${fmtNum(idxAvg4)}).`);
+  if(recs.length<3)recs.push(`Revisar composição do QD e priorizar quitação dos passivos de maior custo financeiro.`);
+
+return`**1. Diagnóstico — ${fmtDate(l.weekDate)}**
+Índice QT/QD de **${fmtNum(idx)}** — situação ${sit}${prev&&dIdx!==null?`, variação de **${dIdx>=0?'+':''}${fmtNum(dIdx)}** na semana`:''}.${idx!==idxAvg4&&n>=4?` Média das últimas 4 semanas: **${fmtNum(idxAvg4)}** — índice está **${idx>idxAvg4?'acima':'abaixo'} da própria média recente**.`:''}
+${tendTxt}${projTxt?' — '+projTxt:''}
+
+**2. Movimentações da Semana**
+${dQT!==null?`QT ${dQT>=0?'cresceu':'recuou'} **${fmtMoneyShort(Math.abs(dQT))}**${fmtPct(pctDiff(prev.qt_total,l.qt_total))} · QD ${dQD>=0?'cresceu':'recuou'} **${fmtMoneyShort(Math.abs(dQD))}**${fmtPct(pctDiff(prev.qd_total,l.qd_total))} · Saldo ${dSaldo>=0?'melhorou':'piorou'} **${fmtMoneyShort(Math.abs(dSaldo))}**.`:'Primeira semana registrada — sem variação anterior para comparar.'}
+${qtMoves.length?`Destaques no QT: ${qtMoves.map(([nm,d,p])=>`**${nm}** ${d>=0?'+':''}${fmtMoneyShort(d)}${fmtPct(p)}`).join(' · ')}.`:''}
+${qdMoves.length?`Destaques no QD: ${qdMoves.map(([nm,d,p])=>`**${nm}** ${d>=0?'+':''}${fmtMoneyShort(d)}${fmtPct(p)}`).join(' · ')}.`:''}
+${prev4&&idx!==null?`Em relação a 4 semanas atrás, o índice ${idx>(prev4.indice_qt_qd||0)?'avançou':'recuou'} de **${fmtNum(prev4.indice_qt_qd||0)}** para **${fmtNum(idx)}** (${(idx-(prev4.indice_qt_qd||0))>=0?'+':''}${fmtNum(idx-(prev4.indice_qt_qd||0))}).`:''}
+
+**3. Tendência e Projeção**
+${n>=4?`Velocidade média do índice: **${idxSlope>=0?'+':''}${fmtNum(idxSlope*100)}% por semana** nas últimas ${Math.min(n,8)} semanas. QT ${qtSlope>=0?'cresce':'recua'} **${fmtMoneyShort(Math.abs(qtSlope))}/semana**, QD ${qdSlope>=0?'cresce':'recua'} **${fmtMoneyShort(Math.abs(qdSlope))}/semana**.`:'Histórico insuficiente para calcular tendência (mínimo 4 semanas).'}
+${projTxt}
+${n>=8?`Comparando com a média de 8 semanas (índice ${fmtNum(idxAvg8)}): situação atual está **${idx>idxAvg8?'melhor':'pior'} que a média histórica recente** em **${fmtNum(Math.abs(idx-idxAvg8)*100)}%**.`:''}
+
+**4. Prazos e Ciclo**
+${prazosTxt.length?prazosTxt.join(' · ')+'.':`PMP, PMV e PME não informados para este período.`}
+${cicloTxt||'Ciclo não calculado — informe PMP e PMV.'}
 
 **5. Pontos de Atenção**
-${idx<1?'- **Índice QT/QD abaixo de 1,0** — os passivos superam os ativos disponíveis.':''}
-${idx>=1&&idx<1.1?'- **Índice QT/QD próximo do limite** — margem estreita entre ativos e passivos, qualquer variação pode romper o equilíbrio.':''}
-${(l.financiamentos||0)>l.qd_total*0.4?'- **Financiamentos representam mais de 40% do QD** — peso relevante de dívidas de longo prazo.':''}
-${(l.saldo_bancario||0)<0?'- **Saldo bancário negativo** — há saldo devedor em caixa/conta corrente.':''}
-${pme>90?'- **PME elevado** — estoque com giro lento, capital imobilizado acima de 90 dias.':''}
-${pme>0&&pme<20?'- **PME muito baixo** — cobertura de estoque abaixo de 20 dias, risco de ruptura.':''}
-${pmv>0&&pmp>0&&pmv>pmp?'- **PMV maior que PMP** — a farmácia paga antes de receber, aumentando a necessidade de capital de giro.':''}
-${ciclo!=null&&ciclo<-15?`- **Ciclo de financiamento negativo em ${fmtDays(Math.abs(ciclo))}** — a farmácia financia o capital de giro com recursos próprios.`:''}
-${(l.excesso_total||0)>0?`- **Excesso crítico de estoque de ${fmtMoney(l.excesso_total)}** — produtos imobilizados com mais de 90 dias sem giro.`:''}
-${(l.indice_faltas||0)>0.05?`- **Índice de faltas em ${fmtPercent(l.indice_faltas)}** — nível de ruptura acima de 5% impacta faturamento.`:''}
-${(l.estoque_custo||0)>l.qt_total*0.6?'- **Estoque representa mais de 60% do QT** — elevada concentração de ativos em mercadoria.':''}
-${[idx<1,idx>=1&&idx<1.1,(l.financiamentos||0)>l.qd_total*0.4,(l.saldo_bancario||0)<0,pme>90,pme>0&&pme<20,pmv>0&&pmp>0&&pmv>pmp,ciclo!=null&&ciclo<-15,(l.excesso_total||0)>0,(l.indice_faltas||0)>0.05,(l.estoque_custo||0)>l.qt_total*0.6].every(c=>!c)?'- Indicadores dentro dos parâmetros nesta semana. Continue monitorando regularmente para detectar variações precoces.':''}
+${riscos.join('\n')}
 
-**6. Recomendações Prioritárias**
-- Manter monitoramento semanal do **Índice QT/QD** e do saldo.
-${pmp>0&&pmp<45?'- Negociar **extensão de prazo com fornecedores** para melhorar o PMP.':''}
-${(l.estoque_custo||0)>l.qt_total*0.5?'- Avaliar **giro do estoque** — representa mais de 50% do QT.':''}
-- Priorizar redução do **QD** por meio de renegociação de passivos.
-- Acompanhar evolução do **ciclo de financiamento** semana a semana.`}
+**6. Recomendações**
+${recs.map((r,i)=>`- ${r}`).join('\n')}`}
 function renderCompBars(elId,items,total,palette){const el=$(elId);if(!el)return;el.innerHTML=items.filter(([,v])=>v>0).map(([label,val],i)=>{const pct=total>0?(val/total*100):0;const color=palette[i%palette.length];return`<div class="comp-bar-item"><div class="comp-bar-meta"><span>${label}</span><span><strong>${fmtMoney(val)}</strong> <span class="comp-bar-pct">${fmtNum(pct)}%</span></span></div><div class="comp-bar-track"><div class="comp-bar-fill" style="width:${Math.max(pct,1)}%;background:${color}"></div></div></div>`}).join('')||'<p class="muted">Sem dados.</p>'}
 function renderInspector(){const m=buildInspectorModel();if(!m){$('inspectorInitial')?.classList.remove('hidden');$('inspectorContent')?.classList.add('hidden');return}$('inspectorInitial')?.classList.add('hidden');$('inspectorContent')?.classList.remove('hidden');const l=m.latest,idx=l.indice_qt_qd||0,pmp=l.pmp||0,pmv=l.pmv||0,pme=l.pme_excel||l.pme||0,ciclo=l.ciclo_financiamento,avgIdx=avg(m.indice);const idxClass=idx>=1.1?'good':idx>=1?'warn':'bad';const cicloClass=ciclo!=null?(ciclo>=10?'good':ciclo>=-10?'warn':'bad'):'blue';$('inspectorHero').innerHTML=[['Saldo QT/QD',fmtMoneyShort(l.saldo_qt_qd),l.saldo_qt_qd>=0?'good':'bad',fmtMoney(l.saldo_qt_qd)],['Índice QT/QD',fmtNum(idx),idxClass,idx>=1?'Cobertura suficiente':'Cobertura insuficiente'],['QT Total',fmtMoneyShort(l.qt_total),'blue',`Média: ${fmtMoneyShort(avg(m.qt))}`],['QD Total',fmtMoneyShort(l.qd_total),'blue',`Média: ${fmtMoneyShort(avg(m.qd))}`]].map(([label,val,cls,sub])=>`<article class="inspector-card inspector-metric ${cls}"><span>${label}</span><strong>${val}</strong><span class="insp-kpi-sub">${sub}</span></article>`).join('');const semItems=[['Liquidez',fmtNum(idx),idx>=1.1?'good':idx>=1?'warning':'bad'],['Saldo',fmtMoneyShort(l.saldo_qt_qd),l.saldo_qt_qd>=0?'good':'bad'],['PMP',pmp>0?fmtDays(pmp):'—',pmp>=45?'good':pmp>=30?'warning':pmp>0?'bad':'neutral'],['PMV',pmv>0?fmtDays(pmv):'—',pmv>0&&pmv<=30?'good':pmv<=45?'warning':pmv>0?'bad':'neutral'],['PME',pme>0?fmtDays(pme):'—',pme>0&&pme<=60?'good':pme<=90?'warning':pme>0?'bad':'neutral'],['Ciclo',ciclo!=null?fmtDays(ciclo):'—',cicloClass]];$('inspectorSemaphore').innerHTML=semItems.map(([l2,v,s])=>`<article class="semaphore-item ${s}"><span>${l2}</span><strong>${v}</strong></article>`).join('');const QT_PALETTE=['#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#eff6ff'];const QD_PALETTE=['#ef4444','#f87171','#fca5a5','#dc2626','#b91c1c','#991b1b'];renderCompBars('inspectorQtBars',[['Estoque custo',l.estoque_custo||0],['Cartões',matrixVal(l,'cartoes')],['Convênios',matrixVal(l,'convenios')],['Saldo bancário',Math.max(l.saldo_bancario||0,0)],['Trade marketing',l.trade_marketing||0],['Cheques',l.cheques||0],['Outros QT',l.outros_qt||0]],l.qt_total,QT_PALETTE);renderCompBars('inspectorQdBars',[['Financiamentos',l.financiamentos||0],['Fornecedores',l.fornecedores||0],['Outras despesas',l.outras_despesas_assumidas||0],['Investimentos assumidos',l.investimentos_assumidos||0],['Tributos atrasados',l.tributos_atrasados||0],['Ações e processos',l.acoes_processos||0]],l.qd_total,QD_PALETTE);$('inspectorTrendTable').innerHTML=`<table><thead><tr><th>Indicador</th><th>Atual</th><th>Média</th></tr></thead><tbody>${[['QT Total',fmtMoney(l.qt_total),fmtMoney(avg(m.qt))],['QD Total',fmtMoney(l.qd_total),fmtMoney(avg(m.qd))],['Saldo QT/QD',fmtMoney(l.saldo_qt_qd),fmtMoney(avg(m.saldo))],['Índice QT/QD',fmtNum(idx),fmtNum(avgIdx)],['PMP',pmp>0?fmtDays(pmp):'—',avg(m.pmp)>0?fmtDays(avg(m.pmp)):'—'],['PMV',pmv>0?fmtDays(pmv):'—',avg(m.pmv)>0?fmtDays(avg(m.pmv)):'—'],['PME',pme>0?fmtDays(pme):'—',avg(m.pme)>0?fmtDays(avg(m.pme)):'—'],['Ciclo',ciclo!=null?fmtDays(ciclo):'—','—']].map(([lbl,cur,av])=>`<tr><td>${lbl}</td><td>${cur}</td><td>${av}</td></tr>`).join('')}</tbody></table>`;const risks=[(idx<1)?{t:'Índice QT/QD abaixo de 1,0 — passivos superam os ativos.',i:'⚠️'}:null,(l.saldo_bancario||0)<0?{t:'Saldo bancário negativo — saldo devedor em conta.',i:'🔴'}:null,ciclo!=null&&ciclo<-15?{t:`Ciclo de financiamento negativo (${fmtDays(ciclo)}) — farmácia precisa financiar ${fmtDays(Math.abs(ciclo))} de capital de giro.`,i:'⚠️'}:null,(pme||0)>90?{t:`PME elevado (${fmtDays(pme)}) — estoque com giro lento.`,i:'⚠️'}:null,(l.financiamentos||0)>(l.qd_total||0)*0.45?{t:'Financiamentos representam mais de 45% do QD.',i:'📋'}:null].filter(Boolean);$('inspectorRisks').innerHTML=risks.length?risks.map(r=>`<div class="insp-risk-item"><span class="insp-risk-icon">${r.i}</span>${r.t}</div>`).join(''):`<div class="insp-action-item">Nenhum risco crítico identificado no período atual.</div>`;const actions=[`Monitorar **Índice QT/QD** (atual ${fmtNum(idx)}) e buscar aproximação de 1,0.`,pmp>0&&pmp<45?`Negociar extensão de prazo com fornecedores (PMP atual ${fmtDays(pmp)}).`:`Manter ou ampliar o prazo médio de pagamento (PMP: ${pmp>0?fmtDays(pmp):'a informar'}).`,(l.estoque_custo||0)>l.qt_total*0.45?`Avaliar giro de estoque — representa ${fmtNum((l.estoque_custo/l.qt_total)*100)}% do QT.`:'Manter giro de estoque saudável.',`Revisar composição do QD e priorizar quitação de passivos de maior custo.`];$('inspectorActions').innerHTML=actions.map((a,i)=>`<div class="insp-action-item"><span class="insp-action-num">${i+1}</span><span>${a.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</span></div>`).join('');$('inspectorDataTable').innerHTML=`<table><thead><tr><th>Semana</th><th>QT</th><th>QD</th><th>Saldo</th><th>Índice</th><th>PMP</th><th>PMV</th><th>PME</th><th>Ciclo</th></tr></thead><tbody>${[...m.ordered].reverse().map(r=>`<tr><td>${fmtDate(r.weekDate)}</td><td>${fmtMoney(r.qt_total)}</td><td>${fmtMoney(r.qd_total)}</td><td class="${r.saldo_qt_qd>=0?'txt-good':'txt-bad'}">${fmtMoney(r.saldo_qt_qd)}</td><td class="${(r.indice_qt_qd||0)>=1?'txt-good':'txt-bad'}">${fmtNum(r.indice_qt_qd)}</td><td>${r.pmp>0?fmtDays(r.pmp):'—'}</td><td>${r.pmv>0?fmtDays(r.pmv):'—'}</td><td>${(r.pme_excel||r.pme)>0?fmtDays(r.pme_excel||r.pme):'—'}</td><td>${r.ciclo_financiamento!=null?fmtDays(r.ciclo_financiamento):'—'}</td></tr>`).join('')}</tbody></table>`;streamInspectorText($('inspectorNarrative'),buildInspectorNarrative(m))}
 function generateInspectorCharts(){const m=buildInspectorModel();if(!m||!window.Chart)return;destroyInspectorCharts();const slice=m.ordered.slice(-52);const labels=slice.map(i=>fmtDate(i.weekDate)),ink=getComputedStyle(document.body).getPropertyValue('--ink').trim(),muted=getComputedStyle(document.body).getPropertyValue('--muted').trim();efficiencyChartInstance=new Chart($('efficiencyChart'),{type:'line',data:{labels,datasets:[{label:'Índice QT/QD',data:slice.map(i=>i.indice_qt_qd||0),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',tension:.3,fill:false,yAxisID:'y2',pointRadius:slice.length>30?1:3},{label:'QT',data:slice.map(i=>i.qt_total),borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.08)',tension:.3,fill:false,pointRadius:0},{label:'QD',data:slice.map(i=>i.qd_total),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.08)',tension:.3,fill:false,pointRadius:0},{label:'Saldo',data:slice.map(i=>i.saldo_qt_qd),borderColor:'#f59e0b',tension:.3,fill:false,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:ink,boxWidth:12,font:{size:11}}}},scales:{x:{ticks:{color:muted,maxTicksLimit:12,font:{size:10}}},y:{ticks:{color:muted,callback:v=>fmtNum(v/1e6)+'M'},position:'left'},y2:{ticks:{color:'#2563eb',callback:v=>fmtNum(v)},position:'right',grid:{drawOnChartArea:false}}}}})}
