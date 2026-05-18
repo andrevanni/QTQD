@@ -427,7 +427,8 @@ function renderClients() {
         localStorage.setItem('qtqd_tenant_id_v1', res.tenant_id);
         localStorage.setItem('qtqd_permissao_v1', 'edita');
         localStorage.removeItem('qtqd_field_config_v1');
-        window.open('https://qtqd-vt2a.vercel.app/cliente', '_blank');
+        // ?_= força o browser a buscar da rede (ignora SW cache)
+        window.open(`https://qtqd-vt2a.vercel.app/cliente?_=${Date.now()}`, '_blank');
         fb(`Portal de ${nome} aberto em nova aba.`, 'success');
       } catch (err) {
         fb(`Erro ao abrir portal: ${err.message}`, 'error');
