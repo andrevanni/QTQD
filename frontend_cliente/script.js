@@ -174,6 +174,59 @@ sidebarRevealButton.addEventListener("click",()=>{if(document.body.classList.con
 document.querySelector(".content")?.addEventListener("click",()=>{if(document.body.classList.contains("sidebar-collapsed"))closeSidebarPreview()});
 historyTable.addEventListener("click",async e=>{const button=e.target.closest("[data-action]");if(!button)return;const record=records.find(i=>i.id===button.dataset.id);if(!record)return;if(button.dataset.action==="edit"){fillForm(record);openSection("cadastro");return}if(button.dataset.action==="evaluate"){fillForm(record);openSection("painel");setFeedback(`Avaliacao preparada para a semana ${fmtDate(record.weekDate)}.`);return}if(button.dataset.action==="delete"){try{if(isApiMode())await window.QTQD_API_CLIENT.deleteAvaliacao(record.id);records=records.filter(i=>i.id!==record.id);saveRecords();renderAll();resetForm();setFeedback(`Semana ${fmtDate(record.weekDate)} excluida.`)}catch(error){setFeedback(`Falha ao excluir na API: ${error.message}`)}}if(button.dataset.action==="fechar"){try{if(isApiMode()){const api=await window.QTQD_API_CLIENT.closeAvaliacao(record.id);const idx=records.findIndex(i=>i.id===record.id);if(idx>=0)records[idx]=apiRecordToLocal(api);}else{const idx=records.findIndex(i=>i.id===record.id);if(idx>=0)records[idx]={...record,status:'fechada'};saveRecords();}renderAll();setFeedback(`Semana ${fmtDate(record.weekDate)} fechada.`);}catch(err){setFeedback(`Falha ao fechar: ${err.message}`);}}if(button.dataset.action==="reenviar-pdf"){try{button.disabled=true;button.textContent='Enviando...';const jwt=localStorage.getItem('qtqd_jwt_v1')||'';const tid=localStorage.getItem('qtqd_tenant_id_v1')||'';const res=await fetch(`${window.location.origin}/api/v1/avaliacoes/${record.id}/reenviar-relatorio`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${jwt}`,'X-Tenant-Id':tid}});const data=await res.json();if(!res.ok)throw new Error(data.detail||'Erro ao reenviar');setFeedback(`PDF reenviado para ${data.enviado_para?.join(', ')||'destinatários cadastrados'}.`);}catch(err){setFeedback(`Falha ao reenviar PDF: ${err.message}`);}finally{button.disabled=false;button.textContent='Reenviar PDF';}}});
 form.addEventListener("input",()=>renderCalculatedPreview());
+// ── Máscaras de input ──────────────────────────────────
+(function(){
+  const MONEY_IDS=['saldo_bancario','contas_receber','cartoes','convenios','cheques','trade_marketing','outros_qt','estoque_custo','contas_pagar','fornecedores','investimentos_assumidos','outras_despesas_assumidas','dividas','financiamentos','tributos_atrasados','acoes_processos','faturamento_previsto_mes','compras_mes','entrada_mes','venda_cupom_mes','venda_custo_mes','lucro_liquido_mes','excesso_curva_a','excesso_curva_b','excesso_curva_c','excesso_curva_d'];
+  const NEG_IDS=new Set(['saldo_bancario','lucro_liquido_mes']);
+  const DECIMAL_IDS=[
+    {id:'pmp',dec:0},{id:'pmv',dec:0},{id:'pme_excel',dec:0},{id:'cobertura_estoque_dia',dec:0},
+    {id:'pmv_avista',dec:0},{id:'pmv_30',dec:0},{id:'pmv_60',dec:0},{id:'pmv_90',dec:0},{id:'pmv_120',dec:0},{id:'pmv_outros',dec:0},
+    {id:'indice_faltas',dec:2}
+  ];
+  function maskMoney(el){
+    const allowNeg=NEG_IDS.has(el.id);
+    const neg=allowNeg&&el.value.includes('-');
+    const digits=el.value.replace(/\D/g,'');
+    if(!digits){el.value='';return;}
+    const n=parseInt(digits,10)/100;
+    el.value=(neg?'-':'')+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  // Máscara de data dd/mm/aaaa
+  const dateEl=$('weekDate');
+  if(dateEl){
+    dateEl.addEventListener('input',function(){
+      let v=this.value.replace(/\D/g,'');
+      if(v.length>2)v=v.slice(0,2)+'/'+v.slice(2);
+      if(v.length>5)v=v.slice(0,5)+'/'+v.slice(5,9);
+      this.value=v;
+    });
+  }
+  // Máscara monetária — preenche da direita (estilo calculadora)
+  MONEY_IDS.forEach(id=>{
+    const el=$(id);
+    if(!el)return;
+    el.addEventListener('focus',function(){this.select();});
+    el.addEventListener('keydown',function(e){
+      if(e.key==='-'&&NEG_IDS.has(this.id)){
+        e.preventDefault();
+        this.value=this.value.startsWith('-')?this.value.slice(1):'-'+this.value;
+      }
+    });
+    el.addEventListener('input',function(){
+      maskMoney(this);
+      this.setSelectionRange(this.value.length,this.value.length);
+    });
+  });
+  // Campos decimais — formata ao sair do campo
+  DECIMAL_IDS.forEach(({id,dec})=>{
+    const el=$(id);
+    if(!el)return;
+    el.addEventListener('blur',function(){
+      const n=parseMoney(this.value);
+      this.value=Number.isFinite(n)&&n!==0?fmtNumInput(n,dec):'';
+    });
+  });
+})();
 window.addEventListener("resize",()=>{if(window.innerWidth<=1180)document.body.classList.remove("sidebar-collapsed","sidebar-open");renderChartsPanel();generateInspectorCharts()});
 window.addEventListener("storage",e=>{if(e.key===FIELD_CONFIG_KEY)renderAll();if(e.key===BRANDING_KEY)applyBranding();if(e.key===THEME_KEY){applyTheme();renderAll()}});
 function openCbNew(){$("cbNewCard")?.classList.remove("hidden");$("cbToggleNew")?.classList.add("hidden")}
