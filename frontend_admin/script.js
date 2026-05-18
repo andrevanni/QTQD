@@ -420,19 +420,20 @@ function renderClients() {
       const nome     = btn.dataset.portalNome;
       btn.disabled = true;
       btn.textContent = 'Abrindo...';
+      // Abre aba em branco ANTES do await — único jeito de não ser bloqueado como popup
+      const portalWin = window.open('about:blank', '_blank');
       try {
         const res = await window.QTQD_API_CLIENT.abrirPortal(getToken(), tenantId);
-        // Grava direto no localStorage (mesmo domínio) — não depende de URL params
         localStorage.setItem('qtqd_jwt_v1', res.access_token);
         localStorage.setItem('qtqd_tenant_id_v1', res.tenant_id);
         localStorage.setItem('qtqd_permissao_v1', 'edita');
         localStorage.removeItem('qtqd_field_config_v1');
-        // URL params como fallback + ?_= quebra cache do SW
         const portalUrl = `https://qtqd-vt2a.vercel.app/cliente?token=${encodeURIComponent(res.access_token)}&tenant_id=${encodeURIComponent(res.tenant_id)}&_=${Date.now()}`;
-        const w = window.open(portalUrl, '_blank');
-        if (w) w.focus();
+        if (portalWin) { portalWin.location.href = portalUrl; portalWin.focus(); }
+        else window.open(portalUrl, '_blank');
         fb(`Portal de ${nome} aberto em nova aba.`, 'success');
       } catch (err) {
+        if (portalWin) portalWin.close();
         fb(`Erro ao abrir portal: ${err.message}`, 'error');
       } finally {
         btn.disabled = false;
