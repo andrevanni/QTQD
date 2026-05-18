@@ -5,21 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/cliente/">
   <title>QT/QD — Saúde Financeira</title>
-  <script>(function(){
-    var p=new URLSearchParams(location.search);
-    var tk=p.get('token'),tid=p.get('tenant_id');
-    if(tk&&tid&&tk!=='undefined'&&tid!=='undefined'){
-      localStorage.setItem('qtqd_jwt_v1',tk);
-      localStorage.setItem('qtqd_tenant_id_v1',tid);
-      localStorage.setItem('qtqd_permissao_v1','edita');
-      localStorage.removeItem('qtqd_field_config_v1');
-      history.replaceState(null,'',location.pathname);
-      var ps=[];
-      if('serviceWorker' in navigator)ps.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));
-      if('caches' in window)ps.push(caches.keys().then(function(ns){return Promise.all(ns.map(function(n){return caches.delete(n);}));}));
-      Promise.all(ps).then(function(){location.href=location.pathname+'?_='+Date.now();});
-    }
-  })();</script>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">

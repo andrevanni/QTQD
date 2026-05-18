@@ -427,7 +427,7 @@ function renderClients() {
         localStorage.setItem('qtqd_permissao_v1', 'edita');
         localStorage.removeItem('qtqd_field_config_v1');
         // Navega a aba atual — sem nova janela, sem popup blocker
-        window.location.href = `https://qtqd-vt2a.vercel.app/cliente?token=${encodeURIComponent(res.access_token)}&tenant_id=${encodeURIComponent(res.tenant_id)}&_=${Date.now()}`;
+        window.location.href = 'https://qtqd-vt2a.vercel.app/cliente';
       } catch (err) {
         btn.disabled = false;
         btn.textContent = 'Acessar Portal';
