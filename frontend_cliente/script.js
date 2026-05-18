@@ -233,6 +233,58 @@ function openCbNew(){$("cbNewCard")?.classList.remove("hidden");$("cbToggleNew")
 function closeCbNew(){$("cbNewCard")?.classList.add("hidden");$("cbToggleNew")?.classList.remove("hidden")}
 $("cbToggleNew")?.addEventListener("click",openCbNew);
 $("cbCollapseNew")?.addEventListener("click",closeCbNew);
+// ── Excel download / import ────────────────────────────
+$("downloadExcelBtn")?.addEventListener("click",async()=>{
+  if(!isApiMode()){setFeedback("Download de template disponível apenas no modo API.");return;}
+  const jwt=localStorage.getItem("qtqd_jwt_v1")||"";
+  const tid=localStorage.getItem("qtqd_tenant_id_v1")||"";
+  const weekVal=$("weekDate")?.value;
+  let q="";
+  if(weekVal&&/^\d{2}\/\d{2}\/\d{4}$/.test(weekVal))q=`?semana=${brToIso(weekVal)}`;
+  const btn=$("downloadExcelBtn");
+  const orig=btn.textContent;
+  btn.disabled=true;btn.textContent="Gerando...";
+  try{
+    const resp=await fetch(`${window.location.origin}/api/v1/avaliacoes/template-excel${q}`,{headers:{"Authorization":`Bearer ${jwt}`,"X-Tenant-Id":tid}});
+    if(!resp.ok)throw new Error("Falha ao gerar template.");
+    const blob=await resp.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=`qtqd_${weekVal?.replace(/\//g,"-")||"template"}.xlsx`;a.click();
+    URL.revokeObjectURL(url);
+    setFeedback("Template baixado. Preencha e importe de volta.");
+  }catch(e){setFeedback(`Erro ao baixar: ${e.message}`);}
+  finally{btn.disabled=false;btn.textContent=orig;}
+});
+$("importExcelBtn")?.addEventListener("click",()=>{
+  if(!isApiMode()){setFeedback("Importação disponível apenas no modo API.");return;}
+  $("importExcelInput")?.click();
+});
+$("importExcelInput")?.addEventListener("change",async function(){
+  const file=this.files?.[0];
+  if(!file)return;
+  this.value="";
+  const jwt=localStorage.getItem("qtqd_jwt_v1")||"";
+  const tid=localStorage.getItem("qtqd_tenant_id_v1")||"";
+  const fd=new FormData();fd.append("file",file);
+  const btn=$("importExcelBtn");
+  const orig=btn.textContent;
+  btn.disabled=true;btn.textContent="Importando...";
+  try{
+    setFeedback("Processando arquivo...");
+    const resp=await fetch(`${window.location.origin}/api/v1/avaliacoes/import-excel`,{method:"POST",headers:{"Authorization":`Bearer ${jwt}`,"X-Tenant-Id":tid},body:fd});
+    const data=await resp.json();
+    if(!resp.ok)throw new Error(data.detail||"Erro ao importar.");
+    const record=apiRecordToLocal(data);
+    const idx=records.findIndex(r=>r.id===record.id);
+    if(idx>=0)records[idx]=record;else records.unshift(record);
+    saveRecords();
+    fillForm(record);
+    renderAll();
+    setFeedback(`Semana ${fmtDate(record.weekDate)} importada com sucesso. Revise e salve.`);
+  }catch(e){setFeedback(`Falha ao importar: ${e.message}`);}
+  finally{btn.disabled=false;btn.textContent=orig;}
+});
 // Login
 async function handleLogin(){const btn=$("loginBtn");const errEl=$("loginError");const email=$("loginEmail")?.value.trim();const pass=$("loginPassword")?.value;if(!email||!pass){if(errEl){errEl.textContent="Informe e-mail e senha.";errEl.classList.remove("hidden")}return}if(btn){btn.disabled=true;btn.textContent="Entrando..."}if(errEl)errEl.classList.add("hidden");try{await doLogin(email,pass);hideLoginScreen();await initializeClient()}catch(e){if(errEl){errEl.textContent=e.message||"E-mail ou senha incorretos.";errEl.classList.remove("hidden")}if(btn){btn.disabled=false;btn.textContent="Entrar"}}}
 $("loginBtn")?.addEventListener("click",handleLogin);
