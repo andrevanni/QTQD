@@ -1,4 +1,4 @@
-const CACHE = 'qtqd-v7';
+const CACHE = 'qtqd-v8';
 const STATIC = [
   '/cliente',
   '/cliente/styles.css',

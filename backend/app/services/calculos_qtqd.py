@@ -8,37 +8,26 @@ def _safe_divide(left: float, right: float) -> float | None:
 
 
 def calcular_indicadores(valores: AvaliacaoValores) -> list[IndicadorCalculado]:
-    qt_total = (
-        valores.saldo_bancario
-        + valores.contas_receber
-        + valores.cartoes
-        + valores.convenios
-        + valores.cheques
-        + valores.trade_marketing
-        + valores.outros_qt
-        + valores.estoque_custo
-    )
-    qd_total = (
-        valores.contas_pagar
-        + valores.fornecedores
-        + valores.investimentos_assumidos
-        + valores.outras_despesas_assumidas
-        + valores.dividas
-        + valores.financiamentos
-        + valores.tributos_atrasados
-        + valores.acoes_processos
-    )
+    # Sub-itens têm prioridade sobre o campo "total se não detalhar"
+    sub_cr = valores.cartoes + valores.convenios + valores.cheques + valores.trade_marketing + valores.outros_qt
+    cr = sub_cr if sub_cr > 0 else valores.contas_receber
+
+    sub_cp = valores.fornecedores + valores.investimentos_assumidos + valores.outras_despesas_assumidas
+    cp = sub_cp if sub_cp > 0 else valores.contas_pagar
+
+    sub_div = valores.financiamentos + valores.tributos_atrasados + valores.acoes_processos
+    div = sub_div if sub_div > 0 else valores.dividas
+
+    qt_total = valores.saldo_bancario + cr + valores.estoque_custo
+    qd_total = cp + div
     saldo_qt_qd = qt_total - qd_total
     indice_qt_qd = _safe_divide(qt_total, qd_total)
-    saldo_sem_dividas = saldo_qt_qd + valores.dividas + valores.financiamentos + valores.tributos_atrasados + valores.acoes_processos
-    indice_sem_dividas = _safe_divide(
-        qt_total,
-        qd_total - valores.dividas - valores.financiamentos - valores.tributos_atrasados - valores.acoes_processos,
-    )
+    saldo_sem_dividas = saldo_qt_qd + div
+    indice_sem_dividas = _safe_divide(qt_total, cp)
     saldo_sem_dividas_sem_estoque = saldo_sem_dividas - valores.estoque_custo
     pme = _safe_divide(valores.estoque_custo * 30, valores.venda_custo_mes)
-    prazo_medio_compra = _safe_divide(valores.contas_pagar * 30, valores.compras_mes)
-    prazo_venda = _safe_divide(valores.contas_receber * 30, valores.venda_cupom_mes)
+    prazo_medio_compra = _safe_divide(cp * 30, valores.compras_mes)
+    prazo_venda = _safe_divide(cr * 30, valores.venda_cupom_mes)
     # Ciclo = PMP - PMV - PME  (positivo = fornecedores financiam, negativo = farmácia financia)
     # Usa pme_excel quando disponível (mais preciso que o calculado)
     pme_para_ciclo = valores.pme_excel if valores.pme_excel > 0 else (pme or 0)
