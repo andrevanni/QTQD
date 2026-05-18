@@ -124,7 +124,7 @@ def fechar(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) ->
         try:
             enviar_relatorio_para_tenant(str(tenant_id), sb, avaliacao_id=str(avaliacao_id), origem="fechar")
         except Exception:
-            pass  # Não bloqueia o fechamento se o envio falhar
+            pass  # Não bloqueia o fechamento — erro já registrado no email_log
 
     return _serialize(result.data[0])
 

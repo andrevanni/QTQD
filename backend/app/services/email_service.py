@@ -16,8 +16,9 @@ except ImportError:
 
 
 def _send_via_resend(to: list[str], subject: str, html: str) -> None:
+    from_addr = settings.resend_from or f"{settings.smtp_from_name} <{settings.smtp_user}>"
     resend_lib.Emails.send({
-        "from": f"{settings.smtp_from_name} <{settings.smtp_user}>",
+        "from": from_addr,
         "to": to,
         "subject": subject,
         "html": html,
@@ -68,10 +69,19 @@ def send_html(
         return
 
     if _HAS_RESEND and not pdf_bytes:
+        resend_err: Exception | None = None
         try:
             _send_via_resend(to, subject, html)
             return
-        except Exception:
-            pass
+        except Exception as e:
+            resend_err = e
+
+        try:
+            _send_via_smtp(to, subject, html, pdf_bytes, pdf_filename)
+            return
+        except Exception as smtp_err:
+            raise RuntimeError(
+                f"Resend falhou: {resend_err} | SMTP falhou: {smtp_err}"
+            ) from smtp_err
 
     _send_via_smtp(to, subject, html, pdf_bytes, pdf_filename)

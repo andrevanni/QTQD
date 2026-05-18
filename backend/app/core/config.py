@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     smtp_password:  str = ""
     smtp_from_name: str = "QTQD – Service Farma"
     resend_api_key: str = ""
+    resend_from: str = ""  # Ex: "QTQD <noreply@seudominio.com>" — se vazio, usa smtp_user
 
     # Token administrativo para endpoints de admin (X-Admin-Token header)
     admin_token: str = "trocar-este-token"
