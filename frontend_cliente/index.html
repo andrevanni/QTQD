@@ -14,11 +14,10 @@
       localStorage.setItem('qtqd_permissao_v1','edita');
       localStorage.removeItem('qtqd_field_config_v1');
       history.replaceState(null,'',location.pathname);
-      if('serviceWorker' in navigator){
-        navigator.serviceWorker.getRegistrations().then(function(rs){
-          return Promise.all(rs.map(function(r){return r.unregister();}));
-        }).then(function(){location.reload(true);});
-      } else { location.reload(true); }
+      var ps=[];
+      if('serviceWorker' in navigator)ps.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));
+      if('caches' in window)ps.push(caches.keys().then(function(ns){return Promise.all(ns.map(function(n){return caches.delete(n);}));}));
+      Promise.all(ps).then(function(){location.href=location.pathname+'?_='+Date.now();});
     }
   })();</script>
 
