@@ -238,9 +238,11 @@ $("downloadExcelBtn")?.addEventListener("click",async()=>{
   if(!isApiMode()){setFeedback("Download de template disponível apenas no modo API.");return;}
   const jwt=localStorage.getItem("qtqd_jwt_v1")||"";
   const tid=localStorage.getItem("qtqd_tenant_id_v1")||"";
+  const recordId=$("recordId")?.value;
   const weekVal=$("weekDate")?.value;
   let q="";
-  if(weekVal&&/^\d{2}\/\d{2}\/\d{4}$/.test(weekVal))q=`?semana=${brToIso(weekVal)}`;
+  // Só pré-preenche se estiver editando um registro existente
+  if(recordId&&weekVal&&/^\d{2}\/\d{2}\/\d{4}$/.test(weekVal))q=`?semana=${brToIso(weekVal)}`;
   const btn=$("downloadExcelBtn");
   const orig=btn.textContent;
   btn.disabled=true;btn.textContent="Gerando...";
