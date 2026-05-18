@@ -18,11 +18,11 @@
   }
 
   function getJwt() {
-    return sessionStorage.getItem(JWT_KEY) || localStorage.getItem(JWT_KEY) || '';
+    return localStorage.getItem(JWT_KEY) || '';
   }
 
   function getTenantId() {
-    return sessionStorage.getItem(TENANT_KEY) || localStorage.getItem(TENANT_KEY) || config.tenantId || '';
+    return localStorage.getItem(TENANT_KEY) || config.tenantId || '';
   }
 
   function authHeaders() {

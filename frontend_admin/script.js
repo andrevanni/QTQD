@@ -420,16 +420,12 @@ function renderClients() {
       const nome     = btn.dataset.portalNome;
       btn.disabled = true;
       btn.textContent = 'Abrindo...';
-      // Abre janela em branco ANTES do await — evita bloqueio de popup (padrão Agenda de Compras)
-      const nova = window.open('', '_blank');
       try {
         const res = await window.QTQD_API_CLIENT.abrirPortal(getToken(), tenantId);
         const url = `https://qtqd-vt2a.vercel.app/cliente?token=${encodeURIComponent(res.access_token)}&tenant_id=${encodeURIComponent(res.tenant_id)}`;
-        if (nova && !nova.closed) { nova.location.href = url; nova.focus(); }
-        else window.open(url, '_blank');
+        window.open(url, '_blank');
         fb(`Portal de ${nome} aberto em nova aba.`, 'success');
       } catch (err) {
-        if (nova) nova.close();
         fb(`Erro ao abrir portal: ${err.message}`, 'error');
       } finally {
         btn.disabled = false;
