@@ -379,20 +379,35 @@ def atualizar(
     payload: AvaliacaoUpdateRequest,
     tenant_id: UUID = Depends(get_current_tenant),
 ) -> AvaliacaoResponse:
+    from backend.app.services.relatorio_service import enviar_relatorio_para_tenant
+
     sb = get_supabase()
     current = sb.table("avaliacoes_semanais").select(_COLS).eq("id", str(avaliacao_id)).eq("tenant_id", str(tenant_id)).limit(1).execute()
     if not current.data:
         raise HTTPException(status_code=404, detail="Avaliacao nao encontrada.")
     row = current.data[0]
+    old_status = row["status"]
+    new_status = payload.status or old_status
     next_valores = AvaliacaoValores(**(payload.valores.model_dump() if payload.valores else row.get("valores") or {}))
     update_data = {
         "semana_referencia": str(payload.semana_referencia) if payload.semana_referencia else row["semana_referencia"],
-        "status": payload.status or row["status"],
+        "status": new_status,
         "observacoes": payload.observacoes if payload.observacoes is not None else row.get("observacoes"),
         "valores": next_valores.model_dump(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     result = sb.table("avaliacoes_semanais").update(update_data).eq("id", str(avaliacao_id)).eq("tenant_id", str(tenant_id)).execute()
+
+    # Se status transicionou de rascunho → fechada, disparar e-mail (igual ao /fechar)
+    if old_status == "rascunho" and new_status == "fechada":
+        cfg_res = sb.table("tenant_pdf_config").select("ativo").eq("tenant_id", str(tenant_id)).limit(1).execute()
+        envio_ativo = cfg_res.data[0].get("ativo", True) if cfg_res.data else True
+        if envio_ativo:
+            try:
+                enviar_relatorio_para_tenant(str(tenant_id), sb, avaliacao_id=str(avaliacao_id), origem="fechar")
+            except Exception:
+                pass  # Não bloqueia o save — erro já registrado no email_log
+
     return _serialize(result.data[0])
 
 

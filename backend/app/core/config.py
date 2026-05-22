@@ -1,5 +1,7 @@
 from functools import lru_cache
+from typing import Any
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +28,13 @@ class Settings(BaseSettings):
     smtp_from_name: str = "QTQD – Service Farma"
     resend_api_key: str = ""
     resend_from: str = ""  # Ex: "QTQD <noreply@seudominio.com>" — se vazio, usa smtp_user
+
+    @field_validator("smtp_port", mode="before")
+    @classmethod
+    def _parse_smtp_port(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return 465
+        return v
 
     # Token administrativo para endpoints de admin (X-Admin-Token header)
     admin_token: str = "trocar-este-token"
