@@ -640,6 +640,10 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 46. **`reenviar-relatorio` mostrava sucesso falso com destinatários vazios:** endpoint retornava 200 com lista vazia quando não havia usuários ativos com e-mail; frontend exibia "PDF reenviado para destinatários cadastrados." Fix: endpoint agora retorna 400 com mensagem clara, igual ao endpoint admin.
 47. **Data de lançamento fechado não podia ser editada:** `AvaliacaoUpdateRequest` não incluía `semana_referencia`; endpoint PATCH e payload do frontend também não a enviavam — a data ficava inalterada após salvar. Fix: campo `semana_referencia` adicionado ao schema, ao endpoint PATCH e ao payload do frontend.
 
+48. **E-mail não enviado ao fechar pelo formulário (Drogaria SV, 22/05/2026):** Usuário mudou o status para "fechada" usando o select de status no formulário de edição e salvou — isso chama `PATCH`, não `POST /fechar`. O `PATCH` apenas salva dados, nunca dispara e-mail. O `POST /fechar` (que envia e-mail) só é chamado pelo botão "Fechar" no histórico (exclusivo de registros `rascunho`). Fix: o endpoint `PATCH` agora detecta a transição `rascunho → fechada` e dispara `enviar_relatorio_para_tenant` automaticamente. Frontend exibe "Fechando semana e enviando e-mail..." durante o processo e "Semana fechada. E-mail enviado para os destinatários cadastrados." ao concluir. Também corrigido o `config.py`: validator Pydantic para `smtp_port` aceita string vazia (usa default 465), evitando `ValidationError` silencioso caso `SMTP_PORT=""` seja configurado no Vercel.
+
+> **Lição aprendida (2026-05-22):** O `PATCH` e o `POST /fechar` atingem o mesmo campo `status`, mas apenas `/fechar` enviava e-mail. O `except Exception: pass` no `/fechar` silenciava erros — sem log nenhum. Diagnóstico confirmado pelos logs do Vercel, que mostraram somente `PATCH` e nenhum `POST /fechar` para aquela avaliação. Sempre verificar os logs do Vercel (`vercel logs --environment production --since 3h --no-follow`) antes de investigar a API de e-mail.
+
 48. **Cadastro de admins no painel admin:** nova seção "Admins" no menu lateral. Tabela `admin_logins` no Supabase (id, email, nome, ativo, is_master, created_at). Endpoints `GET/POST /admin/admins`, `PATCH /admin/admins/{id}/revogar`, `PATCH /admin/admins/{id}/reativar`, `DELETE /admin/admins/{id}`. Convite envia e-mail via Resend com link do painel + ADMIN_TOKEN. Admin master (`andre@servicefarma.far.br`, `is_master=true`) não pode ser revogado nem excluído.
 
 > **Limitação atual:** todos os admins compartilham o mesmo `ADMIN_TOKEN`. "Revogar" apenas marca o registro como inativo no banco — não impede acesso técnico com o token. Autenticação individual por admin (e-mail + senha + JWT) está pendente (ver abaixo).
@@ -712,6 +716,16 @@ CREATE TABLE IF NOT EXISTS admin_logins (
 - Comparação com médias de 4 e 8 semanas
 - Riscos baseados em tendência (não apenas snapshot)
 - Recomendações específicas aos dados reais
+
+---
+
+## Funcionalidades corrigidas em 2026-05-22
+
+### E-mail automático ao fechar pelo formulário
+- **Problema:** fechar pelo select de status no formulário chamava `PATCH` (sem e-mail) em vez de `POST /fechar` (com e-mail)
+- **Fix backend (`avaliacoes.py`):** `PATCH` agora detecta transição `rascunho → fechada` e dispara `enviar_relatorio_para_tenant` com `origem="fechar"`, igualando o comportamento ao `POST /fechar`
+- **Fix frontend (`script.js`):** exibe "Fechando semana e enviando e-mail..." durante a operação e "Semana fechada. E-mail enviado para os destinatários cadastrados." ao concluir
+- **Fix config (`config.py`):** validator Pydantic em `smtp_port` aceita `""` (usa default 465) — evita `ValidationError` silencioso se `SMTP_PORT=""` no Vercel
 
 ---
 
