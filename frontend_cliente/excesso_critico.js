@@ -1,13 +1,15 @@
 /**
- * Módulo Excesso Crítico — assistente que processa Excel de estoque por fabricante,
- * calcula excesso por curva (A/B/C/D) e aplica os valores a uma avaliação existente.
+ * Módulo Excesso Crítico — processa Excel de estoque no PRÓPRIO BROWSER (SheetJS),
+ * calcula excesso por curva (A/B/C/D) e aplica o resultado a uma avaliação existente.
  *
- * Expõe window.QTQD_EXCESSO.init() — invocado quando a seção é aberta no menu lateral.
+ * Processamento no client elimina o limite de upload do Vercel (HTTP 413 em arquivos grandes).
+ * Só os 4 totais são enviados ao backend (endpoint /aplicar/{avaliacao_id}).
+ *
+ * Expõe window.QTQD_EXCESSO.init().
  */
 (function () {
   let initialized = false;
-  let lastResult = null;          // último resultado do /calcular
-  let filteredProducts = [];      // produtos após filtros de curva/busca
+  let lastResult = null;
 
   /* ── Helpers ──────────────────────────────────────────────── */
 
@@ -42,6 +44,18 @@
     if (!el) return;
     el.textContent = msg || '';
     el.style.color = isError ? 'var(--bad, #ef4444)' : '';
+  };
+
+  const normCurva = (v) => String(v || '').trim().toUpperCase().slice(0, 1);
+
+  const toFloat = (v) => {
+    if (v === null || v === undefined || v === '') return 0;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    let s = String(v).trim().replace('R$', '').replace(/\s/g, '');
+    if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.');
+    else if (s.includes(',')) s = s.replace(',', '.');
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
   };
 
   /* ── Limites ──────────────────────────────────────────────── */
@@ -90,7 +104,7 @@
     }
   }
 
-  /* ── Lista de avaliações para aplicar ─────────────────────── */
+  /* ── Lista de avaliações ──────────────────────────────────── */
 
   async function carregarSemanas() {
     const sel = $('excSemanaSelect');
@@ -120,33 +134,189 @@
     }
   }
 
-  /* ── Upload e cálculo ─────────────────────────────────────── */
+  /* ── Cálculo no browser (espelha o backend) ───────────────── */
+
+  function findColIndex(header, candidates) {
+    for (let i = 0; i < header.length; i++) {
+      const h = String(header[i] || '').trim().toLowerCase();
+      if (candidates.some(c => h === c.toLowerCase())) return i;
+    }
+    return -1;
+  }
+
+  /**
+   * Processa o ArrayBuffer do XLSX e retorna o mesmo formato que o backend retornava:
+   * { limites, totais, resumo, produtos }
+   */
+  function processarExcelArrayBuffer(buf, limites) {
+    if (!window.XLSX) {
+      throw new Error('Biblioteca de leitura de Excel não carregou. Verifique sua conexão.');
+    }
+
+    const wb = window.XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if (!ws) throw new Error('Planilha vazia.');
+
+    const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    if (!rows.length) throw new Error('Planilha sem dados.');
+
+    const header = rows[0].map(c => String(c || '').trim());
+
+    const iNome  = findColIndex(header, ['Nome Completo', 'Nome']);
+    const iLinha = findColIndex(header, ['Linha']);
+    const iCurva = findColIndex(header, ['Curva']);
+    const iMedia = findColIndex(header, ['MediaF Un', 'Media', 'Media Un', 'MediaF']);
+    const iQtd   = findColIndex(header, ['Qtd Estoque', 'Qtd', 'Estoque Qtd']);
+    const iValor = findColIndex(header, ['Estoque Valor', 'Valor', 'Estoque R$']);
+
+    if (iNome < 0 || iCurva < 0 || iMedia < 0 || iQtd < 0 || iValor < 0) {
+      throw new Error('Cabeçalho inválido. Esperado: Nome Completo, Linha, Curva, Filial, MediaF Un, Qtd Estoque, Estoque Valor.');
+    }
+
+    const limMap = { A: limites.limite_a, B: limites.limite_b, C: limites.limite_c, D: limites.limite_d };
+
+    // Agregação por (nome, linha, curva) — soma filiais
+    const agg = new Map();
+    let totalLinhas = 0;
+
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.every(v => v === null || v === undefined || v === '')) continue;
+      const nome = row[iNome];
+      if (!nome) continue;
+      const curva = normCurva(row[iCurva]);
+      if (!limMap[curva]) continue;
+
+      const linha = iLinha >= 0 ? String(row[iLinha] || '').trim() : '';
+      const media = toFloat(row[iMedia]);
+      const qtd   = toFloat(row[iQtd]);
+      const valor = toFloat(row[iValor]);
+
+      const key = String(nome).trim() + '||' + linha + '||' + curva;
+      const existing = agg.get(key);
+      if (existing) {
+        existing.qtd   += qtd;
+        existing.media += media;
+        existing.valor += valor;
+      } else {
+        agg.set(key, { nome: String(nome).trim(), linha, curva, qtd, media, valor });
+      }
+      totalLinhas++;
+    }
+
+    // Cálculo de excesso por produto
+    const totaisCurva = { A: 0, B: 0, C: 0, D: 0 };
+    const qtdCriticos = { A: 0, B: 0, C: 0, D: 0 };
+    const produtosCriticos = [];
+    let valorTotalEstoque = 0;
+
+    agg.forEach(item => {
+      valorTotalEstoque += item.valor;
+      const { qtd, media, valor, curva } = item;
+      if (qtd <= 0) return;
+
+      const custoUn = qtd > 0 ? valor / qtd : 0;
+      let excessoUn = 0;
+      let coberturaDias = null;
+
+      if (media === 0) {
+        if (qtd > 1) {
+          excessoUn = qtd;
+          coberturaDias = null; // ∞
+        }
+      } else {
+        coberturaDias = (qtd / media) * 30;
+        const lim = limMap[curva];
+        if (coberturaDias > lim) {
+          const ideal = (media * lim) / 30;
+          excessoUn = qtd - ideal;
+        }
+      }
+
+      if (excessoUn > 0) {
+        const excessoValor = excessoUn * custoUn;
+        totaisCurva[curva] += excessoValor;
+        qtdCriticos[curva]++;
+        produtosCriticos.push({
+          nome: item.nome,
+          linha: item.linha,
+          curva,
+          qtd_estoque: Math.round(qtd * 100) / 100,
+          media_un: Math.round(media * 10000) / 10000,
+          cobertura_dias: coberturaDias !== null ? Math.round(coberturaDias * 10) / 10 : null,
+          excesso_un: Math.round(excessoUn * 100) / 100,
+          custo_un: Math.round(custoUn * 10000) / 10000,
+          excesso_valor: Math.round(excessoValor * 100) / 100,
+        });
+      }
+    });
+
+    produtosCriticos.sort((a, b) => b.excesso_valor - a.excesso_valor);
+
+    const round2 = v => Math.round(v * 100) / 100;
+    const totalExcesso = totaisCurva.A + totaisCurva.B + totaisCurva.C + totaisCurva.D;
+
+    return {
+      limites: limMap,
+      totais: {
+        excesso_curva_a: round2(totaisCurva.A),
+        excesso_curva_b: round2(totaisCurva.B),
+        excesso_curva_c: round2(totaisCurva.C),
+        excesso_curva_d: round2(totaisCurva.D),
+        total: round2(totalExcesso),
+      },
+      resumo: {
+        total_linhas_excel: totalLinhas,
+        total_produtos_unicos: agg.size,
+        total_produtos_criticos: produtosCriticos.length,
+        qtd_criticos_por_curva: qtdCriticos,
+        valor_total_estoque: round2(valorTotalEstoque),
+        pct_excesso: valorTotalEstoque > 0 ? round2(totalExcesso / valorTotalEstoque * 100) : 0,
+      },
+      produtos: produtosCriticos.slice(0, 100),
+    };
+  }
+
+  /* ── Upload e processamento ──────────────────────────────── */
+
+  function lerArquivoComoBuffer(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = () => reject(new Error('Falha ao ler o arquivo.'));
+      reader.readAsArrayBuffer(file);
+    });
+  }
 
   async function onArquivoSelecionado(e) {
     const file = e.target.files && e.target.files[0];
-    e.target.value = ''; // permite re-selecionar o mesmo arquivo
+    e.target.value = '';
     if (!file) return;
     if (!canEdit()) {
       setStatus('excStatus', 'Permissão insuficiente para importar arquivo.', true);
       return;
     }
-    if (!isApi()) {
-      setStatus('excStatus', 'Importação disponível apenas no modo conectado (API).', true);
-      return;
-    }
 
-    setStatus('excStatus', 'Processando ' + file.name + '... (pode levar alguns segundos)');
+    const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+    setStatus('excStatus', 'Lendo ' + file.name + ' (' + sizeMB + ' MB)... aguarde.');
     $('excResultado').classList.add('hidden');
 
     try {
+      const buf = await lerArquivoComoBuffer(file);
+      setStatus('excStatus', 'Calculando excesso por curva...');
+      // Processa em microtask para o status renderizar antes
+      await new Promise(r => setTimeout(r, 50));
+
       const limites = getLimitesUI();
-      const resp = await window.QTQD_API_CLIENT.calcularExcesso(file, limites);
+      const resp = processarExcelArrayBuffer(buf, limites);
       lastResult = resp;
       renderResultado(resp);
+
       const totalCriticos = resp.resumo.total_produtos_criticos;
       const totalLinhas = resp.resumo.total_linhas_excel;
-      setStatus('excStatus', 'Processado: ' + fmtInt(totalLinhas) + ' linhas, ' + fmtInt(totalCriticos) + ' produtos em excesso crítico.');
+      setStatus('excStatus', '✓ Processado: ' + fmtInt(totalLinhas) + ' linhas, ' + fmtInt(totalCriticos) + ' produtos em excesso crítico.');
     } catch (err) {
+      console.error('Excesso: erro no processamento', err);
       setStatus('excStatus', 'Erro: ' + err.message, true);
     }
   }
@@ -182,9 +352,7 @@
       + 'Excesso representa ' + fmtNum(r.pct_excesso) + '% do estoque';
     $('excResumo').textContent = resumoTxt;
 
-    filteredProducts = resp.produtos.slice();
     renderTabela();
-
     $('excResultado').classList.remove('hidden');
     carregarSemanas();
   }
@@ -197,7 +365,6 @@
     let list = lastResult ? lastResult.produtos.slice() : [];
     if (curva) list = list.filter(p => p.curva === curva);
     if (busca) list = list.filter(p => p.nome.toLowerCase().includes(busca));
-    filteredProducts = list;
 
     if (!list.length) {
       tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:24px;text-align:center">Nenhum produto encontrado.</td></tr>';
@@ -257,7 +424,6 @@
       const dataSel = fmtDateBR(resp.semana_referencia);
       setStatus('excAplicarStatus', '✓ Valores aplicados à semana ' + dataSel + ' (' + resp.status + '). Total: ' + fmtBRL(t.total) + '.');
 
-      // Recarrega os registros para refletir a mudança no painel/inspetor
       if (typeof window.loadRecordsFromSource === 'function' && typeof window.renderAll === 'function') {
         try {
           await window.loadRecordsFromSource();
