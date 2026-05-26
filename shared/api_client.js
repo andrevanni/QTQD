@@ -141,6 +141,43 @@
       });
     },
 
+    /* ── Excesso Crítico (exige JWT) ─────────────────── */
+    getExcessoLimites() {
+      return request(base('/me/excesso-critico/limites'), { method: 'GET', headers: authHeaders() });
+    },
+    putExcessoLimites(payload) {
+      return request(base('/me/excesso-critico/limites'), {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+    },
+    calcularExcesso(file, limites) {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('limite_a', String(limites.limite_a));
+      form.append('limite_b', String(limites.limite_b));
+      form.append('limite_c', String(limites.limite_c));
+      form.append('limite_d', String(limites.limite_d));
+      const token = getJwt();
+      const tenantId = getTenantId();
+      return request(base('/me/excesso-critico/calcular'), {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenantId ? { 'X-Tenant-Id': tenantId } : {}),
+        },
+        body: form,
+      });
+    },
+    aplicarExcesso(avaliacaoId, payload) {
+      return request(base(`/me/excesso-critico/aplicar/${avaliacaoId}`), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+    },
+
     /* ── Admin — clientes (exige X-Admin-Token) ──────── */
     listClients(adminToken) {
       return request(base('/admin/clientes'), { method: 'GET', headers: adminHeaders(adminToken) });

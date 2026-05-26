@@ -163,6 +163,13 @@
         </span>
         <span class="nav-label">Lançamentos</span>
       </button>
+
+      <button class="nav-link" data-section="excesso" type="button">
+        <span class="nav-icon">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-.293.707L13 10.414V17a1 1 0 01-1.447.894l-2-1A1 1 0 019 16v-5.586L3.293 6.707A1 1 0 013 6V4z" clip-rule="evenodd"/></svg>
+        </span>
+        <span class="nav-label">Excesso Crítico</span>
+      </button>
     </nav>
 
     <div class="sb-footer">
@@ -611,6 +618,101 @@
       </div>
     </section>
 
+    <!-- ═══ SEÇÃO: Excesso Crítico ═══ -->
+    <section id="excesso" class="section-view hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Análise de Estoque</p>
+            <h2 class="card-title">Excesso Crítico</h2>
+            <p class="txt-muted txt-sm">Importe a tabela de estoque por fabricante. Calculamos o excesso por curva (A/B/C/D) e você aplica em qualquer semana cadastrada.</p>
+          </div>
+        </div>
+
+        <!-- Limites por curva -->
+        <div class="card-inner">
+          <p class="eyebrow">Configuração</p>
+          <h3 class="metric-title" style="margin-bottom:12px">Limite de cobertura por curva (dias)</h3>
+          <p class="txt-muted txt-xs" style="margin-bottom:14px">Produtos com estoque que cubra mais dias do que o limite definido são considerados em excesso crítico.</p>
+          <div class="field-grid-4">
+            <label class="field"><span class="field-label">Curva A (dias)</span><input id="excLimiteA" type="number" min="1" max="9999" value="120"></label>
+            <label class="field"><span class="field-label">Curva B (dias)</span><input id="excLimiteB" type="number" min="1" max="9999" value="150"></label>
+            <label class="field"><span class="field-label">Curva C (dias)</span><input id="excLimiteC" type="number" min="1" max="9999" value="150"></label>
+            <label class="field"><span class="field-label">Curva D (dias)</span><input id="excLimiteD" type="number" min="1" max="9999" value="180"></label>
+          </div>
+          <div class="form-actions" style="margin-top:12px">
+            <button id="excSalvarLimites" class="btn btn-ghost" type="button">Salvar limites</button>
+            <input id="excFileInput" type="file" accept=".xlsx" style="display:none">
+            <button id="excImportBtn" class="btn" type="button">⬆ Importar Excel</button>
+          </div>
+          <div id="excStatus" class="txt-muted txt-xs" style="margin-top:8px"></div>
+        </div>
+
+        <!-- Resultado -->
+        <div id="excResultado" class="hidden">
+          <!-- Cards KPI -->
+          <div class="card-inner" style="margin-top:14px">
+            <p class="eyebrow">Excesso Calculado</p>
+            <h3 class="metric-title" style="margin-bottom:14px">Totais por curva</h3>
+            <div id="excKpis" class="kpi-grid"></div>
+            <div id="excResumo" class="txt-muted txt-sm" style="margin-top:12px"></div>
+          </div>
+
+          <!-- Aplicar a uma semana -->
+          <div class="card-inner" style="margin-top:14px">
+            <p class="eyebrow">Aplicar ao Lançamento</p>
+            <h3 class="metric-title" style="margin-bottom:6px">Escolha a semana que receberá os valores</h3>
+            <p class="txt-muted txt-xs" style="margin-bottom:14px">Os campos <strong>Excesso Curva A/B/C/D</strong> da semana selecionada serão substituídos pelos valores calculados acima.</p>
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+              <label class="field" style="flex:1;min-width:280px">
+                <span class="field-label">Semana</span>
+                <select id="excSemanaSelect"></select>
+              </label>
+              <button id="excAplicarBtn" class="btn" type="button">Aplicar à semana selecionada</button>
+            </div>
+            <div id="excAplicarStatus" class="txt-muted txt-xs" style="margin-top:8px"></div>
+          </div>
+
+          <!-- Tabela de produtos críticos -->
+          <div class="card-inner" style="margin-top:14px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+              <div>
+                <p class="eyebrow">Detalhamento</p>
+                <h3 class="metric-title">Top produtos em excesso</h3>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <select id="excFiltroCurva" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--ink);font-size:13px">
+                  <option value="">Todas as curvas</option>
+                  <option value="A">Curva A</option>
+                  <option value="B">Curva B</option>
+                  <option value="C">Curva C</option>
+                  <option value="D">Curva D</option>
+                </select>
+                <input id="excFiltroBusca" type="text" placeholder="Buscar produto..." style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--ink);font-size:13px;width:220px">
+              </div>
+            </div>
+            <div class="table-wrap" style="max-height:520px;overflow:auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Curva</th>
+                    <th>Linha</th>
+                    <th style="text-align:right">Estoque (un)</th>
+                    <th style="text-align:right">Média/mês</th>
+                    <th style="text-align:right">Cobertura</th>
+                    <th style="text-align:right">Excesso (un)</th>
+                    <th style="text-align:right">Excesso (R$)</th>
+                  </tr>
+                </thead>
+                <tbody id="excTabelaBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══ SEÇÃO: Histórico ═══ -->
     <section id="historico" class="section-view hidden">
       <div class="card">
@@ -655,6 +757,7 @@
 </div>
 <script src="script.js"></script>
 <script src="chart_builder.js"></script>
+<script src="excesso_critico.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
