@@ -619,8 +619,8 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 
 | Cliente | tenant_id | Lançamentos | Observação |
 |---|---|---|---|
-| Total Socorro / Drogaria da Letícia | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | 103+ semanas | Jun/2024 → atualização contínua. Validou Excesso Crítico em 2026-05-26 (R$ 425K). |
-| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | 65+ semanas | Jul/2024 → atualização contínua; 7 usuários ativos (Admin, AVJ, Caio, Cassiano, Elias, Evandro, Raquel) |
+| Total Socorro / Drogaria da Letícia | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | 103+ semanas | Jun/2024 → atualização contínua |
+| Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | 65+ semanas | Jul/2024 → atualização contínua; 7 usuários ativos (Admin, AVJ, Caio, Cassiano, Elias, Evandro, Raquel). Validou Excesso Crítico em 2026-05-26 (R$ 425K). |
 
 ---
 
@@ -781,7 +781,7 @@ CREATE TABLE IF NOT EXISTS tenant_excesso_config (
 
 Se a tabela não existir, o endpoint `GET /limites` retorna os defaults; `PUT` falha com erro do Supabase até a tabela ser criada.
 
-#### Resultado validado (arquivo de teste 2026-05-26, Drogaria da Letícia)
+#### Resultado validado (arquivo de teste 2026-05-26, Drogaria SV)
 - 33.640 linhas no Excel → 17.213 produtos únicos após agregação por filial
 - Excesso total: **R$ 425.542,14** (17,98% do estoque de R$ 2,37M)
 - Distribuição: A R$ 11K (21 prod) · B R$ 29K (71) · C R$ 38K (516) · D R$ 347K (3.748)
