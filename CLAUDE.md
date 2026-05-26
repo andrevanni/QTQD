@@ -615,11 +615,11 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 
 ---
 
-## Clientes — Situação atual (2026-05-10)
+## Clientes — Situação atual (2026-05-26)
 
 | Cliente | tenant_id | Lançamentos | Observação |
 |---|---|---|---|
-| Total Socorro / Drogaria da Letícia | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | 103+ semanas | Jun/2024 → atualização contínua |
+| Total Socorro / Drogaria da Letícia | `b2ce08a4-b1f9-4465-b162-9f5e9bb70092` | 103+ semanas | Jun/2024 → atualização contínua. Validou Excesso Crítico em 2026-05-26 (R$ 425K). |
 | Drogaria SV | `8044331a-4531-47c9-bbff-6546110d5767` | 65+ semanas | Jul/2024 → atualização contínua; 7 usuários ativos (Admin, AVJ, Caio, Cassiano, Elias, Evandro, Raquel) |
 
 ---
@@ -731,9 +731,9 @@ CREATE TABLE IF NOT EXISTS admin_logins (
 
 ---
 
-## Funcionalidade implementada em 2026-05-26
+## Funcionalidades implementadas em 2026-05-26
 
-### Excesso Crítico — assistente de cálculo a partir do Excel de estoque
+### Excesso Crítico — assistente de cálculo a partir do Excel de estoque ✅ EM PRODUÇÃO
 
 Nova seção no menu lateral do portal cliente (**"Excesso Crítico"**) que processa o arquivo `excesso_tabela_fabricante_*.xlsx` (saída do ERP do cliente) e calcula o excesso de estoque por curva (A/B/C/D). O resultado pode ser aplicado a qualquer lançamento existente (rascunho ou fechada), preenchendo automaticamente os campos `excesso_curva_a/b/c/d`.
 
@@ -786,7 +786,7 @@ Se a tabela não existir, o endpoint `GET /limites` retorna os defaults; `PUT` f
 - Excesso total: **R$ 425.542,14** (17,98% do estoque de R$ 2,37M)
 - Distribuição: A R$ 11K (21 prod) · B R$ 29K (71) · C R$ 38K (516) · D R$ 347K (3.748)
 
-### Menu "Ajuda" no portal cliente
+### Menu "Ajuda" no portal cliente ✅ EM PRODUÇÃO
 
 Nav-link **"Ajuda"** no menu lateral (grupo SUPORTE) abrindo seção `#ajuda` com guia completo das 6 funcionalidades: Visão geral, Inspetor IA, Painel, Gráficos, Histórico, Lançamentos, Excesso Crítico, Boas práticas, Suporte.
 
