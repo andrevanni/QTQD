@@ -170,6 +170,15 @@
         </span>
         <span class="nav-label">Excesso Crítico</span>
       </button>
+
+      <p class="nav-group-label" style="margin-top:18px">SUPORTE</p>
+
+      <button class="nav-link" data-section="ajuda" type="button">
+        <span class="nav-icon">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1.5 1.5 0 00-1.5 1.5.75.75 0 11-1.5 0 3 3 0 013-3 3 3 0 011.5 5.59c-.4.23-.5.42-.5.91v.25a.75.75 0 11-1.5 0V10c0-1.14.61-1.74 1.25-2.1A1.5 1.5 0 0010 5z" clip-rule="evenodd"/></svg>
+        </span>
+        <span class="nav-label">Ajuda</span>
+      </button>
     </nav>
 
     <div class="sb-footer">
@@ -737,6 +746,169 @@
             </thead>
             <tbody id="historyTable"></tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SEÇÃO: Ajuda ═══ -->
+    <section id="ajuda" class="section-view hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Suporte</p>
+            <h2 class="card-title">Guia do Portal QTQD</h2>
+            <p class="txt-muted txt-sm">Explicação rápida de cada funcionalidade e como obter o melhor proveito.</p>
+          </div>
+        </div>
+
+        <!-- Visão geral -->
+        <div class="card-inner">
+          <p class="eyebrow">Visão geral</p>
+          <h3 class="metric-title" style="margin-bottom:10px">O que é o QTQD</h3>
+          <p class="txt-sm" style="line-height:1.65">
+            O QTQD é um sistema de avaliação financeira semanal. Você lança os valores de
+            <strong>QT (Quanto Tenho)</strong> — saldo bancário, contas a receber, estoque etc.
+            — e <strong>QD (Quanto Devo)</strong> — contas a pagar, dívidas, financiamentos —
+            e o sistema calcula automaticamente indicadores como Saldo, Índice QT/QD, PME,
+            Ciclo de Financiamento e Margem Bruta. A análise é semanal e acumula um histórico
+            que alimenta gráficos de tendência e o Inspetor IA.
+          </p>
+        </div>
+
+        <!-- Inspetor IA -->
+        <div class="card-inner" style="margin-top:14px">
+          <p class="eyebrow">⚡ Inspetor IA</p>
+          <h3 class="metric-title" style="margin-bottom:10px">Análise automática da semana</h3>
+          <p class="txt-sm" style="line-height:1.65;margin-bottom:10px">
+            É a tela de abertura do portal. Mostra um diagnóstico completo da última semana:
+          </p>
+          <ul class="txt-sm" style="line-height:1.7;padding-left:22px">
+            <li><strong>4 KPIs</strong> de topo: Saldo, Índice, QT Total, QD Total.</li>
+            <li><strong>Semáforo Executivo:</strong> 6 indicadores classificados como verde/amarelo/vermelho.</li>
+            <li><strong>Composição QT e QD:</strong> barras proporcionais com o peso de cada componente.</li>
+            <li><strong>Gráfico de evolução:</strong> Índice + QT + QD + Saldo das últimas 52 semanas.</li>
+            <li><strong>Diagnóstico IA:</strong> texto analítico com tendências (regressão linear), projeção 4 semanas e comparação com médias históricas.</li>
+            <li><strong>Riscos e Plano de ação:</strong> alertas automáticos e recomendações priorizadas.</li>
+          </ul>
+          <p class="txt-sm" style="line-height:1.65;margin-top:10px">
+            Botão <strong>"Gerar PDF"</strong> imprime a análise completa via janela de impressão do navegador.
+          </p>
+        </div>
+
+        <!-- Painel -->
+        <div class="card-inner" style="margin-top:14px">
+          <p class="eyebrow">📊 Painel de Avaliação</p>
+          <h3 class="metric-title" style="margin-bottom:10px">Tabela comparativa semana a semana</h3>
+          <p class="txt-sm" style="line-height:1.65">
+            Mostra todos os indicadores em colunas (uma por semana, mais recente à esquerda).
+            A primeira coluna (nomes dos indicadores) fica fixa enquanto você rola horizontalmente.
+            Use o filtro <strong>"Todos os anos"</strong> para limitar a um ano específico, ou o botão
+            <strong>"Maximizar"</strong> para abrir em tela cheia.
+          </p>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="card-inner" style="margin-top:14px">
+          <p class="eyebrow">📈 Gráficos</p>
+          <h3 class="metric-title" style="margin-bottom:10px">Crie visualizações personalizadas</h3>
+          <p class="txt-sm" style="line-height:1.65;margin-bottom:10px">
+            Use o botão <strong>"+ Criar novo gráfico"</strong>:
+          </p>
+          <ul class="txt-sm" style="line-height:1.7;padding-left:22px">
+            <li>Dê um <strong>nome</strong> ao gráfico (ex: "Evolução do Saldo — 12 semanas").</li>
+            <li>Clique nos <strong>campos</strong> que devem aparecer (na ordem que quiser).</li>
+            <li>Escolha <strong>período</strong> (semanas/meses/anos), <strong>quantidade</strong>, <strong>tipo</strong> (linha/barra) e <strong>escala</strong> (valor real ou % de variação).</li>
+            <li>Clique em <strong>"Salvar Gráfico"</strong>. Ele aparece na lista e pode ser editado ou reordenado.</li>
+          </ul>
+          <p class="txt-sm" style="line-height:1.65;margin-top:10px">
+            Marque <strong>"Incluir no relatório PDF"</strong> para que o gráfico apareça no e-mail semanal.
+            Os gráficos são compartilhados entre todos os usuários do mesmo cliente.
+          </p>
+        </div>
+
+        <!-- Histórico -->
+        <div class="card-inner" style="margin-top:14px">
+          <p class="eyebrow">🕓 Histórico</p>
+          <h3 class="metric-title" style="margin-bottom:10px">Todas as semanas registradas</h3>
+          <p class="txt-sm" style="line-height:1.65">
+            Lista cronológica (mais recente primeiro). Cada linha mostra status, QT, QD, Saldo e Índice.
+            Ações disponíveis:
+          </p>
+          <ul class="txt-sm" style="line-height:1.7;padding-left:22px;margin-top:6px">
+            <li><strong>Editar:</strong> abre o formulário com os dados preenchidos.</li>
+            <li><strong>Excluir:</strong> remove o lançamento (cuidado, ação irreversível).</li>
+            <li><strong>Avaliar:</strong> vai direto para o Painel filtrado por esta semana.</li>
+            <li><strong>Fechar</strong> (só em rascunhos): muda o status para "fechada" e dispara o e-mail de relatório.</li>
+            <li><strong>Reenviar PDF:</strong> reenvia o e-mail do relatório sem alterar status.</li>
+          </ul>
+        </div>
+
+        <!-- Lançamentos -->
+        <div class="card-inner" style="margin-top:14px">
+          <p class="eyebrow">📝 Lançamentos</p>
+          <h3 class="metric-title" style="margin-bottom:10px">Entrada de dados semanal</h3>
+          <p class="txt-sm" style="line-height:1.65;margin-bottom:10px">
+            Formulário principal para registrar uma nova semana ou editar uma existente.
+          </p>
+          <ul class="txt-sm" style="line-height:1.7;padding-left:22px">
+            <li>Comece pela <strong>Data da semana</strong> (formato dd/mm/aaaa).</li>
+            <li>Preencha QT, QD e Informações Complementares — campos detalhados (cartões, convênios etc.) somam automaticamente quando preenchidos.</li>
+            <li>Use o botão <strong>"⬇ Excel"</strong> para baixar um template pré-preenchido com os dados existentes (útil para enviar a alguém preencher offline).</li>
+            <li>Use <strong>"⬆ Importar"</strong> para subir um Excel preenchido — ele cria/atualiza automaticamente o lançamento como rascunho.</li>
+            <li>Status <strong>Rascunho</strong> = em edição (não entra em gráficos/inspetor). Status <strong>Fechada</strong> = consolidada (entra em todas as análises e dispara e-mail).</li>
+            <li><strong>Índice de Faltas:</strong> digite o percentual normalmente (6,82 = 6,82%). O sistema converte automaticamente.</li>
+          </ul>
+        </div>
+
+        <!-- Excesso Crítico -->
+        <div class="card-inner" style="margin-top:14px">
+          <p class="eyebrow">📦 Excesso Crítico</p>
+          <h3 class="metric-title" style="margin-bottom:10px">Análise de estoque parado por curva</h3>
+          <p class="txt-sm" style="line-height:1.65;margin-bottom:10px">
+            Calcula automaticamente o valor de excesso de estoque por curva (A/B/C/D) a partir do Excel
+            de fabricantes que sai do seu ERP. O resultado pode ser aplicado direto em qualquer semana
+            já cadastrada — substituindo os campos manuais de Excesso Curva A/B/C/D.
+          </p>
+          <p class="txt-sm" style="line-height:1.65;margin-bottom:10px"><strong>Como usar:</strong></p>
+          <ol class="txt-sm" style="line-height:1.7;padding-left:22px">
+            <li>Ajuste os <strong>limites por curva</strong> (em dias de cobertura). Padrão: A=120, B=150, C=150, D=180. Clique "Salvar limites" para persistir a configuração.</li>
+            <li>Clique <strong>"⬆ Importar Excel"</strong> e selecione o arquivo do ERP. Formato esperado: colunas Nome Completo, Linha, Curva, Filial, MediaF Un, Qtd Estoque, Estoque Valor.</li>
+            <li>O sistema mostra <strong>4 cards (A/B/C/D + Total)</strong> com o valor calculado e a lista dos top 100 produtos críticos. Use os filtros de curva e busca para investigar.</li>
+            <li>Em <strong>"Aplicar ao Lançamento"</strong>, escolha a semana e clique no botão. Os 4 valores são gravados no lançamento — visíveis em Painel, Inspetor IA e e-mail.</li>
+          </ol>
+          <p class="txt-sm" style="line-height:1.65;margin-top:10px"><strong>Regra de cálculo:</strong></p>
+          <ul class="txt-sm" style="line-height:1.7;padding-left:22px">
+            <li>Cobertura em dias = <code>(Qtd Estoque / MediaF Un) × 30</code></li>
+            <li>Se cobertura &gt; limite da curva → excesso em unidades = <code>Qtd Estoque − (MediaF Un × limite / 30)</code></li>
+            <li>Custo unitário = <code>Estoque Valor / Qtd Estoque</code></li>
+            <li>Excesso em R$ = <code>excesso_un × custo_un</code></li>
+            <li>Produtos sem venda (MediaF Un = 0 e Qtd Estoque &gt; 1): todo o estoque é considerado excesso.</li>
+          </ul>
+        </div>
+
+        <!-- Boas práticas -->
+        <div class="card-inner" style="margin-top:14px">
+          <p class="eyebrow">💡 Boas práticas</p>
+          <h3 class="metric-title" style="margin-bottom:10px">Para tirar o máximo do QTQD</h3>
+          <ul class="txt-sm" style="line-height:1.85;padding-left:22px">
+            <li><strong>Frequência semanal:</strong> faça o lançamento sempre no mesmo dia da semana — segunda-feira é o mais comum. Consistência é o que permite as análises de tendência.</li>
+            <li><strong>Detalhe sub-itens:</strong> em vez de só preencher "Contas a receber" total, detalhe Cartões / Convênios / Cheques. Isso enriquece a composição mostrada no Inspetor IA.</li>
+            <li><strong>Mantenha PMP, PMV e PME atualizados:</strong> são a base para o Ciclo de Financiamento. Quando faltam, o ciclo aparece vazio.</li>
+            <li><strong>Use o Excesso Crítico mensalmente:</strong> exporte o Excel do ERP no fim do mês e aplique na semana correspondente. Acompanhe a evolução nos gráficos.</li>
+            <li><strong>Feche os rascunhos:</strong> só semanas "fechadas" alimentam os gráficos e o Inspetor IA. Rascunhos ficam invisíveis para as análises.</li>
+            <li><strong>Tenha pelo menos 8 semanas:</strong> o Inspetor IA precisa de histórico para identificar tendências e fazer projeções confiáveis.</li>
+          </ul>
+        </div>
+
+        <!-- Suporte -->
+        <div class="card-inner" style="margin-top:14px">
+          <p class="eyebrow">📞 Suporte</p>
+          <h3 class="metric-title" style="margin-bottom:10px">Em caso de dúvida</h3>
+          <p class="txt-sm" style="line-height:1.65">
+            Entre em contato com a equipe da <strong>Service Farma</strong> pelo e-mail
+            <a href="mailto:comercial@servicefarma.far.br" style="color:#2563eb;text-decoration:underline">comercial@servicefarma.far.br</a>
+            ou pelos canais habituais. Inclua, sempre que possível, um print da tela e a data da semana envolvida.
+          </p>
         </div>
       </div>
     </section>
