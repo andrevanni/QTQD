@@ -652,7 +652,9 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 
 48. **Cadastro de admins no painel admin:** nova seção "Admins" no menu lateral. Tabela `admin_logins` no Supabase (id, email, nome, ativo, is_master, created_at). Endpoints `GET/POST /admin/admins`, `PATCH /admin/admins/{id}/revogar`, `PATCH /admin/admins/{id}/reativar`, `DELETE /admin/admins/{id}`. Convite envia e-mail via Resend com link do painel + ADMIN_TOKEN. Admin master (`andre@servicefarma.far.br`, `is_master=true`) não pode ser revogado nem excluído.
 
-> **Limitação atual:** todos os admins compartilham o mesmo `ADMIN_TOKEN`. "Revogar" apenas marca o registro como inativo no banco — não impede acesso técnico com o token. Autenticação individual por admin (e-mail + senha + JWT) está pendente (ver abaixo).
+> **Limitação atual:** todos os admins compartilham o mesmo `ADMIN_TOKEN`. "Revogar" apenas marca o registro como inativo no banco — não impede acesso técnico com o token. Autenticação individual por admin (e-mail + senha + JWT) está pendente (ver **Segurança (pendente)**).
+
+50. **Painel admin não salvava ícone nos favoritos do Safari/iOS (2026-06-30):** o `<head>` do `frontend_admin/index.html` não tinha **nenhuma** tag de ícone (`apple-touch-icon`/`favicon`), então o iOS salvava um screenshot ao "Adicionar à Tela de Início". O favicon `/service_icone.ico` referenciado no `frontend_cliente` nem existe no repo (404). Fix: copiar o `icon-512.png` do QTQD para `frontend_admin/assets/` (forçar `git add -f` porque `*.png` está no `.gitignore`) + adicionar `apple-touch-icon`, `icon` e `apple-mobile-web-app-title` no `<head>` do admin. Validado em produção: HTTP 200 em `/admin/assets/icon-512.png`. Obs.: iOS cacheia ícone de forma agressiva — pode exigir limpar histórico do Safari para ver o novo.
 
 ---
 
@@ -807,4 +809,7 @@ Nav-link **"Ajuda"** no menu lateral (grupo SUPORTE) abrindo seção `#ajuda` co
 
 - Regenerar `SUPABASE_SERVICE_ROLE_KEY` após estabilização
 - Revogar tokens GitHub usados durante implantação inicial
-- **Autenticação individual de admins:** substituir ADMIN_TOKEN compartilhado por login e-mail + senha com JWT por admin. Cada admin teria credenciais próprias no Supabase Auth (`app_metadata.qtqd_admin = true`). Revogação passaria a funcionar de verdade. Padrão: igual ao PEC-SF e Agenda de Compras Web.
+- **⚠ PENDÊNCIA PRIORITÁRIA — Login individual de admin (e-mail + senha):** Hoje **o painel admin NÃO tem login de usuário/senha** — o acesso é por um único `ADMIN_TOKEN` compartilhado por todos os admins (valor atual em produção: `qtqd-admin-a3-2026`, na env var `ADMIN_TOKEN` do Vercel). Isso confunde quem espera logar com e-mail/senha (o e-mail/senha `andre@servicefarma.far.br` serve só para o **portal cliente**, não para o admin). Consequências do modelo atual:
+  - O botão "Revogar" na seção Admins apenas marca `ativo = false` em `admin_logins` — **não impede** acesso técnico, pois o token continua válido.
+  - Não há rastreabilidade de qual admin fez cada ação (todos usam o mesmo token).
+  - **Solução pretendida:** substituir o `ADMIN_TOKEN` compartilhado por login e-mail + senha com JWT por admin. Cada admin teria credenciais próprias no Supabase Auth (`app_metadata.qtqd_admin = true`). Revogação passaria a funcionar de verdade e cada ação seria atribuível. Padrão: igual ao PEC-SF e Agenda de Compras Web.
