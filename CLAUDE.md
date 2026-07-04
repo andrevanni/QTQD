@@ -810,6 +810,8 @@ Ver spec/plano em `docs/superpowers/`. Coluna `lancamento` no Excel; itens "Sim*
 - Validado em produção (arquivo 2026-07-04, limites reais da SV A=90/B=120/C=150/D=180): **Lançamentos R$ 66.232,77** (1.133 itens) · **Excesso retirando lançamentos R$ 422.764,06** (4.368 prod: A 8.762,67 · B 37.438,50 · C 29.209,99 · D 347.352,90). Sem excluir seria R$ 456.019,34 (redução de R$ 33.255,28).
 - Aplicado à semana 2026-06-30 da SV durante a verificação E2E (valor gravado e preservado após save do formulário).
 
+> **Pendências menores (deferidas na revisão final, não bloqueiam):** (a) o docstring de `aplicar()` em `excesso_critico.py` ainda cita só `excesso_curva_a/b/c/d` — atualizar para mencionar `total_estoque_lancamentos`; (b) no cálculo do browser, `resumo.total_linhas_excel` e `total_produtos_unicos` passaram a excluir as linhas de lançamento — o resumo mostra "N itens de lançamento excluídos" à parte, então os números reconciliam, mas o rótulo "linhas no Excel" ficou um pouco menor que a contagem bruta.
+
 ### Menu "Ajuda" no portal cliente ✅ EM PRODUÇÃO
 
 Nav-link **"Ajuda"** no menu lateral (grupo SUPORTE) abrindo seção `#ajuda` com guia completo das 6 funcionalidades: Visão geral, Inspetor IA, Painel, Gráficos, Histórico, Lançamentos, Excesso Crítico, Boas práticas, Suporte.
