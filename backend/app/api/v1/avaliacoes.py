@@ -17,6 +17,24 @@ router = APIRouter(prefix="/avaliacoes", tags=["avaliacoes"])
 
 _COLS = "id, tenant_id, semana_referencia, status, observacoes, valores, created_at, updated_at"
 
+# Campos persistidos no JSONB `valores` que NÃO são gerenciados pelo formulário
+# nem pela importação Excel — apenas o assistente de Excesso Crítico (/aplicar) os
+# escreve. Devem ser preservados em qualquer escrita que substitua `valores` inteiro
+# (PATCH do formulário, import-excel), senão voltam ao default 0 e o valor aplicado
+# é perdido silenciosamente.
+APPLY_ONLY_VALORES_FIELDS = ("total_estoque_lancamentos",)
+
+
+def _preserve_apply_only(new_valores: dict, old_valores: dict | None) -> dict:
+    """Copia os campos apply-only do registro existente para o novo dict de valores,
+    quando presentes — evita zerar valores gravados só pelo /aplicar."""
+    if not old_valores:
+        return new_valores
+    for field in APPLY_ONLY_VALORES_FIELDS:
+        if old_valores.get(field) is not None:
+            new_valores[field] = old_valores[field]
+    return new_valores
+
 # Campos do template Excel: (chave_interna | None=seção, label, formato)
 _EXCEL_CAMPOS = [
     (None, "QT — QUANTO TENHO", None),
@@ -291,7 +309,7 @@ def import_excel(
     sb = get_supabase()
     existing = (
         sb.table("avaliacoes_semanais")
-        .select("id")
+        .select("id, valores")
         .eq("tenant_id", str(tenant_id))
         .eq("semana_referencia", semana_referencia)
         .limit(1)
@@ -304,7 +322,11 @@ def import_excel(
     if existing.data:
         result = (
             sb.table("avaliacoes_semanais")
-            .update({"valores": av.model_dump(), "status": "rascunho", "updated_at": now})
+            .update({
+                "valores": _preserve_apply_only(av.model_dump(), existing.data[0].get("valores")),
+                "status": "rascunho",
+                "updated_at": now,
+            })
             .eq("id", existing.data[0]["id"])
             .eq("tenant_id", str(tenant_id))
             .execute()
@@ -389,11 +411,14 @@ def atualizar(
     old_status = row["status"]
     new_status = payload.status or old_status
     next_valores = AvaliacaoValores(**(payload.valores.model_dump() if payload.valores else row.get("valores") or {}))
+    next_valores_dict = next_valores.model_dump()
+    if payload.valores:
+        next_valores_dict = _preserve_apply_only(next_valores_dict, row.get("valores"))
     update_data = {
         "semana_referencia": str(payload.semana_referencia) if payload.semana_referencia else row["semana_referencia"],
         "status": new_status,
         "observacoes": payload.observacoes if payload.observacoes is not None else row.get("observacoes"),
-        "valores": next_valores.model_dump(),
+        "valores": next_valores_dict,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     result = sb.table("avaliacoes_semanais").update(update_data).eq("id", str(avaliacao_id)).eq("tenant_id", str(tenant_id)).execute()
