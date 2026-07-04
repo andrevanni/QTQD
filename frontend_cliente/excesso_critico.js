@@ -48,6 +48,8 @@
 
   const normCurva = (v) => String(v || '').trim().toUpperCase().slice(0, 1);
 
+  const isLancamento = (v) => v != null && String(v).trim().toLowerCase().startsWith('sim');
+
   const toFloat = (v) => {
     if (v === null || v === undefined || v === '') return 0;
     if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
@@ -145,21 +147,12 @@
   }
 
   /**
-   * Processa o ArrayBuffer do XLSX e retorna o mesmo formato que o backend retornava:
-   * { limites, totais, resumo, produtos }
+   * Calcula o excesso por curva (A/B/C/D) a partir de linhas já parseadas do Excel.
+   * Função pura — não toca window/DOM. `rows` é Array<Array> (linha 0 = header).
+   * Retorna { limites, totais, resumo, produtos }.
    */
-  function processarExcelArrayBuffer(buf, limites) {
-    if (!window.XLSX) {
-      throw new Error('Biblioteca de leitura de Excel não carregou. Verifique sua conexão.');
-    }
-
-    const wb = window.XLSX.read(buf, { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    if (!ws) throw new Error('Planilha vazia.');
-
-    const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-    if (!rows.length) throw new Error('Planilha sem dados.');
-
+  function calcularExcessoDeRows(rows, limites) {
+    if (!rows || !rows.length) throw new Error('Planilha sem dados.');
     const header = rows[0].map(c => String(c || '').trim());
 
     const iNome  = findColIndex(header, ['Nome Completo', 'Nome']);
@@ -168,6 +161,7 @@
     const iMedia = findColIndex(header, ['MediaF Un', 'Media', 'Media Un', 'MediaF']);
     const iQtd   = findColIndex(header, ['Qtd Estoque', 'Qtd', 'Estoque Qtd']);
     const iValor = findColIndex(header, ['Estoque Valor', 'Valor', 'Estoque R$']);
+    const iLanc  = findColIndex(header, ['lancamento', 'Lançamento', 'Lançamentos', 'Lancamentos', 'Lancamento']);
 
     if (iNome < 0 || iCurva < 0 || iMedia < 0 || iQtd < 0 || iValor < 0) {
       throw new Error('Cabeçalho inválido. Esperado: Nome Completo, Linha, Curva, Filial, MediaF Un, Qtd Estoque, Estoque Valor.');
@@ -178,12 +172,22 @@
     // Agregação por (nome, linha, curva) — soma filiais
     const agg = new Map();
     let totalLinhas = 0;
+    let totalEstoqueLancamentos = 0;
+    let qtdLancamentos = 0;
 
     for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
       if (!row || row.every(v => v === null || v === undefined || v === '')) continue;
       const nome = row[iNome];
       if (!nome) continue;
+
+      // Lançamento: soma pura no total e sai (não entra no excesso)
+      if (iLanc >= 0 && isLancamento(row[iLanc])) {
+        totalEstoqueLancamentos += toFloat(row[iValor]);
+        qtdLancamentos++;
+        continue;
+      }
+
       const curva = normCurva(row[iCurva]);
       if (!limMap[curva]) continue;
 
@@ -264,6 +268,7 @@
         excesso_curva_c: round2(totaisCurva.C),
         excesso_curva_d: round2(totaisCurva.D),
         total: round2(totalExcesso),
+        total_estoque_lancamentos: round2(totalEstoqueLancamentos),
       },
       resumo: {
         total_linhas_excel: totalLinhas,
@@ -272,9 +277,27 @@
         qtd_criticos_por_curva: qtdCriticos,
         valor_total_estoque: round2(valorTotalEstoque),
         pct_excesso: valorTotalEstoque > 0 ? round2(totalExcesso / valorTotalEstoque * 100) : 0,
+        qtd_lancamentos: qtdLancamentos,
       },
       produtos: produtosCriticos.slice(0, 100),
     };
+  }
+
+  /**
+   * Processa o ArrayBuffer do XLSX (lê via SheetJS) e delega o cálculo à função pura.
+   * Retorna o mesmo formato que o backend retornava: { limites, totais, resumo, produtos }
+   */
+  function processarExcelArrayBuffer(buf, limites) {
+    if (!window.XLSX) {
+      throw new Error('Biblioteca de leitura de Excel não carregou. Verifique sua conexão.');
+    }
+
+    const wb = window.XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if (!ws) throw new Error('Planilha vazia.');
+
+    const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    return calcularExcessoDeRows(rows, limites);
   }
 
   /* ── Upload e processamento ──────────────────────────────── */
@@ -474,5 +497,6 @@
     }
   }
 
-  window.QTQD_EXCESSO = { init };
+  if (typeof window !== 'undefined') window.QTQD_EXCESSO = { init };
+  if (typeof module !== 'undefined' && module.exports) module.exports = { calcularExcessoDeRows };
 })();
