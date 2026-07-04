@@ -367,10 +367,16 @@
         + '</article>';
     }).join('');
 
-    $('excKpis').innerHTML = cardsHtml;
+    const lancCard = '<article class="kpi-card neutral" style="border-left:4px solid #7c3aed">'
+      + '<span>Estoque em Lançamentos</span>'
+      + '<strong>' + fmtBRL(t.total_estoque_lancamentos || 0) + '</strong>'
+      + '<span class="txt-muted txt-xs">' + fmtInt(r.qtd_lancamentos || 0) + ' itens excluídos</span>'
+      + '</article>';
+    $('excKpis').innerHTML = cardsHtml + lancCard;
 
     const resumoTxt = fmtInt(r.total_linhas_excel) + ' linhas no Excel · '
       + fmtInt(r.total_produtos_unicos) + ' produtos únicos (após somar filiais) · '
+      + fmtInt(r.qtd_lancamentos || 0) + ' itens de lançamento excluídos (' + fmtBRL(t.total_estoque_lancamentos || 0) + ') · '
       + 'Estoque total: ' + fmtBRL(r.valor_total_estoque) + ' · '
       + 'Excesso representa ' + fmtNum(r.pct_excesso) + '% do estoque';
     $('excResumo').textContent = resumoTxt;
@@ -439,6 +445,7 @@
       excesso_curva_b: t.excesso_curva_b,
       excesso_curva_c: t.excesso_curva_c,
       excesso_curva_d: t.excesso_curva_d,
+      total_estoque_lancamentos: t.total_estoque_lancamentos || 0,
     };
 
     setStatus('excAplicarStatus', 'Aplicando...');
