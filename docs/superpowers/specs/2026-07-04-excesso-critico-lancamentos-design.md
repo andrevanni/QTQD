@@ -34,6 +34,7 @@ A fonte de dados do assistente de Excesso Crítico (Excel do ERP do cliente) gan
 3. **Exibir** o total no assistente de Excesso Crítico.
 4. **Persistir** o total na avaliação semanal ao clicar em "Aplicar".
 5. **Mostrar no painel semanal** o valor persistido, **somente leitura** (sem campo editável no formulário).
+6. **Disponibilizar no gerador de gráficos** o campo "Total de Estoque em Lançamentos" como opção selecionável (consequência automática de incluí-lo em `matrixRows`, do qual `chartFieldCatalog` é derivado).
 
 ## Regra de detecção do lançamento
 

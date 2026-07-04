@@ -486,6 +486,8 @@ e acrescentar, logo após ele (antes do `]` que fecha o array):
 
 > Como `total_estoque_lancamentos` NÃO está em `componentLabels`, o filtro `visibleRows` o mantém sempre visível (igual a `excesso_total`). Não adicionar a `componentLabels`.
 
+> **Gráficos (requisito adicional):** adicionar a linha ao `matrixRows` também faz o campo aparecer no gerador de gráficos automaticamente — `chartFieldCatalog` é derivado de `matrixRows` ([script.js:10](../../frontend_cliente/script.js)) e `isFieldVisible` retorna `true` para chaves fora da config. Nenhuma mudança em `chart_builder.js` é necessária. A verificação de que o campo aparece e pode ser plotado sem erro está na Task 5.
+
 - [ ] **Step 2: Verificar sintaxe do script.js (CRÍTICO)**
 
 Run: `cd "/Users/avj/Developer/Sistemas Python/QTQD" && node --check frontend_cliente/script.js && echo "SINTAXE OK"`
@@ -533,6 +535,8 @@ Expected: valor ≥ 1.
 - [ ] **Step 3: Verificação E2E (headless) — assistente + aplicar + painel**
 
 Com Chromium headless (padrão do projeto), logar como usuário da Drogaria SV, ir em Excesso Crítico, subir o Excel de 2026-07-04, confirmar o KPI "Estoque em Lançamentos = R$ 66.232,77 (1.133 itens)", clicar "Aplicar" numa semana de teste, e confirmar no painel a linha "TOTAL DE ESTOQUE EM LANÇAMENTOS" com o valor. Alternativamente, confirmar via API que `valores.total_estoque_lancamentos` foi gravado.
+
+Confirmar também o requisito de **gráficos**: na seção Gráficos, o campo "Total de Estoque em Lançamentos" aparece como opção selecionável e pode ser plotado sem erro de console (o desenho usa `chartFieldCatalog.find`, que agora inclui a chave).
 
 - [ ] **Step 4: Atualizar documentação**
 
