@@ -292,6 +292,7 @@
       }
 
       if (!row.key) return;
+      if (row.key === 'total_estoque_lancamentos' && typeof hasLancamentosData === 'function' && !hasLancamentosData()) return;
       if (!ALWAYS.includes(row.key) && !isFieldVisible(row.key)) return;
 
       const idx = cbState.fields.indexOf(row.key);
