@@ -12,6 +12,21 @@ router = APIRouter(prefix="/me/excesso-critico", tags=["excesso-critico"])
 
 DEFAULT_LIMITES = {"limite_a": 120, "limite_b": 150, "limite_c": 150, "limite_d": 180}
 CURVA_KEYS = {"A": "excesso_curva_a", "B": "excesso_curva_b", "C": "excesso_curva_c", "D": "excesso_curva_d"}
+APLICAR_FIELDS = list(CURVA_KEYS.values()) + ["total_estoque_lancamentos"]
+
+
+def _merge_aplicar_valores(valores: dict, payload: dict) -> dict:
+    """Grava os campos aplicáveis (excesso por curva + total de lançamentos) em `valores`,
+    preservando os demais. Lança ValueError se algum campo presente for não-numérico."""
+    out = dict(valores)
+    for field in APLICAR_FIELDS:
+        v = payload.get(field)
+        if v is not None:
+            try:
+                out[field] = float(v)
+            except (TypeError, ValueError):
+                raise ValueError(f"{field} deve ser numérico")
+    return out
 
 
 # ── Limites por curva (config do tenant) ──────────────────────────────────────
@@ -240,13 +255,10 @@ def aplicar(
         raise HTTPException(status_code=404, detail="Avaliação não encontrada.")
 
     valores = dict(res.data[0].get("valores") or {})
-    for curva, field in CURVA_KEYS.items():
-        v = payload.get(field)
-        if v is not None:
-            try:
-                valores[field] = float(v)
-            except (TypeError, ValueError):
-                raise HTTPException(status_code=400, detail=f"{field} deve ser numérico")
+    try:
+        valores = _merge_aplicar_valores(valores, payload)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     now = datetime.now(timezone.utc).isoformat()
     sb.table("avaliacoes_semanais").update({"valores": valores, "updated_at": now}).eq("id", str(avaliacao_id)).eq("tenant_id", str(tenant_id)).execute()
@@ -256,5 +268,5 @@ def aplicar(
         "avaliacao_id": str(avaliacao_id),
         "semana_referencia": res.data[0]["semana_referencia"],
         "status": res.data[0]["status"],
-        "valores_aplicados": {f: valores.get(f, 0) for f in CURVA_KEYS.values()},
+        "valores_aplicados": {f: valores.get(f, 0) for f in APLICAR_FIELDS},
     }

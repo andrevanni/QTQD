@@ -42,6 +42,7 @@ class AvaliacaoValores(BaseModel):
     excesso_curva_b: float = 0
     excesso_curva_c: float = 0
     excesso_curva_d: float = 0
+    total_estoque_lancamentos: float = 0
 
 
 class AvaliacaoCreateRequest(AvaliacaoValores):
