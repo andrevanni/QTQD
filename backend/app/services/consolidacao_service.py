@@ -51,7 +51,7 @@ def media_ponderada(valores: list[float], pesos: list[float]) -> float:
     return 0.0
 
 
-def consolidar_valores(itens) -> AvaliacaoValores:
+def consolidar_valores(itens: list[AvaliacaoValores | dict]) -> AvaliacaoValores:
     """Consolida uma lista de AvaliacaoValores numa só.
 
     Aditivos somam; prazos/índices são média ponderada pela sua base

@@ -66,6 +66,7 @@ def test_todos_os_campos_do_schema_tem_regra():
     campos = set(AvaliacaoValores().model_dump().keys())
     cobertos = set(ADITIVOS) | set(PONDERADOS.keys())
     assert campos == cobertos, f"Sem regra: {campos - cobertos}; sobrando: {cobertos - campos}"
+    assert set(ADITIVOS).isdisjoint(PONDERADOS), "campo em ADITIVOS e PONDERADOS ao mesmo tempo"
 
 
 def test_item_unico_reproduz_valores():
