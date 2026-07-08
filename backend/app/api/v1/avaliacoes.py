@@ -12,6 +12,7 @@ from backend.app.schemas.avaliacoes import (
     AvaliacaoValores,
 )
 from backend.app.services.calculos_qtqd import calcular_indicadores
+from backend.app.services.series_service import build_series
 
 router = APIRouter(prefix="/avaliacoes", tags=["avaliacoes"])
 
@@ -367,16 +368,58 @@ def import_excel(
 
 
 @router.get("", response_model=list[AvaliacaoResponse])
-def listar(tenant_id: UUID = Depends(get_current_tenant)) -> list[AvaliacaoResponse]:
-    result = (
-        get_supabase()
-        .table("avaliacoes_semanais")
-        .select(_COLS)
+def listar(
+    tenant_id: UUID = Depends(get_current_tenant),
+    nivel: str | None = None,
+    loja_id: UUID | None = None,
+    grupo_id: UUID | None = None,
+) -> list[AvaliacaoResponse]:
+    sb = get_supabase()
+    if not nivel:
+        result = (
+            sb.table("avaliacoes_semanais")
+            .select(_COLS)
+            .eq("tenant_id", str(tenant_id))
+            .order("semana_referencia", desc=True)
+            .execute()
+        )
+        return [_serialize(row) for row in result.data]
+    # série consolidada por nível
+    avals = (
+        sb.table("avaliacoes_semanais")
+        .select("semana_referencia, grupo_id, loja_id, valores")
         .eq("tenant_id", str(tenant_id))
-        .order("semana_referencia", desc=True)
         .execute()
+        .data
     )
-    return [_serialize(row) for row in result.data]
+    grupos = (
+        sb.table("grupos_economicos")
+        .select("id, nivel_preenchimento")
+        .eq("tenant_id", str(tenant_id))
+        .execute()
+        .data
+    )
+    ref = str(loja_id) if nivel == "loja" else (str(grupo_id) if nivel == "grupo" else None)
+    serie = build_series(avals, grupos, nivel, ref)
+    out = []
+    for s in serie:
+        v = AvaliacaoValores(**(s["valores"]))
+        out.append(
+            AvaliacaoResponse(
+                id=UUID(int=0),
+                tenant_id=tenant_id,
+                grupo_id=grupo_id,
+                loja_id=loja_id,
+                semana_referencia=s["semana_referencia"],
+                status="fechada",
+                observacoes=None,
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+                valores=v,
+                indicadores=calcular_indicadores(v),
+            )
+        )
+    return out
 
 
 @router.get("/{avaliacao_id}", response_model=AvaliacaoResponse)

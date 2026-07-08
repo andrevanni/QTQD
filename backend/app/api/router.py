@@ -6,6 +6,7 @@ from backend.app.api.v1.admin_logins import router as admin_logins_router
 from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.avaliacoes import router as avaliacoes_router
 from backend.app.api.v1.cliente_config import router as cliente_config_router
+from backend.app.api.v1.comparativo import router as comparativo_router
 from backend.app.api.v1.estrutura import router as estrutura_router
 from backend.app.api.v1.excesso_critico import router as excesso_critico_router
 from backend.app.api.v1.importacao import router as importacao_router
@@ -18,6 +19,7 @@ api_router.include_router(auth_router)
 # Rotas do cliente (exigem JWT Supabase Auth)
 api_router.include_router(avaliacoes_router)
 api_router.include_router(cliente_config_router)
+api_router.include_router(comparativo_router)
 api_router.include_router(estrutura_router)
 api_router.include_router(excesso_critico_router)
 
