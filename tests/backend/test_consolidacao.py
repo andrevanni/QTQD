@@ -2,6 +2,7 @@ import pytest
 from backend.app.services.consolidacao_service import media_ponderada
 from backend.app.schemas.avaliacoes import AvaliacaoValores
 from backend.app.services.consolidacao_service import consolidar_valores
+from backend.app.services.calculos_qtqd import calcular_indicadores
 
 
 def test_media_ponderada_basica():
@@ -91,3 +92,34 @@ def test_associatividade_loja_grupo_rede():
     assert cascata.pmp == pytest.approx(plano.pmp)
     assert cascata.pmv == pytest.approx(plano.pmv)
     assert cascata.compras_mes == pytest.approx(plano.compras_mes)
+
+
+def _ind(indicadores, codigo):
+    return next(i.valor for i in indicadores if i.codigo == codigo)
+
+
+def test_indice_consolidado_eh_qt_sobre_qd_nao_media_de_indices():
+    # Loja A: QT alto, QD baixo; Loja B: QT baixo, QD alto.
+    a = AvaliacaoValores(saldo_bancario=1000.0, estoque_custo=0.0, contas_pagar=500.0)
+    b = AvaliacaoValores(saldo_bancario=100.0, estoque_custo=0.0, contas_pagar=1000.0)
+    cons = consolidar_valores([a, b])
+    ind = calcular_indicadores(cons)
+    # QT_rede = 1100, QD_rede = 1500 -> índice = 1100/1500 ≈ 0.7333
+    assert _ind(ind, "qt_total") == pytest.approx(1100.0)
+    assert _ind(ind, "qd_total") == pytest.approx(1500.0)
+    assert _ind(ind, "indice_qt_qd") == pytest.approx(1100.0 / 1500.0)
+
+
+def test_ciclo_consolidado_usa_prazos_ponderados():
+    # PMP ponderado por compras, PMV por venda_custo, PME_excel por estoque
+    a = AvaliacaoValores(pmp=40.0, compras_mes=1000.0, pmv=30.0, venda_custo_mes=1000.0,
+                         pme_excel=20.0, estoque_custo=1000.0)
+    b = AvaliacaoValores(pmp=20.0, compras_mes=1000.0, pmv=10.0, venda_custo_mes=1000.0,
+                         pme_excel=40.0, estoque_custo=1000.0)
+    cons = consolidar_valores([a, b])
+    ind = calcular_indicadores(cons)
+    # pmp=30, pmv=20, pme=30 -> ciclo = 30 - 20 - 30 = -20
+    assert cons.pmp == pytest.approx(30.0)
+    assert cons.pmv == pytest.approx(20.0)
+    assert cons.pme_excel == pytest.approx(30.0)
+    assert _ind(ind, "ciclo_financiamento") == pytest.approx(-20.0)
