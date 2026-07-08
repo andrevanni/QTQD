@@ -111,15 +111,18 @@ def test_indice_consolidado_eh_qt_sobre_qd_nao_media_de_indices():
 
 
 def test_ciclo_consolidado_usa_prazos_ponderados():
-    # PMP ponderado por compras, PMV por venda_custo, PME_excel por estoque
-    a = AvaliacaoValores(pmp=40.0, compras_mes=1000.0, pmv=30.0, venda_custo_mes=1000.0,
-                         pme_excel=20.0, estoque_custo=1000.0)
-    b = AvaliacaoValores(pmp=20.0, compras_mes=1000.0, pmv=10.0, venda_custo_mes=1000.0,
-                         pme_excel=40.0, estoque_custo=1000.0)
+    # Bases de peso DIFERENTES entre lojas: média ponderada != média simples
+    a = AvaliacaoValores(pmp=40.0, compras_mes=100.0, pmv=30.0, venda_custo_mes=200.0,
+                         pme_excel=20.0, estoque_custo=500.0)
+    b = AvaliacaoValores(pmp=20.0, compras_mes=300.0, pmv=10.0, venda_custo_mes=600.0,
+                         pme_excel=40.0, estoque_custo=1500.0)
     cons = consolidar_valores([a, b])
     ind = calcular_indicadores(cons)
-    # pmp=30, pmv=20, pme=30 -> ciclo = 30 - 20 - 30 = -20
-    assert cons.pmp == pytest.approx(30.0)
-    assert cons.pmv == pytest.approx(20.0)
-    assert cons.pme_excel == pytest.approx(30.0)
-    assert _ind(ind, "ciclo_financiamento") == pytest.approx(-20.0)
+    # pmp ponderado por compras: (40*100+20*300)/400 = 25
+    # pmv ponderado por venda_custo: (30*200+10*600)/800 = 15
+    # pme_excel ponderado por estoque: (20*500+40*1500)/2000 = 35
+    # ciclo = 25 - 15 - 35 = -25  (média simples dos prazos daria -20 -> discrimina)
+    assert cons.pmp == pytest.approx(25.0)
+    assert cons.pmv == pytest.approx(15.0)
+    assert cons.pme_excel == pytest.approx(35.0)
+    assert _ind(ind, "ciclo_financiamento") == pytest.approx(-25.0)
