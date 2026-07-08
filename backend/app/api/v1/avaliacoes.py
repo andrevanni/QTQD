@@ -15,7 +15,7 @@ from backend.app.services.calculos_qtqd import calcular_indicadores
 
 router = APIRouter(prefix="/avaliacoes", tags=["avaliacoes"])
 
-_COLS = "id, tenant_id, semana_referencia, status, observacoes, valores, created_at, updated_at"
+_COLS = "id, tenant_id, grupo_id, loja_id, semana_referencia, status, observacoes, valores, created_at, updated_at"
 
 # Campos persistidos no JSONB `valores` que NÃO são gerenciados pelo formulário
 # nem pela importação Excel — apenas o assistente de Excesso Crítico (/aplicar) os
@@ -34,6 +34,20 @@ def _preserve_apply_only(new_valores: dict, old_valores: dict | None) -> dict:
         if old_valores.get(field) is not None:
             new_valores[field] = old_valores[field]
     return new_valores
+
+
+def _validar_unidade(modo_rede: bool, nivel_grupo: str | None, grupo_id, loja_id) -> None:
+    """Valida a unidade (grupo/loja) conforme o modo do tenant. Levanta ValueError."""
+    if not modo_rede:
+        if grupo_id is not None or loja_id is not None:
+            raise ValueError("Cliente sem modo_rede não aceita grupo_id/loja_id.")
+        return
+    if grupo_id is None:
+        raise ValueError("modo_rede exige grupo_id.")
+    if nivel_grupo == "loja" and loja_id is None:
+        raise ValueError("Grupo com preenchimento por loja exige loja_id.")
+    if nivel_grupo == "grupo" and loja_id is not None:
+        raise ValueError("Grupo com preenchimento direto não aceita loja_id.")
 
 # Campos do template Excel: (chave_interna | None=seção, label, formato)
 _EXCEL_CAMPOS = [
@@ -86,6 +100,8 @@ def _serialize(row: dict) -> AvaliacaoResponse:
     return AvaliacaoResponse(
         id=row["id"],
         tenant_id=row["tenant_id"],
+        grupo_id=row.get("grupo_id"),
+        loja_id=row.get("loja_id"),
         semana_referencia=row["semana_referencia"],
         status=row["status"],
         observacoes=row.get("observacoes"),
@@ -381,15 +397,29 @@ def obter(avaliacao_id: UUID, tenant_id: UUID = Depends(get_current_tenant)) -> 
 def criar(payload: AvaliacaoCreateRequest, tenant_id: UUID = Depends(get_current_tenant)) -> AvaliacaoResponse:
     if payload.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="tenant_id do payload nao confere com o token.")
-    valores = AvaliacaoValores(**payload.model_dump(exclude={"tenant_id", "semana_referencia", "status", "observacoes"}))
+    valores = AvaliacaoValores(**payload.model_dump(exclude={"tenant_id", "semana_referencia", "status", "observacoes", "grupo_id", "loja_id"}))
+
+    sb = get_supabase()
+    tenant_row = sb.table("tenants").select("modo_rede").eq("id", str(tenant_id)).limit(1).execute()
+    modo_rede = bool(tenant_row.data[0].get("modo_rede")) if tenant_row.data else False
+    nivel_grupo = None
+    if payload.grupo_id is not None:
+        g = sb.table("grupos_economicos").select("nivel_preenchimento").eq("id", str(payload.grupo_id)).eq("tenant_id", str(tenant_id)).limit(1).execute()
+        nivel_grupo = g.data[0]["nivel_preenchimento"] if g.data else None
+    try:
+        _validar_unidade(modo_rede, nivel_grupo, payload.grupo_id, payload.loja_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     data = {
         "tenant_id": str(tenant_id),
+        "grupo_id": str(payload.grupo_id) if payload.grupo_id else None,
+        "loja_id": str(payload.loja_id) if payload.loja_id else None,
         "semana_referencia": str(payload.semana_referencia),
         "status": payload.status,
         "observacoes": payload.observacoes,
         "valores": valores.model_dump(),
     }
-    result = get_supabase().table("avaliacoes_semanais").insert(data).execute()
+    result = sb.table("avaliacoes_semanais").insert(data).execute()
     if not result.data:
         raise HTTPException(status_code=500, detail="Falha ao criar avaliacao.")
     return _serialize(result.data[0])
@@ -418,6 +448,8 @@ def atualizar(
         "semana_referencia": str(payload.semana_referencia) if payload.semana_referencia else row["semana_referencia"],
         "status": new_status,
         "observacoes": payload.observacoes if payload.observacoes is not None else row.get("observacoes"),
+        "grupo_id": str(payload.grupo_id) if payload.grupo_id is not None else row.get("grupo_id"),
+        "loja_id": str(payload.loja_id) if payload.loja_id is not None else row.get("loja_id"),
         "valores": next_valores_dict,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
