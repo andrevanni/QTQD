@@ -384,11 +384,14 @@ def listar(
             .execute()
         )
         return [_serialize(row) for row in result.data]
+    if nivel not in ("loja", "grupo", "rede"):
+        raise HTTPException(status_code=400, detail="nivel deve ser loja, grupo ou rede.")
     # série consolidada por nível
     avals = (
         sb.table("avaliacoes_semanais")
         .select("semana_referencia, grupo_id, loja_id, valores")
         .eq("tenant_id", str(tenant_id))
+        .neq("status", "rascunho")
         .execute()
         .data
     )

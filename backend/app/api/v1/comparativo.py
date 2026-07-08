@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from backend.app.core.auth import get_current_tenant
 from backend.app.db.client import get_supabase
@@ -18,6 +18,7 @@ def _carregar(tenant_id: UUID):
         sb.table("avaliacoes_semanais")
         .select("semana_referencia, grupo_id, loja_id, valores")
         .eq("tenant_id", str(tenant_id))
+        .neq("status", "rascunho")
         .execute()
         .data
     )
@@ -46,6 +47,10 @@ def comparativo(
     modo: str = "snapshot",
     semana: str | None = None,
 ) -> dict:
+    if nivel not in ("loja", "grupo", "rede"):
+        raise HTTPException(status_code=400, detail="nivel deve ser loja, grupo ou rede.")
+    if modo not in ("snapshot", "evolucao"):
+        raise HTTPException(status_code=400, detail="modo deve ser snapshot ou evolucao.")
     avals, grupos, lojas = _carregar(tenant_id)
     ref = str(grupo_id) if grupo_id else None
     if modo == "evolucao":
