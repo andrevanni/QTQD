@@ -316,6 +316,35 @@
       return request(base(`/admin/admins/${id}`), { method: 'DELETE', headers: adminHeaders(adminToken) });
     },
 
+    /* ── Estrutura multi-loja (exige X-Admin-Token) ──── */
+    listGrupos(adminToken, tenantId) {
+      return request(base(`/admin/tenants/${tenantId}/grupos`), { method: 'GET', headers: adminHeaders(adminToken) });
+    },
+    criarGrupo(adminToken, tenantId, payload) {
+      return request(base(`/admin/tenants/${tenantId}/grupos`), { method: 'POST', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
+    },
+    atualizarGrupo(adminToken, tenantId, gid, payload) {
+      return request(base(`/admin/tenants/${tenantId}/grupos/${gid}`), { method: 'PATCH', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
+    },
+    excluirGrupo(adminToken, tenantId, gid) {
+      return request(base(`/admin/tenants/${tenantId}/grupos/${gid}`), { method: 'DELETE', headers: adminHeaders(adminToken) });
+    },
+    listLojas(adminToken, tenantId) {
+      return request(base(`/admin/tenants/${tenantId}/lojas`), { method: 'GET', headers: adminHeaders(adminToken) });
+    },
+    criarLoja(adminToken, tenantId, payload) {
+      return request(base(`/admin/tenants/${tenantId}/lojas`), { method: 'POST', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
+    },
+    atualizarLoja(adminToken, tenantId, lid, payload) {
+      return request(base(`/admin/tenants/${tenantId}/lojas/${lid}`), { method: 'PATCH', headers: adminHeaders(adminToken), body: JSON.stringify(payload) });
+    },
+    excluirLoja(adminToken, tenantId, lid) {
+      return request(base(`/admin/tenants/${tenantId}/lojas/${lid}`), { method: 'DELETE', headers: adminHeaders(adminToken) });
+    },
+    toggleModoRede(adminToken, tenantId, ativo) {
+      return request(base(`/admin/tenants/${tenantId}/modo-rede`), { method: 'PATCH', headers: adminHeaders(adminToken), body: JSON.stringify({ ativo: ativo }) });
+    },
+
     /* ── Admin — importações ─────────────────────────── */
     listImportacoes(adminToken, tenantId) {
       const qs = tenantId ? `?tenant_id=${tenantId}` : '';
