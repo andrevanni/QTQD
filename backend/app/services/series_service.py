@@ -1,5 +1,6 @@
 from backend.app.schemas.avaliacoes import AvaliacaoValores
 from backend.app.services.consolidacao_service import consolidar_valores
+from backend.app.services.calculos_qtqd import calcular_indicadores
 
 # Total -> sub-itens que, se presentes (>0), tornam o total redundante
 _GRUPOS_DETALHE = {
@@ -82,3 +83,51 @@ def build_series(avaliacoes: list[dict], grupos: list[dict], nivel: str, ref_id:
             rede = consolidar_valores(consolidados_grupo)
             out.append({"semana_referencia": s, "valores": rede.model_dump()})
     return out
+
+
+def _pacote(valores: AvaliacaoValores) -> dict:
+    """Agrupa valores e indicadores calculados."""
+    return {
+        "valores": valores.model_dump(),
+        "indicadores": [i.model_dump() for i in calcular_indicadores(valores)],
+    }
+
+
+def _unidades_filhas(grupos: list[dict], lojas: list[dict], nivel: str, ref_id: str | None):
+    """Lista de (id, nome, tipo) das unidades comparáveis no nível pedido."""
+    if nivel == "rede":
+        return [(g["id"], g.get("nome", ""), "grupo") for g in grupos]
+    # nivel == "grupo": compara as lojas daquele grupo
+    return [(l["id"], l.get("nome", ""), "loja") for l in lojas if l.get("grupo_id") == ref_id]
+
+
+def build_comparativo_snapshot(avaliacoes, grupos, lojas, nivel, ref_id, semana) -> dict:
+    """Snapshot de comparativo: unidades filhas + total consolidado numa semana."""
+    grupos_por_id = {g["id"]: g for g in grupos}
+    unidades_out = []
+    for uid, nome, tipo in _unidades_filhas(grupos, lojas, nivel, ref_id):
+        if tipo == "grupo":
+            da_grupo = [a for a in avaliacoes if a.get("grupo_id") == uid]
+            cons = _consolidar_grupo(grupos_por_id[uid], da_grupo, semana)
+        else:  # loja
+            regs = [a for a in avaliacoes if a.get("loja_id") == uid and a["semana_referencia"] == semana]
+            cons = _valores_norm(regs[0]) if regs else None
+        if cons is not None:
+            unidades_out.append({"id": uid, "nome": nome, "tipo": tipo, **_pacote(cons)})
+    total_serie = build_series(avaliacoes, grupos, nivel, ref_id)
+    total_v = next((s["valores"] for s in total_serie if s["semana_referencia"] == semana), None)
+    total = _pacote(AvaliacaoValores(**total_v)) if total_v else _pacote(AvaliacaoValores())
+    return {"semana": semana, "unidades": unidades_out, "total": total}
+
+
+def build_comparativo_evolucao(avaliacoes, grupos, lojas, nivel, ref_id) -> dict:
+    """Evolução de cada unidade filha: série com indicadores por semana."""
+    unidades_out = []
+    for uid, nome, tipo in _unidades_filhas(grupos, lojas, nivel, ref_id):
+        sub_nivel = "grupo" if tipo == "grupo" else "loja"
+        serie = build_series(avaliacoes, grupos, sub_nivel, uid)
+        pontos = [{"semana": s["semana_referencia"],
+                   "indicadores": [i.model_dump() for i in calcular_indicadores(AvaliacaoValores(**s["valores"]))]}
+                  for s in serie]
+        unidades_out.append({"id": uid, "nome": nome, "serie": pontos})
+    return {"unidades": unidades_out}
