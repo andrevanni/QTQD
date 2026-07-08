@@ -1,7 +1,8 @@
 import pytest
 from backend.app.schemas.avaliacoes import AvaliacaoValores
+from backend.app.services.calculos_qtqd import calcular_indicadores
 from backend.app.services.series_service import (
-    _normalizar_detalhe, build_series,
+    build_series,
     build_comparativo_snapshot, build_comparativo_evolucao,
 )
 
@@ -13,19 +14,6 @@ def _av(semana, valores, grupo_id=None, loja_id=None):
 
 def _ind(indicadores, codigo):
     return next(i["valor"] for i in indicadores if i["codigo"] == codigo)
-
-
-def test_normalizar_zera_total_quando_ha_subitens():
-    v = {"contas_receber": 500.0, "cartoes": 300.0, "convenios": 100.0}
-    out = _normalizar_detalhe(v)
-    assert out["contas_receber"] == 0.0   # zerado: sub-itens presentes
-    assert out["cartoes"] == 300.0
-
-
-def test_normalizar_mantem_total_sem_subitens():
-    v = {"contas_receber": 500.0}
-    out = _normalizar_detalhe(v)
-    assert out["contas_receber"] == 500.0
 
 
 def test_series_nivel_loja_retorna_serie_crua():
@@ -113,3 +101,57 @@ def test_comparativo_evolucao_uma_serie_por_unidade():
     evo = build_comparativo_evolucao(avals, grupos, lojas, nivel="grupo", ref_id="g1")
     l1 = next(u for u in evo["unidades"] if u["nome"] == "Loja 1")
     assert [p["semana"] for p in l1["serie"]] == ["2026-07-06", "2026-06-29"]
+
+
+def _qt(valores: dict) -> float:
+    from backend.app.schemas.avaliacoes import AvaliacaoValores as AV
+    from backend.app.services.calculos_qtqd import calcular_indicadores
+    ind = calcular_indicadores(AV(**valores))
+    return next(i.valor for i in ind if i.codigo == "qt_total")
+
+
+def test_series_grupo_misto_detalhe_nao_perde_total():
+    # Loja A detalha (cartoes=300), Loja B só total (contas_receber=500)
+    avals = [
+        _av("2026-07-06", {"cartoes": 300.0}, grupo_id="g1", loja_id="l1"),
+        _av("2026-07-06", {"contas_receber": 500.0}, grupo_id="g1", loja_id="l2"),
+    ]
+    grupos = [{"id": "g1", "nivel_preenchimento": "loja"}]
+    serie = build_series(avals, grupos, nivel="grupo", ref_id="g1")
+    assert _qt(serie[0]["valores"]) == 800.0  # nada perdido (300 + 500)
+
+
+def test_series_uniforme_detalhe_preserva_subitens():
+    avals = [
+        _av("2026-07-06", {"cartoes": 300.0}, grupo_id="g1", loja_id="l1"),
+        _av("2026-07-06", {"cartoes": 200.0}, grupo_id="g1", loja_id="l2"),
+    ]
+    grupos = [{"id": "g1", "nivel_preenchimento": "loja"}]
+    serie = build_series(avals, grupos, nivel="grupo", ref_id="g1")
+    v = serie[0]["valores"]
+    assert v["cartoes"] == 500.0        # preservado (uniforme, não colapsa)
+    assert v["contas_receber"] == 0.0
+
+
+def test_series_rede_mista_grupo_direto_e_loja_nao_perde_total():
+    # g1 (loja, detalha cartoes=300) + g2 (grupo direto, contas_receber=500)
+    avals = [
+        _av("2026-07-06", {"cartoes": 300.0}, grupo_id="g1", loja_id="l1"),
+        _av("2026-07-06", {"contas_receber": 500.0}, grupo_id="g2", loja_id=None),
+    ]
+    grupos = [
+        {"id": "g1", "nivel_preenchimento": "loja"},
+        {"id": "g2", "nivel_preenchimento": "grupo"},
+    ]
+    serie = build_series(avals, grupos, nivel="rede", ref_id=None)
+    assert _qt(serie[0]["valores"]) == 800.0  # 300 + 500
+
+
+def test_series_loja_e_crua_nao_normaliza():
+    # nível loja deve devolver o dado cru: total preenchido permanece
+    avals = [_av("2026-07-06", {"contas_receber": 500.0, "cartoes": 100.0}, grupo_id="g1", loja_id="l1")]
+    grupos = [{"id": "g1", "nivel_preenchimento": "loja"}]
+    serie = build_series(avals, grupos, nivel="loja", ref_id="l1")
+    v = serie[0]["valores"]
+    assert v["contas_receber"] == 500.0  # cru, não zerado
+    assert v["cartoes"] == 100.0

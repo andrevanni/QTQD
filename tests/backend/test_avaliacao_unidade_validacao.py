@@ -22,3 +22,8 @@ def test_modo_rede_grupo_nivel_grupo_exige_grupo_sem_loja():
         _validar_unidade(True, "grupo", "g1", "l1")
     with pytest.raises(ValueError):
         _validar_unidade(True, "grupo", None, None)
+
+
+def test_modo_rede_grupo_nao_resolvido_falha():
+    with pytest.raises(ValueError):
+        _validar_unidade(True, None, "g-de-outro-tenant", None)

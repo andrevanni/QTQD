@@ -44,6 +44,8 @@ def _validar_unidade(modo_rede: bool, nivel_grupo: str | None, grupo_id, loja_id
         return
     if grupo_id is None:
         raise ValueError("modo_rede exige grupo_id.")
+    if nivel_grupo is None:
+        raise ValueError("grupo_id não encontrado para o tenant.")
     if nivel_grupo == "loja" and loja_id is None:
         raise ValueError("Grupo com preenchimento por loja exige loja_id.")
     if nivel_grupo == "grupo" and loja_id is not None:
@@ -400,16 +402,17 @@ def criar(payload: AvaliacaoCreateRequest, tenant_id: UUID = Depends(get_current
     valores = AvaliacaoValores(**payload.model_dump(exclude={"tenant_id", "semana_referencia", "status", "observacoes", "grupo_id", "loja_id"}))
 
     sb = get_supabase()
-    tenant_row = sb.table("tenants").select("modo_rede").eq("id", str(tenant_id)).limit(1).execute()
-    modo_rede = bool(tenant_row.data[0].get("modo_rede")) if tenant_row.data else False
-    nivel_grupo = None
-    if payload.grupo_id is not None:
-        g = sb.table("grupos_economicos").select("nivel_preenchimento").eq("id", str(payload.grupo_id)).eq("tenant_id", str(tenant_id)).limit(1).execute()
-        nivel_grupo = g.data[0]["nivel_preenchimento"] if g.data else None
-    try:
-        _validar_unidade(modo_rede, nivel_grupo, payload.grupo_id, payload.loja_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    if payload.grupo_id is not None or payload.loja_id is not None:
+        tenant_row = sb.table("tenants").select("modo_rede").eq("id", str(tenant_id)).limit(1).execute()
+        modo_rede = bool(tenant_row.data[0].get("modo_rede")) if tenant_row.data else False
+        nivel_grupo = None
+        if payload.grupo_id is not None:
+            g = sb.table("grupos_economicos").select("nivel_preenchimento").eq("id", str(payload.grupo_id)).eq("tenant_id", str(tenant_id)).limit(1).execute()
+            nivel_grupo = g.data[0]["nivel_preenchimento"] if g.data else None
+        try:
+            _validar_unidade(modo_rede, nivel_grupo, payload.grupo_id, payload.loja_id)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     data = {
         "tenant_id": str(tenant_id),
         "grupo_id": str(payload.grupo_id) if payload.grupo_id else None,
@@ -444,6 +447,19 @@ def atualizar(
     next_valores_dict = next_valores.model_dump()
     if payload.valores:
         next_valores_dict = _preserve_apply_only(next_valores_dict, row.get("valores"))
+    if payload.grupo_id is not None or payload.loja_id is not None:
+        eff_grupo = payload.grupo_id if payload.grupo_id is not None else row.get("grupo_id")
+        eff_loja = payload.loja_id if payload.loja_id is not None else row.get("loja_id")
+        t = sb.table("tenants").select("modo_rede").eq("id", str(tenant_id)).limit(1).execute()
+        modo_rede = bool(t.data[0].get("modo_rede")) if t.data else False
+        nivel_grupo = None
+        if eff_grupo is not None:
+            g = sb.table("grupos_economicos").select("nivel_preenchimento").eq("id", str(eff_grupo)).eq("tenant_id", str(tenant_id)).limit(1).execute()
+            nivel_grupo = g.data[0]["nivel_preenchimento"] if g.data else None
+        try:
+            _validar_unidade(modo_rede, nivel_grupo, eff_grupo, eff_loja)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     update_data = {
         "semana_referencia": str(payload.semana_referencia) if payload.semana_referencia else row["semana_referencia"],
         "status": new_status,
