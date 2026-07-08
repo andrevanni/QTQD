@@ -19,6 +19,7 @@ O sistema **já possui infraestrutura multi-tenant** (um usuário pode acessar v
 5. **Nível de preenchimento configurável por grupo:** alguns grupos são lançados **loja a loja**; outros já vêm **consolidados por grupo** (o cliente lança direto no grupo). Um mesmo cliente pode misturar os dois tipos.
 6. **Escopo da 1ª entrega:** completo ("tudo redondo") — preenchimento por unidade, seletor de 3 níveis no portal, consolidado ponderado em Inspetor + Painel + Gráficos, Excesso Crítico por loja e relatório por e-mail por nível.
 7. **Ciclo de financiamento opcional (2ª sugestão):** basta o admin ocultar PMP/PMV/PME pela config de Campos (já existe); único ajuste é garantir que, ocultos, não gerem alerta "vermelho" no semáforo.
+8. **Comparativo lado a lado (incluído na fase 1):** nova seção comparando unidades — **snapshot** (uma semana) **+ evolução** (linha por unidade ao longo das semanas). Render isolado, sem tocar os renders existentes.
 
 ### Enquadramento: todo cliente é uma "rede"
 
@@ -36,6 +37,13 @@ Conceitualmente **todo cliente é uma rede**. A quebra em **grupos econômicos**
 ### Grupo único implícito (para "rede sem grupo econômico")
 
 Quando uma rede tem lojas mas o cliente **não** raciocina em termos de grupo econômico, o sistema usa **um grupo único implícito** ("Geral"). O modelo continua 3-níveis internamente, mas a UX esconde o nível grupo quando há apenas um grupo (rede ≡ grupo). Assim "rede direto com lojas" e "rede com vários grupos" usam a mesma estrutura, sem forçar o cliente a criar grupos que não existem para ele.
+
+### Casos de exemplo
+
+- **Rede com 3 lojas, lançando loja a loja (caso comum):** 1 grupo "Geral" (`nivel='loja'`) + 3 lojas. Seletor mostra **Loja 1 / Loja 2 / Loja 3 / REDE (consolidado)** — nível grupo omitido por ser único. Vê cada loja independente e o consolidado das três.
+- **Rede que já recebe consolidado por grupo:** 1+ grupos com `nivel='grupo'`, lançamento direto no grupo, sem lojas. Seletor mostra os grupos + REDE.
+- **Rede mista:** grupo A por loja (várias lojas) + grupo B consolidado (direto). Seletor mostra lojas do A, grupo A (soma), grupo B (direto) e REDE (soma de A+B).
+- **Cliente comum de hoje (sem modo_rede):** nenhum grupo/loja, série única, sem seletor — idêntico ao atual.
 
 ## Modelo de dados
 
@@ -190,6 +198,32 @@ O Excel de Excesso já traz a coluna `Filial` (1–6). Com `lojas.filial_excel` 
 - Envio no nível **rede** (padrão), **grupo** e/ou **loja**, configurável no admin (`tenant_pdf_config`).
 - `relatorio_html` renderiza a série do nível escolhido (mesmo template).
 
+## Comparativo lado a lado
+
+Nova **seção isolada** no portal ("Comparativo"), com render próprio (`renderComparativo()`) que **não toca** Inspetor/Painel/Gráficos/Histórico existentes — isolamento protege o `script.js` sensível. Visível somente com `modo_rede` on e mais de uma unidade comparável.
+
+**Unidades comparadas** dependem do nível ativo:
+- Nível **rede** → compara os **grupos** (cada grupo pelo seu consolidado).
+- Nível **grupo** (`nivel='loja'`) → compara as **lojas** daquele grupo.
+
+### Modo snapshot (uma semana)
+
+- Seletor de semana (padrão = mais recente).
+- **Tabela comparativa:** indicadores nas linhas × uma coluna por unidade + coluna **Total (consolidado)**. Reusa `matrixVal`/`fmtMoneyShort`/`fmtPercent`.
+- **Gráfico de barras agrupadas** dos indicadores-chave (QT, QD, Saldo, Índice QT/QD, Excesso) por unidade.
+
+### Modo evolução (várias semanas)
+
+- **Gráfico de linhas:** uma linha por unidade ao longo das semanas, para um indicador selecionável (ex.: Índice QT/QD, Saldo, QT). Seletor de indicador.
+
+### Backend
+
+- `GET /me/comparativo?nivel=rede|grupo&grupo_id=…&modo=snapshot&semana=…`
+  → array `[{ unidade:{id,nome,tipo}, valores, indicadores }]` por unidade filha + o consolidado (Total). Reusa `consolidar_valores`.
+- `GET /me/comparativo?nivel=rede|grupo&grupo_id=…&modo=evolucao`
+  → por unidade, série `[{ semana, indicadores }]` (frontend escolhe o campo a plotar). Um único request (evita N chamadas).
+- Sem `modo_rede`: seção não aparece; endpoint retorna vazio/404.
+
 ## Ciclo de financiamento opcional (2ª sugestão)
 
 - Preenchimento opcional de PMP/PMV/PME já é possível: admin oculta os campos pela config de Campos.
@@ -214,12 +248,12 @@ Para ligar o recurso num cliente específico (opt-in deliberado):
 - **Paridade:** conferir que o consolidado da rede de um cliente = os números que o cliente somaria manualmente (validar com dados reais de um cliente piloto).
 - **Retrocompatibilidade:** cliente `modo_rede=false` produz exatamente a mesma resposta de hoje em todos os endpoints (grupo_id/loja_id NULL).
 - **E2E no portal:** seletor troca a série corretamente; lançamento grava no grupo/loja certo; consolidado bate; sem erros no console F12.
+- **Comparativo:** snapshot com N unidades + Total soma corretamente; evolução plota uma linha por unidade; seção some para `modo_rede=false`; render isolado não altera Inspetor/Painel/Gráficos.
 
 ## Fora de escopo (fase 1)
 
-- Permissão de usuário por loja/grupo (todos os usuários do cliente veem todas as unidades — coerente com "config compartilhada").
-- Metas/orçamento por loja.
-- Comparativo lado a lado entre lojas na mesma tela (o seletor troca de série; comparação simultânea fica para depois).
+- **Permissão de usuário por loja/grupo** (todos os usuários do cliente veem todas as unidades — coerente com "config compartilhada"). Deixado para depois deliberadamente, para não mexer em login/`tenant_usuarios` nesta fase.
+- **Metas/orçamento por loja** (realizado × meta).
 
 ## Arquivos afetados (previsão)
 
@@ -229,11 +263,12 @@ Para ligar o recurso num cliente específico (opt-in deliberado):
 | `backend/app/schemas/avaliacoes.py` | `grupo_id`/`loja_id` nos requests; schemas de grupo/loja |
 | `backend/app/services/consolidacao_service.py` | **novo** — `consolidar_valores()` |
 | `backend/app/api/v1/avaliacoes.py` | filtro por nível; consolidação; `_preserve_apply_only` por unidade |
+| `backend/app/api/v1/comparativo.py` (ou em avaliacoes) | **novo** — `GET /me/comparativo` snapshot + evolução |
 | `backend/app/api/v1/admin_clientes.py` (ou novo `admin_estrutura.py`) | CRUD grupos/lojas + toggle `modo_rede` |
 | `backend/app/api/v1/excesso_critico.py` | aplicar por loja via `filial_excel` |
 | `backend/app/services/relatorio_service.py` / `relatorio_html.py` | envio por nível |
 | `shared/api_client.js` | métodos `getLojas`, CRUD grupos/lojas, série por nível |
-| `frontend_cliente/script.js` | seletor de nível; troca de série; `loja_id`/`grupo_id` em lançamentos; semáforo tolerante a ciclo ausente |
+| `frontend_cliente/script.js` | seletor de nível; troca de série; `loja_id`/`grupo_id` em lançamentos; semáforo tolerante a ciclo ausente; **`renderComparativo()` isolado** |
 | `frontend_cliente/excesso_critico.js` | aplicar por loja |
 | `frontend_cliente/index.html` | seletor no topbar; SW bump |
 | `frontend_cliente/sw.js` | `qtqd-v13 → v14` |
