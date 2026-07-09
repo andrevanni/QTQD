@@ -31,3 +31,14 @@ def test_modo_rede_nivel_rede_soma():
     grupos = [{"id": "g1", "nivel_preenchimento": "loja"}]
     out = montar_avals_por_nivel(avals, grupos, modo_rede=True, nivel="rede", ref=None)
     assert out[0]["valores"]["saldo_bancario"] == 300.0
+
+
+def test_nivel_rede_com_ref_none_consolida():
+    """Fallback para rede quando é modo_rede + nivel loja/grupo mas ref=None (envio manual sem contexto)."""
+    avals = [
+        _av("2026-07-06", {"saldo_bancario": 100.0}, grupo_id="g1", loja_id="l1"),
+        _av("2026-07-06", {"saldo_bancario": 200.0}, grupo_id="g1", loja_id="l2"),
+    ]
+    grupos = [{"id": "g1", "nivel_preenchimento": "loja"}]
+    out = montar_avals_por_nivel(avals, grupos, modo_rede=True, nivel="rede", ref=None)
+    assert out[0]["valores"]["saldo_bancario"] == 300.0

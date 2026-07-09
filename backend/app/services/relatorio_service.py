@@ -70,7 +70,11 @@ def enviar_relatorio_para_tenant(
             elif nivel_relatorio == "grupo":
                 ref = av_ref.data[0].get("grupo_id")
 
-    serie = montar_avals_por_nivel(all_avals, grupos, modo_rede, nivel_relatorio, ref)[:n_retratos]
+    nivel_efetivo = nivel_relatorio
+    if modo_rede and nivel_relatorio in ("loja", "grupo") and ref is None:
+        nivel_efetivo = "rede"  # envio manual sem contexto de loja -> consolidado da rede (evita relatório vazio)
+
+    serie = montar_avals_por_nivel(all_avals, grupos, modo_rede, nivel_efetivo, ref)[:n_retratos]
 
     avals_sorted = sorted(serie, key=lambda x: x["semana_referencia"])
     periodos = []
