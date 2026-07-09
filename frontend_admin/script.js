@@ -167,6 +167,7 @@ function loadPdfSection() {
   populateClientSelects();
   $('pdfConfigPanel')?.classList.add('hidden');
   $('pdfDestinatariosList').innerHTML = '';
+  $('pdfNivelRelatorio').value = 'loja';
   loadEmailLog(null);
 }
 
@@ -178,6 +179,7 @@ $('pdfClient')?.addEventListener('change', async () => {
   // Limpa para não mostrar dados do cliente anterior enquanto carrega
   $('pdfNRetratos').value  = 8;
   $('pdfAtivo').checked    = true;
+  $('pdfNivelRelatorio').value = 'loja';
   $('pdfDestinatariosList').innerHTML = '';
   panel.classList.remove('hidden');
 
@@ -187,6 +189,7 @@ $('pdfClient')?.addEventListener('change', async () => {
     if (cfg) {
       $('pdfNRetratos').value = cfg.n_retratos ?? 8;
       $('pdfAtivo').checked   = cfg.ativo ?? true;
+      $('pdfNivelRelatorio').value = cfg.nivel_relatorio ?? 'loja';
     }
   } catch {}
 
@@ -218,6 +221,7 @@ $('savePdfConfigBtn')?.addEventListener('click', async () => {
   const payload = {
     n_retratos: parseInt($('pdfNRetratos').value || '8'),
     ativo:      $('pdfAtivo').checked,
+    nivel_relatorio: $('pdfNivelRelatorio').value,
   };
   try {
     await window.QTQD_API_CLIENT.savePdfConfig(getToken(), tenantId, payload);
@@ -334,6 +338,7 @@ function openSection(id) {
   if (id === 'identidade') loadBranding();
   if (id === 'admins')     loadAdmins();
   if (id === 'ambiente')   renderAmbiente();
+  if (id === 'estrutura')  loadEstrutura();
 }
 
 /* ── Login screen ────────────────────────────────────── */
@@ -553,7 +558,7 @@ function renderLicenses() {
 
 function populateClientSelects() {
   ['licenseClient', 'importClient', 'brandingClient', 'camposClient', 'templateClient',
-   'usuarioClient', 'usuarioClientFilter', 'pdfClient'].forEach(id => {
+   'usuarioClient', 'usuarioClientFilter', 'pdfClient', 'estruturaClient'].forEach(id => {
     const sel = $(id);
     if (!sel) return;
     const cur = sel.value;
@@ -753,6 +758,160 @@ $('btnConviteApp')?.addEventListener('click', async () => {
 });
 
 $('usuarioClientFilter')?.addEventListener('change', loadUsuarios);
+
+/* ═══════════════════════════════════════════════════════
+   ESTRUTURA (multi-loja: grupos/lojas + modo_rede)
+   ═══════════════════════════════════════════════════════ */
+let estruturaGrupos = [];
+let estruturaLojas = [];
+
+async function loadEstrutura() {
+  const tid = $('estruturaClient')?.value || '';
+  const wrap = $('estruturaModoRedeWrap');
+  const body = $('estruturaBody');
+  const empty = $('estruturaEmpty');
+  if (!tid) {
+    if (wrap) wrap.hidden = true;
+    if (body) body.hidden = true;
+    if (empty) empty.hidden = false;
+    return;
+  }
+  try {
+    const [grupos, lojas] = await Promise.all([
+      window.QTQD_API_CLIENT.listGrupos(getToken(), tid),
+      window.QTQD_API_CLIENT.listLojas(getToken(), tid),
+    ]);
+    estruturaGrupos = grupos || [];
+    estruturaLojas = lojas || [];
+    // modo_rede: ler via /me/lojas não dá (admin); usar o registro do cliente já carregado
+    const cli = clients.find(c => String(c.id) === String(tid));
+    if ($('estruturaModoRede')) $('estruturaModoRede').checked = !!(cli && cli.modo_rede);
+    if (wrap) wrap.hidden = false;
+    if (body) body.hidden = false;
+    if (empty) empty.hidden = true;
+    renderEstrutura();
+  } catch (e) {
+    fb('Erro ao carregar estrutura: ' + e.message, 'error');
+  }
+}
+
+function renderEstrutura() {
+  // popular select de grupo do formulário de loja
+  const sel = $('lojaGrupoSelect');
+  if (sel) {
+    sel.innerHTML = '<option value="">Selecione o grupo</option>' +
+      estruturaGrupos.map(function (g) { return '<option value="' + g.id + '">' + g.nome + '</option>'; }).join('');
+  }
+  // lista de grupos com suas lojas
+  const list = $('gruposList');
+  if (!list) return;
+  if (!estruturaGrupos.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px">Nenhum grupo cadastrado.</p>';
+    return;
+  }
+  list.innerHTML = '';
+  estruturaGrupos.forEach(function (g) {
+    const lojasDoGrupo = estruturaLojas.filter(function (l) { return String(l.grupo_id) === String(g.id); });
+    const card = el('article', 'entity-card');
+    const nivelLabel = g.nivel_preenchimento === 'grupo' ? 'Direto no grupo' : 'Por loja';
+    let html = '<div class="entity-card-row">';
+    html += '<strong>' + g.nome + '</strong>';
+    html += '<span style="font-size:12px;color:var(--muted)">' + nivelLabel + '</span>';
+    html += '<button class="danger-button" data-del-grupo="' + g.id + '" type="button" style="padding:4px 10px;font-size:11px;flex-shrink:0">Excluir</button>';
+    html += '</div>';
+    if (g.nivel_preenchimento === 'loja') {
+      if (lojasDoGrupo.length) {
+        html += '<ul style="margin:8px 0 0;padding-left:18px;font-size:13px">';
+        lojasDoGrupo.forEach(function (l) {
+          const fil = (l.filial_excel !== null && l.filial_excel !== undefined) ? ' · Filial ' + l.filial_excel : '';
+          html += '<li>' + l.nome + fil + ' <button class="danger-button" data-del-loja="' + l.id + '" type="button" style="padding:2px 8px;font-size:11px">remover</button></li>';
+        });
+        html += '</ul>';
+      } else {
+        html += '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Sem lojas cadastradas.</p>';
+      }
+    }
+    card.innerHTML = html;
+    list.appendChild(card);
+  });
+  // handlers de exclusão (delegação simples)
+  list.querySelectorAll('[data-del-grupo]').forEach(function (b) {
+    b.addEventListener('click', function () { excluirGrupoEstrutura(b.getAttribute('data-del-grupo')); });
+  });
+  list.querySelectorAll('[data-del-loja]').forEach(function (b) {
+    b.addEventListener('click', function () { excluirLojaEstrutura(b.getAttribute('data-del-loja')); });
+  });
+}
+
+async function excluirGrupoEstrutura(gid) {
+  const tid = $('estruturaClient').value;
+  if (!confirm('Excluir este grupo e suas lojas? Esta ação não pode ser desfeita.')) return;
+  try {
+    await window.QTQD_API_CLIENT.excluirGrupo(getToken(), tid, gid);
+    fb('Grupo excluído.', 'success');
+    await loadEstrutura();
+  } catch (e) { fb('Erro ao excluir grupo: ' + e.message, 'error'); }
+}
+
+async function excluirLojaEstrutura(lid) {
+  const tid = $('estruturaClient').value;
+  if (!confirm('Excluir esta loja?')) return;
+  try {
+    await window.QTQD_API_CLIENT.excluirLoja(getToken(), tid, lid);
+    fb('Loja excluída.', 'success');
+    await loadEstrutura();
+  } catch (e) { fb('Erro ao excluir loja: ' + e.message, 'error'); }
+}
+
+// Listeners (registrados uma vez no load do script)
+$('estruturaClient')?.addEventListener('change', loadEstrutura);
+
+$('estruturaModoRede')?.addEventListener('change', async function () {
+  const tid = $('estruturaClient').value;
+  if (!tid) return;
+  try {
+    await window.QTQD_API_CLIENT.toggleModoRede(getToken(), tid, $('estruturaModoRede').checked);
+    const cli = clients.find(function (c) { return String(c.id) === String(tid); });
+    if (cli) cli.modo_rede = $('estruturaModoRede').checked;
+    fb('Modo rede ' + ($('estruturaModoRede').checked ? 'ativado' : 'desativado') + '.', 'success');
+  } catch (e) { fb('Erro ao alterar modo rede: ' + e.message, 'error'); }
+});
+
+$('addGrupoButton')?.addEventListener('click', async function () {
+  const tid = $('estruturaClient').value;
+  const nome = $('grupoNome').value.trim();
+  if (!tid) { fb('Selecione um cliente.', 'error'); return; }
+  if (!nome) { fb('Informe o nome do grupo.', 'error'); return; }
+  try {
+    await window.QTQD_API_CLIENT.criarGrupo(getToken(), tid, { nome: nome, nivel_preenchimento: $('grupoNivel').value });
+    $('grupoNome').value = '';
+    fb('Grupo adicionado.', 'success');
+    await loadEstrutura();
+  } catch (e) { fb('Erro ao adicionar grupo: ' + e.message, 'error'); }
+});
+
+$('addLojaButton')?.addEventListener('click', async function () {
+  const tid = $('estruturaClient').value;
+  const grupoId = $('lojaGrupoSelect').value;
+  const nome = $('lojaNome').value.trim();
+  const filStr = $('lojaFilialExcel').value.trim();
+  if (!tid) { fb('Selecione um cliente.', 'error'); return; }
+  if (!grupoId) { fb('Selecione o grupo.', 'error'); return; }
+  if (!nome) { fb('Informe o nome da loja.', 'error'); return; }
+  const payload = { grupo_id: grupoId, nome: nome };
+  if (filStr) {
+    const fil = parseInt(filStr, 10);
+    if (isNaN(fil)) { fb('Filial deve ser um número.', 'error'); return; }
+    payload.filial_excel = fil;
+  }
+  try {
+    await window.QTQD_API_CLIENT.criarLoja(getToken(), tid, payload);
+    $('lojaNome').value = '';
+    $('lojaFilialExcel').value = '';
+    fb('Loja adicionada.', 'success');
+    await loadEstrutura();
+  } catch (e) { fb('Erro ao adicionar loja: ' + e.message, 'error'); }
+});
 
 /* ═══════════════════════════════════════════════════════
    TEMPLATE EXCEL

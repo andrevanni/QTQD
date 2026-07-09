@@ -129,6 +129,12 @@ Todos os QT/QD em R$ e derivados aditivos:
 
 Cada grupo "entrega" seu consolidado de forma uniforme; a rede não precisa saber como cada grupo foi preenchido.
 
+### ⚠ Atenção para o Plano 2 — detalhamento heterogêneo entre lojas
+
+`calcular_indicadores` usa prioridade "ou-ou": se qualquer sub-item de um grupo (ex.: `cartoes`) > 0, usa a soma dos sub-itens e **ignora** o campo total (`contas_receber`). A consolidação, porém, soma total **e** sub-itens de forma independente e aditiva (correto isoladamente). Combinação problemática: se a **Loja A detalha sub-itens** (`cartoes>0`) e a **Loja B preenche só o total** (`contas_receber>0`, sub-itens 0), o consolidado terá ambos > 0 → `calcular_indicadores` escolhe a soma dos sub-itens e **descarta silenciosamente o total da Loja B**, subestimando o QT/QD da rede. Aplica-se igualmente a `contas_pagar`/`fornecedores…` e `dividas`/`financiamentos…`.
+
+Hoje **não é regressão** (nenhum dado passa por esse caminho ainda, e lojas de uma mesma rede tendem a usar o mesmo modo de preenchimento). Mas o Plano 2 deve tratar: (a) **normalizar total→sub-itens** (ou vice-versa) antes de consolidar, ou (b) **exigir modo de detalhamento uniforme por rede**. Decidir e travar com teste no Plano 2.
+
 ## Backend
 
 ### Estrutura (setup) — admin

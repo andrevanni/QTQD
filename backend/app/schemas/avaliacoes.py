@@ -50,6 +50,8 @@ class AvaliacaoCreateRequest(AvaliacaoValores):
     semana_referencia: date
     status: str = "rascunho"
     observacoes: str | None = None
+    grupo_id: UUID | None = None
+    loja_id: UUID | None = None
 
 
 class AvaliacaoUpdateRequest(BaseModel):
@@ -57,6 +59,8 @@ class AvaliacaoUpdateRequest(BaseModel):
     status: str | None = None
     observacoes: str | None = None
     valores: AvaliacaoValores | None = None
+    grupo_id: UUID | None = None
+    loja_id: UUID | None = None
 
 
 class IndicadorCalculado(BaseModel):
@@ -69,6 +73,8 @@ class IndicadorCalculado(BaseModel):
 class AvaliacaoResponse(BaseModel):
     id: UUID
     tenant_id: UUID
+    grupo_id: UUID | None = None
+    loja_id: UUID | None = None
     semana_referencia: date
     status: str
     observacoes: str | None = None

@@ -65,6 +65,10 @@
             <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 14.094A5.973 5.973 0 004 17v1H1v-1a3 3 0 013.75-2.906z"/></svg></span>
             <span class="nav-label">Usuários</span>
           </button>
+          <button class="nav-link" data-section="estrutura" type="button">
+            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm10-1a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"/></svg></span>
+            <span class="nav-label">Estrutura</span>
+          </button>
           <button class="nav-link" data-section="identidade" type="button">
             <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg></span>
             <span class="nav-label">Identidade Visual</span>
@@ -269,6 +273,14 @@
                   <span>E-mail para teste (deixe vazio para enviar a todos)</span>
                   <input id="pdfEmailTeste" type="email" placeholder="email@exemplo.com" autocomplete="off">
                 </label>
+                <label class="field">
+                  <span>Nível do relatório (multi-loja)</span>
+                  <select id="pdfNivelRelatorio">
+                    <option value="loja">Loja</option>
+                    <option value="grupo">Grupo econômico</option>
+                    <option value="rede">Rede (consolidado)</option>
+                  </select>
+                </label>
                 <div class="hero-actions" style="flex-wrap:wrap;gap:8px">
                   <button id="savePdfConfigBtn" class="primary-button" type="button">Salvar configuração</button>
                   <button id="sendNowBtn" class="secondary-button" type="button">📧 Enviar relatório</button>
@@ -343,6 +355,65 @@
                   <button id="btnResetSenha" class="secondary-button" type="button">🔑 Resetar senha</button>
                   <button id="btnInativar" class="secondary-button" type="button">⛔ Inativar</button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Estrutura ─────────────────────────────────── -->
+        <section id="estrutura" class="admin-section hidden">
+          <div class="board">
+            <div class="board-header">
+              <div><p class="eyebrow">Multi-loja</p><h3>Estrutura de rede</h3></div>
+            </div>
+            <p class="board-copy">Configure grupos econômicos e lojas do cliente. O portal só mostra o seletor de rede quando "Modo rede" está ativo.</p>
+
+            <label class="field" style="max-width:320px;margin-top:12px">
+              <span>Cliente</span>
+              <select id="estruturaClient"></select>
+            </label>
+
+            <div id="estruturaModoRedeWrap" style="margin-top:16px" hidden>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="estruturaModoRede"> Modo rede ativo (mostra o seletor de loja/grupo no portal)
+              </label>
+            </div>
+
+            <div id="estruturaEmpty" class="board-copy" style="margin-top:16px">Selecione um cliente para configurar a estrutura.</div>
+
+            <div id="estruturaBody" hidden>
+              <h3 style="margin-top:20px">Grupos econômicos</h3>
+              <div class="form-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+                <label class="field">
+                  <span>Nome do grupo</span>
+                  <input type="text" id="grupoNome" placeholder="Ex.: Geral">
+                </label>
+                <label class="field">
+                  <span>Preenchimento</span>
+                  <select id="grupoNivel">
+                    <option value="loja">Por loja</option>
+                    <option value="grupo">Direto no grupo</option>
+                  </select>
+                </label>
+                <button id="addGrupoButton" class="primary-button" type="button">Adicionar grupo</button>
+              </div>
+              <div id="gruposList" class="card-list" style="margin-top:12px"></div>
+
+              <h3 style="margin-top:24px">Nova loja</h3>
+              <div class="form-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+                <label class="field">
+                  <span>Grupo</span>
+                  <select id="lojaGrupoSelect"></select>
+                </label>
+                <label class="field">
+                  <span>Nome da loja</span>
+                  <input type="text" id="lojaNome" placeholder="Ex.: Loja Centro">
+                </label>
+                <label class="field" style="width:90px">
+                  <span>Filial (Excel)</span>
+                  <input type="text" inputmode="numeric" id="lojaFilialExcel" placeholder="1">
+                </label>
+                <button id="addLojaButton" class="primary-button" type="button">Adicionar loja</button>
               </div>
             </div>
           </div>

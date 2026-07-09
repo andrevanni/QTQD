@@ -30,5 +30,6 @@ class ClienteAdminUpdateRequest(BaseModel):
 
 class ClienteAdminResumo(ClienteAdminBase):
     id: UUID
+    modo_rede: bool = False
     created_at: datetime
     updated_at: datetime

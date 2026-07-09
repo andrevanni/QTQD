@@ -5,6 +5,16 @@ Usada pelo endpoint admin (manual) e pelo endpoint de finalização (automático
 from datetime import date
 
 
+def montar_avals_por_nivel(all_avals: list[dict], grupos: list[dict], modo_rede: bool, nivel: str, ref: str | None) -> list[dict]:
+    """Devolve [{semana_referencia, valores}] no nível pedido, ordenado desc.
+    Sem modo_rede: usa as avals como estão (comportamento atual)."""
+    if not modo_rede or nivel not in ("loja", "grupo", "rede"):
+        return sorted(all_avals, key=lambda x: x["semana_referencia"], reverse=True)
+    from backend.app.services.series_service import build_series
+    serie = build_series(all_avals, grupos, nivel, ref)  # já desc
+    return serie
+
+
 def enviar_relatorio_para_tenant(
     tenant_id: str,
     sb,
@@ -33,21 +43,40 @@ def enviar_relatorio_para_tenant(
     tenant_res = sb.table("tenants").select("nome").eq("id", tenant_id).limit(1).execute()
     tenant_nome = tenant_res.data[0]["nome"] if tenant_res.data else "Cliente"
 
-    # Últimas N avaliações publicadas (sem rascunhos)
-    avals = (
+    # Nível do relatório (loja/grupo/rede) — só relevante quando o tenant está em modo_rede
+    modo_rede_res = sb.table("tenants").select("modo_rede").eq("id", tenant_id).limit(1).execute()
+    modo_rede = bool(modo_rede_res.data[0].get("modo_rede")) if modo_rede_res.data else False
+    nivel_relatorio = cfg.get("nivel_relatorio") or "loja"
+
+    # Todas as avaliações publicadas (sem rascunhos) — a consolidação por nível precisa de todas as lojas
+    all_avals = (
         sb.table("avaliacoes_semanais")
-        .select("semana_referencia,valores")
+        .select("semana_referencia,grupo_id,loja_id,valores")
         .eq("tenant_id", tenant_id)
         .neq("status", "rascunho")
-        .order("semana_referencia", desc=True)
-        .limit(n_retratos)
         .execute()
         .data
-    )
-    if not avals:
+    ) or []
+    if not all_avals:
         return []
+    grupos = sb.table("grupos_economicos").select("id,nivel_preenchimento").eq("tenant_id", tenant_id).execute().data or []
 
-    avals_sorted = sorted(avals, key=lambda x: x["semana_referencia"])
+    ref = None
+    if modo_rede and avaliacao_id:
+        av_ref = sb.table("avaliacoes_semanais").select("grupo_id,loja_id").eq("id", avaliacao_id).limit(1).execute()
+        if av_ref.data:
+            if nivel_relatorio == "loja":
+                ref = av_ref.data[0].get("loja_id")
+            elif nivel_relatorio == "grupo":
+                ref = av_ref.data[0].get("grupo_id")
+
+    nivel_efetivo = nivel_relatorio
+    if modo_rede and nivel_relatorio in ("loja", "grupo") and ref is None:
+        nivel_efetivo = "rede"  # envio manual sem contexto de loja -> consolidado da rede (evita relatório vazio)
+
+    serie = montar_avals_por_nivel(all_avals, grupos, modo_rede, nivel_efetivo, ref)[:n_retratos]
+
+    avals_sorted = sorted(serie, key=lambda x: x["semana_referencia"])
     periodos = []
     for av in avals_sorted:
         try:
