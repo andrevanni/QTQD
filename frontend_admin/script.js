@@ -167,6 +167,7 @@ function loadPdfSection() {
   populateClientSelects();
   $('pdfConfigPanel')?.classList.add('hidden');
   $('pdfDestinatariosList').innerHTML = '';
+  $('pdfNivelRelatorio').value = 'loja';
   loadEmailLog(null);
 }
 
@@ -178,6 +179,7 @@ $('pdfClient')?.addEventListener('change', async () => {
   // Limpa para não mostrar dados do cliente anterior enquanto carrega
   $('pdfNRetratos').value  = 8;
   $('pdfAtivo').checked    = true;
+  $('pdfNivelRelatorio').value = 'loja';
   $('pdfDestinatariosList').innerHTML = '';
   panel.classList.remove('hidden');
 
@@ -187,6 +189,7 @@ $('pdfClient')?.addEventListener('change', async () => {
     if (cfg) {
       $('pdfNRetratos').value = cfg.n_retratos ?? 8;
       $('pdfAtivo').checked   = cfg.ativo ?? true;
+      $('pdfNivelRelatorio').value = cfg.nivel_relatorio ?? 'loja';
     }
   } catch {}
 
@@ -218,6 +221,7 @@ $('savePdfConfigBtn')?.addEventListener('click', async () => {
   const payload = {
     n_retratos: parseInt($('pdfNRetratos').value || '8'),
     ativo:      $('pdfAtivo').checked,
+    nivel_relatorio: $('pdfNivelRelatorio').value,
   };
   try {
     await window.QTQD_API_CLIENT.savePdfConfig(getToken(), tenantId, payload);
