@@ -1,10 +1,11 @@
-const CACHE = 'qtqd-v13';
+const CACHE = 'qtqd-v14';
 const STATIC = [
   '/cliente',
   '/cliente/styles.css',
   '/cliente/script.js',
   '/cliente/chart_builder.js',
   '/cliente/excesso_critico.js',
+  '/cliente/multiloja.js',
   '/cliente/manifest.json',
   '/cliente/assets/logo_alta.jpg',
   '/shared/app_config.js',
