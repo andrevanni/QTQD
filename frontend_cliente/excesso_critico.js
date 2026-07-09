@@ -151,7 +151,7 @@
    * Função pura — não toca window/DOM. `rows` é Array<Array> (linha 0 = header).
    * Retorna { limites, totais, resumo, produtos }.
    */
-  function calcularExcessoDeRows(rows, limites) {
+  function calcularExcessoDeRows(rows, limites, filial) {
     if (!rows || !rows.length) throw new Error('Planilha sem dados.');
     const header = rows[0].map(c => String(c || '').trim());
 
@@ -162,6 +162,7 @@
     const iQtd   = findColIndex(header, ['Qtd Estoque', 'Qtd', 'Estoque Qtd']);
     const iValor = findColIndex(header, ['Estoque Valor', 'Valor', 'Estoque R$']);
     const iLanc  = findColIndex(header, ['lancamento', 'Lançamento', 'Lançamentos', 'Lancamentos', 'Lancamento']);
+    const iFilial = findColIndex(header, ['Filial']);
 
     if (iNome < 0 || iCurva < 0 || iMedia < 0 || iQtd < 0 || iValor < 0) {
       throw new Error('Cabeçalho inválido. Esperado: Nome Completo, Linha, Curva, Filial, MediaF Un, Qtd Estoque, Estoque Valor.');
@@ -178,6 +179,7 @@
     for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
       if (!row || row.every(v => v === null || v === undefined || v === '')) continue;
+      if (filial != null && iFilial >= 0 && Number(row[iFilial]) !== Number(filial)) continue;
       const nome = row[iNome];
       if (!nome) continue;
 
@@ -287,7 +289,7 @@
    * Processa o ArrayBuffer do XLSX (lê via SheetJS) e delega o cálculo à função pura.
    * Retorna o mesmo formato que o backend retornava: { limites, totais, resumo, produtos }
    */
-  function processarExcelArrayBuffer(buf, limites) {
+  function processarExcelArrayBuffer(buf, limites, filial) {
     if (!window.XLSX) {
       throw new Error('Biblioteca de leitura de Excel não carregou. Verifique sua conexão.');
     }
@@ -297,7 +299,7 @@
     if (!ws) throw new Error('Planilha vazia.');
 
     const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-    return calcularExcessoDeRows(rows, limites);
+    return calcularExcessoDeRows(rows, limites, filial);
   }
 
   /* ── Upload e processamento ──────────────────────────────── */
@@ -331,7 +333,8 @@
       await new Promise(r => setTimeout(r, 50));
 
       const limites = getLimitesUI();
-      const resp = processarExcelArrayBuffer(buf, limites);
+      const filialAtiva = (window.QTQD_MULTILOJA && window.QTQD_MULTILOJA.activeFilial) ? window.QTQD_MULTILOJA.activeFilial() : null;
+      const resp = processarExcelArrayBuffer(buf, limites, filialAtiva);
       lastResult = resp;
       renderResultado(resp);
 
