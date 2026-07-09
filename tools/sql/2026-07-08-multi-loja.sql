@@ -36,6 +36,9 @@ ALTER TABLE avaliacoes_semanais ADD COLUMN IF NOT EXISTS grupo_id uuid REFERENCE
 ALTER TABLE avaliacoes_semanais ADD COLUMN IF NOT EXISTS loja_id  uuid REFERENCES lojas(id) ON DELETE CASCADE;
 
 -- 5) Unicidade sem regressão:
+--    0) REMOVER a constraint antiga que trava multi-loja (bloqueava 2 lojas na mesma
+--       semana). Segura: o índice parcial (a) abaixo mantém a garantia p/ clientes sem rede.
+ALTER TABLE avaliacoes_semanais DROP CONSTRAINT IF EXISTS avaliacoes_semanais_tenant_id_semana_referencia_key;
 --    a) registros SEM unidade (clientes atuais) permanecem únicos por (tenant, semana)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_aval_tenant_semana_sem_unidade
   ON avaliacoes_semanais(tenant_id, semana_referencia)
