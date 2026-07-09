@@ -13,7 +13,7 @@ from backend.app.schemas.admin_clientes import (
 
 router = APIRouter(prefix="/admin/clientes", tags=["admin-clientes"], dependencies=[Depends(require_admin_token)])
 
-_COLS = "id, nome, slug, status, plano, contato_nome, contato_email, observacoes, created_at, updated_at"
+_COLS = "id, nome, slug, status, plano, contato_nome, contato_email, observacoes, modo_rede, created_at, updated_at"
 
 
 @router.get("", response_model=list[ClienteAdminResumo])

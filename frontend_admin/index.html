@@ -353,58 +353,59 @@
         </section>
 
         <!-- ── Estrutura ─────────────────────────────────── -->
-        <section id="estrutura" class="section" hidden>
-          <div class="card">
-            <div class="card-inner">
-              <p class="eyebrow">Multi-loja</p>
-              <h2>Estrutura de rede</h2>
-              <p class="section-desc">Configure grupos econômicos e lojas do cliente. O portal só mostra o seletor de rede quando "Modo rede" está ativo.</p>
+        <section id="estrutura" class="admin-section hidden">
+          <div class="board">
+            <div class="board-header">
+              <div><p class="eyebrow">Multi-loja</p><h3>Estrutura de rede</h3></div>
+            </div>
+            <p class="board-copy">Configure grupos econômicos e lojas do cliente. O portal só mostra o seletor de rede quando "Modo rede" está ativo.</p>
 
-              <label class="field-label" for="estruturaClient">Cliente</label>
+            <label class="field" style="max-width:320px;margin-top:12px">
+              <span>Cliente</span>
               <select id="estruturaClient"></select>
+            </label>
 
-              <div id="estruturaModoRedeWrap" style="margin-top:16px" hidden>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                  <input type="checkbox" id="estruturaModoRede"> Modo rede ativo (mostra o seletor de loja/grupo no portal)
+            <div id="estruturaModoRedeWrap" style="margin-top:16px" hidden>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="estruturaModoRede"> Modo rede ativo (mostra o seletor de loja/grupo no portal)
+              </label>
+            </div>
+
+            <div id="estruturaEmpty" class="board-copy" style="margin-top:16px">Selecione um cliente para configurar a estrutura.</div>
+
+            <div id="estruturaBody" hidden>
+              <h3 style="margin-top:20px">Grupos econômicos</h3>
+              <div class="form-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+                <label class="field">
+                  <span>Nome do grupo</span>
+                  <input type="text" id="grupoNome" placeholder="Ex.: Geral">
                 </label>
+                <label class="field">
+                  <span>Preenchimento</span>
+                  <select id="grupoNivel">
+                    <option value="loja">Por loja</option>
+                    <option value="grupo">Direto no grupo</option>
+                  </select>
+                </label>
+                <button id="addGrupoButton" class="primary-button" type="button">Adicionar grupo</button>
               </div>
+              <div id="gruposList" class="card-list" style="margin-top:12px"></div>
 
-              <div id="estruturaEmpty" class="section-desc" style="margin-top:16px">Selecione um cliente para configurar a estrutura.</div>
-
-              <div id="estruturaBody" hidden>
-                <h3 style="margin-top:20px">Grupos econômicos</h3>
-                <div class="form-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-                  <div>
-                    <label class="field-label" for="grupoNome">Nome do grupo</label>
-                    <input type="text" id="grupoNome" placeholder="Ex.: Geral">
-                  </div>
-                  <div>
-                    <label class="field-label" for="grupoNivel">Preenchimento</label>
-                    <select id="grupoNivel">
-                      <option value="loja">Por loja</option>
-                      <option value="grupo">Direto no grupo</option>
-                    </select>
-                  </div>
-                  <button id="addGrupoButton" class="btn btn-primary" type="button">Adicionar grupo</button>
-                </div>
-                <div id="gruposList" style="margin-top:12px"></div>
-
-                <h3 style="margin-top:24px">Nova loja</h3>
-                <div class="form-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-                  <div>
-                    <label class="field-label" for="lojaGrupoSelect">Grupo</label>
-                    <select id="lojaGrupoSelect"></select>
-                  </div>
-                  <div>
-                    <label class="field-label" for="lojaNome">Nome da loja</label>
-                    <input type="text" id="lojaNome" placeholder="Ex.: Loja Centro">
-                  </div>
-                  <div>
-                    <label class="field-label" for="lojaFilialExcel">Filial (Excel)</label>
-                    <input type="text" inputmode="numeric" id="lojaFilialExcel" placeholder="1" style="width:90px">
-                  </div>
-                  <button id="addLojaButton" class="btn btn-primary" type="button">Adicionar loja</button>
-                </div>
+              <h3 style="margin-top:24px">Nova loja</h3>
+              <div class="form-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+                <label class="field">
+                  <span>Grupo</span>
+                  <select id="lojaGrupoSelect"></select>
+                </label>
+                <label class="field">
+                  <span>Nome da loja</span>
+                  <input type="text" id="lojaNome" placeholder="Ex.: Loja Centro">
+                </label>
+                <label class="field" style="width:90px">
+                  <span>Filial (Excel)</span>
+                  <input type="text" inputmode="numeric" id="lojaFilialExcel" placeholder="1">
+                </label>
+                <button id="addLojaButton" class="primary-button" type="button">Adicionar loja</button>
               </div>
             </div>
           </div>

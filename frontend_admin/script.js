@@ -810,17 +810,17 @@ function renderEstrutura() {
     const lojasDoGrupo = estruturaLojas.filter(function (l) { return String(l.grupo_id) === String(g.id); });
     const card = el('article', 'entity-card');
     const nivelLabel = g.nivel_preenchimento === 'grupo' ? 'Direto no grupo' : 'Por loja';
-    let html = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">';
+    let html = '<div class="entity-card-row">';
     html += '<strong>' + g.nome + '</strong>';
     html += '<span style="font-size:12px;color:var(--muted)">' + nivelLabel + '</span>';
-    html += '<button class="btn btn-danger btn-sm" data-del-grupo="' + g.id + '" type="button">Excluir</button>';
+    html += '<button class="danger-button" data-del-grupo="' + g.id + '" type="button" style="padding:4px 10px;font-size:11px;flex-shrink:0">Excluir</button>';
     html += '</div>';
     if (g.nivel_preenchimento === 'loja') {
       if (lojasDoGrupo.length) {
         html += '<ul style="margin:8px 0 0;padding-left:18px;font-size:13px">';
         lojasDoGrupo.forEach(function (l) {
           const fil = (l.filial_excel !== null && l.filial_excel !== undefined) ? ' · Filial ' + l.filial_excel : '';
-          html += '<li>' + l.nome + fil + ' <button class="btn-link" data-del-loja="' + l.id + '" type="button" style="color:#dc2626">remover</button></li>';
+          html += '<li>' + l.nome + fil + ' <button class="danger-button" data-del-loja="' + l.id + '" type="button" style="padding:2px 8px;font-size:11px">remover</button></li>';
         });
         html += '</ul>';
       } else {
@@ -895,7 +895,11 @@ $('addLojaButton')?.addEventListener('click', async function () {
   if (!grupoId) { fb('Selecione o grupo.', 'error'); return; }
   if (!nome) { fb('Informe o nome da loja.', 'error'); return; }
   const payload = { grupo_id: grupoId, nome: nome };
-  if (filStr) payload.filial_excel = parseInt(filStr, 10);
+  if (filStr) {
+    const fil = parseInt(filStr, 10);
+    if (isNaN(fil)) { fb('Filial deve ser um número.', 'error'); return; }
+    payload.filial_excel = fil;
+  }
   try {
     await window.QTQD_API_CLIENT.criarLoja(getToken(), tid, payload);
     $('lojaNome').value = '';
