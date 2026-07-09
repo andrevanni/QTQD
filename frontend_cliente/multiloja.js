@@ -13,6 +13,17 @@
       }
       return null; // rede / grupo consolidado -> não é unidade de entrada
     },
+    isRede: function () { return !!(arvore && arvore.modo_rede); },
+    activeFilial: function () {
+      if (!current || !current.loja_id || !arvore) return null;
+      let fil = null;
+      arvore.grupos.forEach(function (g) {
+        (g.lojas || []).forEach(function (l) {
+          if (String(l.id) === String(current.loja_id)) { fil = l.filial_excel; }
+        });
+      });
+      return (fil === undefined || fil === null) ? null : fil;
+    },
   };
 
   function esc(s) {
