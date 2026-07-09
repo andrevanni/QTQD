@@ -77,6 +77,10 @@
             <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg></span>
             <span class="nav-label">Admins</span>
           </button>
+          <button class="nav-link" data-section="ajuda" type="button">
+            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.94 1.34 1 1 0 11-1.89-.67A3 3 0 1111 10.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg></span>
+            <span class="nav-label">Ajuda</span>
+          </button>
           <button class="nav-link" data-section="ambiente" type="button">
             <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm14 1a1 1 0 11-2 0 1 1 0 012 0zM2 13a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2zm14 1a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"/></svg></span>
             <span class="nav-label">Ambiente</span>
@@ -484,6 +488,47 @@
         </section>
 
         <!-- ── Ambiente ──────────────────────────────────── -->
+        <section id="ajuda" class="admin-section hidden">
+          <div class="board">
+            <div class="form-panel">
+              <div class="board-header">
+                <div><p class="eyebrow">Ajuda</p><h3>Multi-loja / Grupo Econômico — parametrização</h3></div>
+              </div>
+              <p style="line-height:1.65;margin:0 0 12px">
+                Permite que um cliente (rede) com várias lojas lance dados <strong>por loja</strong> e veja a
+                <strong>visão consolidada</strong>. É <strong>opt-in</strong>: enquanto o "Modo rede" estiver
+                desligado, o portal do cliente funciona exatamente como hoje.
+              </p>
+              <p style="line-height:1.65;margin:0 0 6px"><strong>Hierarquia:</strong> Rede (o cliente) → Grupos econômicos → Lojas. Cada grupo pode ser preenchido <strong>loja a loja</strong> ou <strong>direto no grupo</strong> (quando o cliente já entrega consolidado).</p>
+              <p style="line-height:1.65;margin:14px 0 6px"><strong>Passo a passo (seção “Estrutura”):</strong></p>
+              <ol style="line-height:1.75;padding-left:22px;margin:0">
+                <li>Selecione o <strong>cliente</strong>.</li>
+                <li>Crie um ou mais <strong>grupos econômicos</strong> — dê o nome e escolha o <strong>preenchimento</strong>: “Por loja” ou “Direto no grupo”. Se o cliente não pensa em grupos, crie um único grupo “Geral”.</li>
+                <li>Para grupos “Por loja”, adicione as <strong>lojas</strong>: nome + <strong>Filial (Excel)</strong> = o número da filial como aparece no Excel de Excesso Crítico (usado para filtrar o excesso por loja).</li>
+                <li>Ligue <strong>“Modo rede ativo”</strong>. A partir daí o portal daquele cliente mostra o seletor de nível e o menu Comparativo.</li>
+              </ol>
+              <p style="line-height:1.65;margin:14px 0 6px"><strong>Nível do relatório por e-mail (seção “Relatório”):</strong> escolha se o e-mail sai no nível <strong>Loja</strong>, <strong>Grupo</strong> ou <strong>Rede</strong> (padrão: Loja). No envio manual sem contexto de loja, o sistema usa o consolidado da rede automaticamente.</p>
+            </div>
+          </div>
+
+          <div class="board" style="margin-top:16px">
+            <div class="form-panel">
+              <div class="board-header">
+                <div><p class="eyebrow">Como consolida</p><h3>Matemática das visões</h3></div>
+              </div>
+              <ul style="line-height:1.75;padding-left:22px;margin:0">
+                <li><strong>Valores em R$</strong> (QT, QD, Saldo, Excesso, estoque): <strong>somam</strong> as lojas.</li>
+                <li><strong>Prazos e índices</strong> não somam — são <strong>média ponderada</strong>: PMP ponderado pelas compras do mês, PMV pela venda a custo, PME pelo estoque, Índice de Faltas pela venda a custo.</li>
+                <li><strong>Índices calculados</strong> (Índice QT/QD, Ciclo) são recalculados a partir do consolidado — o índice da rede é QT&nbsp;÷&nbsp;QD da rede, nunca a média dos índices das lojas.</li>
+                <li><strong>Consolidado do grupo</strong> = soma das lojas (ou o lançamento direto, se o grupo for “direto no grupo”). <strong>Consolidado da rede</strong> = soma dos grupos.</li>
+              </ul>
+              <p style="line-height:1.65;margin:14px 0 0;color:var(--muted,#94a3b8)">
+                Observação: os níveis consolidados (rede/grupo) são somente leitura — o cliente só lança dados selecionando uma loja. Clientes de loja única (sem modo rede) não são afetados por nada disso.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section id="ambiente" class="admin-section hidden">
           <div class="stats-grid" style="margin-bottom:16px">
             <article>
