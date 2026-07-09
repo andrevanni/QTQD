@@ -74,6 +74,7 @@ class PdfConfigRequest(BaseModel):
     incluir_inspetor: bool = False
     incluir_graficos: bool = False
     ativo:            bool = True
+    nivel_relatorio:  str  = "loja"
 
 
 class PdfConfigResponse(PdfConfigRequest):
