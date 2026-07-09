@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from uuid import UUID
+from uuid import UUID, uuid5, NAMESPACE_URL
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
@@ -409,7 +409,7 @@ def listar(
         v = AvaliacaoValores(**(s["valores"]))
         out.append(
             AvaliacaoResponse(
-                id=UUID(int=0),
+                id=uuid5(NAMESPACE_URL, "qtqd-consolidado:" + str(nivel) + ":" + str(ref) + ":" + s["semana_referencia"]),
                 tenant_id=tenant_id,
                 grupo_id=grupo_id,
                 loja_id=loja_id,

@@ -24,6 +24,8 @@
     if (!API || !window.QTQD_PORTAL || !window.QTQD_PORTAL.isApiMode()) return;
     try { arvore = await API.getMeLojas(); } catch (e) { return; }
     if (!arvore || !arvore.modo_rede || !arvore.grupos || !arvore.grupos.length) return;
+    const cmpLink = document.querySelector('.nav-link[data-section="comparativo"]');
+    if (cmpLink) cmpLink.style.display = '';
     injectSelector();
     wireComparativoNav();
     await selectFromValue('rede::');
