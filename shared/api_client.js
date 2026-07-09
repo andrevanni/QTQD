@@ -178,6 +178,24 @@
       });
     },
 
+    /* ── Multi-loja (exige JWT) ──────────────────────── */
+    getMeLojas() {
+      return request(base('/me/lojas'), { method: 'GET', headers: authHeaders() });
+    },
+    listAvaliacoesNivel(nivel, refId) {
+      let qs = '?nivel=' + encodeURIComponent(nivel);
+      if (nivel === 'loja' && refId) qs += '&loja_id=' + encodeURIComponent(refId);
+      if (nivel === 'grupo' && refId) qs += '&grupo_id=' + encodeURIComponent(refId);
+      return request(base('/avaliacoes' + qs), { method: 'GET', headers: authHeaders() });
+    },
+    getComparativo(params) {
+      const p = params || {};
+      let qs = '?nivel=' + encodeURIComponent(p.nivel || 'rede') + '&modo=' + encodeURIComponent(p.modo || 'snapshot');
+      if (p.grupo_id) qs += '&grupo_id=' + encodeURIComponent(p.grupo_id);
+      if (p.semana) qs += '&semana=' + encodeURIComponent(p.semana);
+      return request(base('/me/comparativo' + qs), { method: 'GET', headers: authHeaders() });
+    },
+
     /* ── Admin — clientes (exige X-Admin-Token) ──────── */
     listClients(adminToken) {
       return request(base('/admin/clientes'), { method: 'GET', headers: adminHeaders(adminToken) });
