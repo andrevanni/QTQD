@@ -676,6 +676,10 @@ Tabela criada em 2026-05-04. Cada tentativa de envio grava um registro:
 
 > **Lição aprendida (2026-07-08):** testes unitários (dados sintéticos) **não pegam** constraints do banco. Antes de shipar mudança de modelo, rodar um E2E contra o Supabase real. **Como rodar SQL/DDL no Supabase daqui:** conexão direta ao Postgres é bloqueada (problema #7), mas a **Management API** roda DDL — `POST https://api.supabase.com/v1/projects/ludbgghdknwfzcrqfdge/database/query` com `Authorization: Bearer <PAT sbp_...>` + header `User-Agent` de navegador (senão Cloudflare 1010). O PAT é gerado pelo usuário em Account → Access Tokens e deve ser revogado após o uso.
 
+53. **Excesso Crítico dava "Cabeçalho inválido" para o Total Socorro (2026-07-15):** o Excel do ERP do Total Socorro nomeia a coluna de quantidade como **`Qtde Estoque`** (com "e"), mas o `findColIndex` (`excesso_critico.js`) faz match **exato** e só aceitava `Qtd Estoque` → `iQtd = -1` → erro. Fix: adicionar as grafias `Qtde Estoque`/`Qtde`/`Quantidade Estoque`/`Quantidade` aos candidatos de `iQtd`. Mudança **aditiva** (mantém `Qtd Estoque` como primeira opção) — a SV não é afetada. SW `qtqd-v15 → qtqd-v16`.
+
+> **Lição aprendida (2026-07-15):** para provar que um fix no parser do Excesso não quebra outro cliente, dá pra extrair as **funções puras reais** (`findColIndex`, `calcularExcessoDeRows` — a última é marcada "não toca window/DOM") por intervalo de linhas do `excesso_critico.js`, `require` num harness Node, e rodar contra o Excel real (via `openpyxl → JSON`) com os dois cabeçalhos → resultado idêntico = sem regressão. Cabeçalhos de ERP variam (`Qtd`/`Qtde`, acentos, abreviações) — quando um cliente novo dá "Cabeçalho inválido", comparar o header real com os candidatos de `findColIndex` antes de tudo.
+
 ---
 
 ## Admin — Seção "Admins"
@@ -895,6 +899,7 @@ Admin → **Estrutura** → selecionar cliente → criar grupo(s) + lojas (com n
 - **Metas/orçamento por loja** (realizado × meta).
 - **Excesso "todas as lojas de uma vez"** (hoje é por loja ativa; ideal: um upload aplica em todas via `filial_excel`).
 - Aviso quando o Excesso é aberto em nível consolidado (evitar aplicar em id sintético).
+- **Filial como texto no Excel do Total Socorro:** o arquivo de Excesso do Total Socorro (2026-07-15) traz a coluna `Filial` com **texto** (`LOJA 1`, `LOJA 2`) em vez de número. Em loja única (sem `modo_rede`) é irrelevante. Mas se o Total Socorro virar multi-loja, o vínculo loja↔Excel usa `lojas.filial_excel` (número) contra a coluna `Filial` — seria preciso o ERP exportar `1`/`2`, ou o `activeFilial()`/filtro passar a casar por texto (`"LOJA 1"`).
 
 ---
 
