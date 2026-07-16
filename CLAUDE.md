@@ -766,6 +766,8 @@ Nova seção no menu lateral do portal cliente (**"Excesso Crítico"**) que proc
 #### Formato esperado do Excel
 Colunas (qualquer ordem, header na linha 1): `Nome Completo`, `Linha`, `Curva` (A/B/C/D), `Filial` (1-6), `MediaF Un` (média mensal de venda em unidades), `Qtd Estoque`, `Estoque Valor`. **Coluna opcional `lancamento`** (aceita `lancamento`/`Lançamento`/`Lançamentos`) — valores tipo `"Sim - 90D"` marcam produtos em lançamento.
 
+> **Variações de cabeçalho aceitas (`findColIndex` faz match exato, case-insensitive):** a coluna de quantidade aceita `Qtd Estoque`/`Qtde Estoque`/`Qtd`/`Qtde`/`Quantidade Estoque`/`Quantidade`; média aceita `MediaF Un`/`Media`/`Media Un`/`MediaF`; valor aceita `Estoque Valor`/`Valor`/`Estoque R$`. Se um ERP usar outra grafia, dá "Cabeçalho inválido" — adicionar a variação em `excesso_critico.js` (`iQtd`/`iMedia`/`iValor`). O Excel do Total Socorro usa `Qtde Estoque` (2026-07-15); a SV usa `Qtd Estoque` — ambos produzem resultado idêntico.
+
 #### Regra de cálculo
 **Itens de lançamento** (coluna `lancamento` cujo valor, sem espaços e minúsculo, **começa com "sim"**) são **retirados do cálculo de excesso** e somados à parte no campo `total_estoque_lancamentos` (soma pura do `Estoque Valor`, **sem regra e sem quebra por curva**). Se a coluna não existir, `total_estoque_lancamentos = 0` e nada é excluído (retrocompatível).
 
