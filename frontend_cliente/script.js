@@ -402,6 +402,8 @@ $("loginBtn")?.addEventListener("click",handleLogin);
 ["loginEmail","loginPassword"].forEach(id=>$( id)?.addEventListener("keydown",e=>{if(e.key==="Enter")handleLogin()}));
 function showLoginScreen(){const o=$("loginOverlay");if(o)o.classList.remove("hidden");document.body.classList.add("login-active")}
 function hideLoginScreen(){const o=$("loginOverlay");if(o)o.classList.add("hidden");document.body.classList.remove("login-active")}
+function handleLogout(){if(!confirm("Deseja sair do portal?"))return;try{if(window.QTQD_API_CLIENT){window.QTQD_API_CLIENT.clearJwt();window.QTQD_API_CLIENT.clearTenantId();}}catch(e){}["qtqd_jwt_v1","qtqd_tenant_id_v1","qtqd_permissao_v1",BRANDING_KEY,FIELD_CONFIG_KEY].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});location.reload();}
+$("logoutButton")?.addEventListener("click",handleLogout);
 function isExpiredOrUnauthorized(msg){return/401|unauthorized|nao autorizado|não autorizado|expired|expirado/i.test(String(msg))}
 async function doLogin(email,password){if(!window.QTQD_API_CLIENT)throw new Error("API não disponível");const data=await window.QTQD_API_CLIENT.login(email,password);if(!data?.access_token||!data?.tenant_id)throw new Error("Resposta inválida do servidor");window.QTQD_API_CLIENT.setJwt(data.access_token);window.QTQD_API_CLIENT.setTenantId(data.tenant_id);if(data.permissao)localStorage.setItem('qtqd_permissao_v1',data.permissao);if(data.clientName)localStorage.setItem(BRANDING_KEY,JSON.stringify({clientName:data.nome||defaultBranding.clientName,clientLogoUrl:''}));return data}
 async function initializeClient(){applyTheme();applyBranding();openSection("inspetor");

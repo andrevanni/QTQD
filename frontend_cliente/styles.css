@@ -392,6 +392,34 @@ body.sidebar-mini .icon-expand       { display: block; }
   gap: 10px;
 }
 
+.topbar-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.topbar-logout:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+body[data-theme="dark"] .topbar-logout:hover {
+  background: rgba(220, 38, 38, 0.18);
+  border-color: rgba(220, 38, 38, 0.5);
+  color: #fca5a5;
+}
+
 .client-chip {
   display: flex;
   align-items: center;
