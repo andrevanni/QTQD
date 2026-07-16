@@ -159,7 +159,7 @@
     const iLinha = findColIndex(header, ['Linha']);
     const iCurva = findColIndex(header, ['Curva']);
     const iMedia = findColIndex(header, ['MediaF Un', 'Media', 'Media Un', 'MediaF']);
-    const iQtd   = findColIndex(header, ['Qtd Estoque', 'Qtd', 'Estoque Qtd']);
+    const iQtd   = findColIndex(header, ['Qtd Estoque', 'Qtde Estoque', 'Qtd', 'Qtde', 'Estoque Qtd', 'Quantidade Estoque', 'Quantidade']);
     const iValor = findColIndex(header, ['Estoque Valor', 'Valor', 'Estoque R$']);
     const iLanc  = findColIndex(header, ['lancamento', 'Lançamento', 'Lançamentos', 'Lancamentos', 'Lancamento']);
     const iFilial = findColIndex(header, ['Filial']);
